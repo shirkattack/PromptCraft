@@ -262,6 +262,10 @@ The application supports multiple optimization techniques:
 - **DSPy**: Systematic prompt optimization using DSPy framework
 - **Simple**: Basic prompt enhancement using direct LM feedback
 
+## 🔧 DSPy Integration
+
+PromptCraft leverages [DSPy](https://github.com/stanfordnlp/dspy) (Declarative Self-improving Language Programs) as a core framework for systematic prompt optimization. DSPy provides a programmatic approach to prompt engineering through composable modules and type-safe signatures. In this project, DSPy serves as the abstraction layer between the optimization service and local AI models via Ollama, enabling privacy-focused prompt optimization without external API dependencies. The integration uses DSPy's `LM` class for unified model management, `context()` for thread-safe operations in async environments, and sophisticated predictors like `Predict()` and `ChainOfThought()` for multi-step reasoning tasks. The architecture implements custom DSPy signatures with `InputField` and `OutputField` definitions, allowing structured prompt transformations with clear input/output contracts. This foundation supports the meta-prompt optimization method and enables task-specific prompt engineering for code generation, creative writing, analysis, and translation workflows, providing measurable improvement scores (0-100) with detailed performance metadata for each optimization session.
+
 ## 🛠️ Available Scripts
 
 ### Root Level (Convenience Scripts)
