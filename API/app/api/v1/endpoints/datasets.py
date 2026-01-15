@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from typing import List
 import uuid
 from app.core.database import get_db
+from app.core.auth import verify_api_key
 from app.models.training import TrainingDataset
 from app.schemas.training import (
     TrainingDatasetCreate,
     TrainingDatasetResponse
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 @router.post("/", response_model=TrainingDatasetResponse)
 def create_dataset(

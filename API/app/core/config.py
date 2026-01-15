@@ -30,7 +30,11 @@ class Settings(BaseSettings):
     # App settings
     app_name: str = "PromptCraft API - Ollama Edition"
     debug: bool = False
-    
+
+    # Security
+    api_key: Optional[str] = None  # If set, API key authentication is required
+    require_api_key: bool = False  # Set to True to enforce API key auth
+
     class Config:
         env_file = ".env"
         extra = "ignore"  # Ignore extra fields from .env file

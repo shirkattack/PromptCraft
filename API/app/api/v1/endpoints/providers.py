@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from app.schemas.optimization import AIProviderResponse, AIModelResponse
 from app.services.ollama_service import ollama_service
+from app.core.auth import verify_api_key
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 @router.get("/", response_model=List[AIProviderResponse])
 async def get_providers():

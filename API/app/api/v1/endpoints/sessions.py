@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import uuid
 from app.core.database import get_db
+from app.core.auth import verify_api_key
 from app.models.optimization import OptimizationSession
 from app.schemas.optimization import (
     OptimizationSessionCreate,
@@ -13,7 +14,7 @@ from app.schemas.optimization import (
 from app.services.ollama_service import ollama_service
 from app.services.optimization_service import optimization_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 @router.post("/", response_model=OptimizationSessionResponse)
 async def create_session(

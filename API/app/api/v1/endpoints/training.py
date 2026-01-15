@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.auth import verify_api_key
 from app.models.training import TrainingDataset, TrainingSample
 from app.schemas.training import (
     TrainingDatasetCreate,
@@ -27,7 +28,7 @@ from app.schemas.training import (
 )
 from app.services.training_service import training_service
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 # Dataset CRUD Operations
 @router.post("/", response_model=TrainingDatasetResponse)
