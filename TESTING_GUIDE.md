@@ -123,7 +123,7 @@ pytest tests/test_services/test_ollama_service.py -v
 make dev
 
 # Or manually
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
 ```
 
 **Expected Result:** Server starts without errors, shows startup logs.
@@ -131,13 +131,13 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ### Test 3.4: API Health Checks
 ```bash
 # Test root endpoint
-curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8765/
 
 # Test health endpoint
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8765/health
 
 # Test API documentation
-open http://127.0.0.1:8000/docs
+open http://127.0.0.1:8765/docs
 ```
 
 **Expected Result:** 
@@ -148,13 +148,13 @@ open http://127.0.0.1:8000/docs
 ### Test 3.5: Ollama Service Integration
 ```bash
 # Test Ollama health through API
-curl http://127.0.0.1:8000/api/v1/providers/ollama/health
+curl http://127.0.0.1:8765/api/v1/providers/ollama/health
 
 # Test model listing
-curl http://127.0.0.1:8000/api/v1/providers/ollama/models
+curl http://127.0.0.1:8765/api/v1/providers/ollama/models
 
 # Test providers endpoint
-curl http://127.0.0.1:8000/api/v1/providers/
+curl http://127.0.0.1:8765/api/v1/providers/
 ```
 
 **Expected Result:** 
@@ -204,7 +204,7 @@ Open browser developer tools and check:
 Using the API directly:
 ```bash
 # Create a new session
-curl -X POST http://127.0.0.1:8000/api/v1/sessions/ \
+curl -X POST http://127.0.0.1:8765/api/v1/sessions/ \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Session",
@@ -220,7 +220,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/sessions/ \
 ### Test 5.2: Optimize a Prompt
 ```bash
 # Use the session ID from previous test
-curl -X POST http://127.0.0.1:8000/api/v1/sessions/{SESSION_ID}/optimize \
+curl -X POST http://127.0.0.1:8765/api/v1/sessions/{SESSION_ID}/optimize \
   -H "Content-Type: application/json" \
   -d '{
     "optimization_method": "meta_prompt"
@@ -257,8 +257,8 @@ Using the web interface:
 ### Test 6.1: Response Time Test
 ```bash
 # Time API responses
-time curl http://127.0.0.1:8000/health
-time curl http://127.0.0.1:8000/api/v1/providers/ollama/models
+time curl http://127.0.0.1:8765/health
+time curl http://127.0.0.1:8765/api/v1/providers/ollama/models
 ```
 
 **Expected Result:** Responses under 1 second for health, under 5 seconds for models.
@@ -267,7 +267,7 @@ time curl http://127.0.0.1:8000/api/v1/providers/ollama/models
 ```bash
 # Test multiple simultaneous requests
 for i in {1..5}; do
-  curl http://127.0.0.1:8000/health &
+  curl http://127.0.0.1:8765/health &
 done
 wait
 ```
@@ -289,8 +289,8 @@ Test with a long prompt (500+ words) through the frontend or API.
 pkill ollama
 
 # Test API responses
-curl http://127.0.0.1:8000/api/v1/providers/ollama/health
-curl http://127.0.0.1:8000/api/v1/providers/ollama/models
+curl http://127.0.0.1:8765/api/v1/providers/ollama/health
+curl http://127.0.0.1:8765/api/v1/providers/ollama/models
 
 # Restart Ollama
 ollama serve &
@@ -301,7 +301,7 @@ ollama serve &
 ### Test 7.2: Invalid Model Test
 ```bash
 # Try to use non-existent model
-curl -X POST http://127.0.0.1:8000/api/v1/sessions/ \
+curl -X POST http://127.0.0.1:8765/api/v1/sessions/ \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Error Test",
@@ -317,7 +317,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/sessions/ \
 ### Test 7.3: Malformed Request Test
 ```bash
 # Send invalid JSON
-curl -X POST http://127.0.0.1:8000/api/v1/sessions/ \
+curl -X POST http://127.0.0.1:8765/api/v1/sessions/ \
   -H "Content-Type: application/json" \
   -d '{"invalid": json}'
 ```
@@ -350,8 +350,8 @@ Your PromptCraft installation is working correctly if:
 
 2. **Port conflicts:**
    ```bash
-   # Check what's using port 8000
-   lsof -i :8000
+   # Check what's using port 8765
+   lsof -i :8765
    # Kill process or change port in config
    ```
 

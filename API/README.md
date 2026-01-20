@@ -91,7 +91,7 @@ CORS_ORIGINS=["http://localhost:3000"]
 
 # Security
 API_HOST=127.0.0.1
-API_PORT=8000
+API_PORT=8765
 ```
 
 ## 🚀 Usage
@@ -103,7 +103,7 @@ API_PORT=8000
 make dev
 
 # Or manually
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8765
 ```
 
 ### Production Deployment
@@ -113,14 +113,14 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 pip install -e .
 
 # Run with production settings
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+uvicorn app.main:app --host 0.0.0.0 --port 8765 --workers 4
 ```
 
 ### API Documentation
 
-- **Interactive Docs**: http://127.0.0.1:8000/docs (Swagger UI)
-- **Alternative Docs**: http://127.0.0.1:8000/redoc (ReDoc)
-- **OpenAPI Schema**: http://127.0.0.1:8000/openapi.json
+- **Interactive Docs**: http://127.0.0.1:8765/docs (Swagger UI)
+- **Alternative Docs**: http://127.0.0.1:8765/redoc (ReDoc)
+- **OpenAPI Schema**: http://127.0.0.1:8765/openapi.json
 
 ## 🧪 Testing
 
@@ -276,7 +276,7 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 ## 🆘 Support
 
 - **Issues**: GitHub Issues (configure your repository URL)
-- **Documentation**: [API Documentation](http://127.0.0.1:8000/docs)
+- **Documentation**: [API Documentation](http://127.0.0.1:8765/docs)
 - **Discussions**: GitHub Discussions (configure your repository URL)
 
 ## 🙏 Acknowledgments

@@ -13,7 +13,7 @@ import sys
 from typing import Dict, Any
 
 # Configuration
-API_BASE = "http://127.0.0.1:8000"
+API_BASE = "http://127.0.0.1:8765"
 TEST_PROMPTS = [
     {
         "name": "Simple Coding Task",

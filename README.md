@@ -128,7 +128,7 @@ PromptCraft/
    npm run dev:web
    ```
    
-   - Backend: http://127.0.0.1:8000
+   - Backend: http://127.0.0.1:8765
    - Frontend: http://localhost:3000
 
 ## 🧪 Testing Your Setup
@@ -228,13 +228,13 @@ Web/
 ### 1. Backend API Test
 ```bash
 # Test backend health
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8765/health
 
 # Test sessions endpoint
-curl http://127.0.0.1:8000/api/v1/sessions/
+curl http://127.0.0.1:8765/api/v1/sessions/
 
 # Test providers
-curl http://127.0.0.1:8000/api/v1/providers/
+curl http://127.0.0.1:8765/api/v1/providers/
 ```
 
 ### 2. Frontend Integration Test
@@ -354,7 +354,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 DATABASE_URL=sqlite:///./app.db
 LOG_LEVEL=INFO
 API_HOST=127.0.0.1
-API_PORT=8000
+API_PORT=8765
 ```
 
 #### Frontend
@@ -364,7 +364,7 @@ No environment variables required for basic functionality.
 
 ### Common Issues
 
-1. **CORS errors**: Ensure backend is running on 127.0.0.1:8000
+1. **CORS errors**: Ensure backend is running on 127.0.0.1:8765
 2. **Module not found**: Run `npm install --legacy-peer-deps`
 3. **Ollama not connecting**: Check Ollama is running with `ollama serve`
 4. **Database errors**: Delete `app.db` and restart backend to recreate
@@ -372,7 +372,7 @@ No environment variables required for basic functionality.
 ### Debug Commands
 ```bash
 # Check if services are running
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8765/health
 curl -I http://localhost:3000
 
 # Check Ollama
@@ -382,8 +382,8 @@ curl http://localhost:11434/api/tags
 tail -f API/logs/*
 
 # Check API directly
-curl http://127.0.0.1:8000/api/v1/sessions/
-curl http://127.0.0.1:8000/api/v1/providers/
+curl http://127.0.0.1:8765/api/v1/sessions/
+curl http://127.0.0.1:8765/api/v1/providers/
 ```
 
 ## 📈 Performance
@@ -409,7 +409,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues**: Open a GitHub issue for bugs and feature requests
 - **Documentation**: Check the `/docs` directory for detailed guides
-- **API Docs**: Visit http://127.0.0.1:8000/docs when backend is running
+- **API Docs**: Visit http://127.0.0.1:8765/docs when backend is running
 
 ---
 
