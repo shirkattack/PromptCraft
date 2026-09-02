@@ -9,20 +9,20 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 from app.core.config import settings
 
 
 def setup_logging() -> None:
     """Configure logging for the application."""
-    
+
     # Create logs directory if it doesn't exist
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
-    
+
     # Logging configuration
-    config: Dict[str, Any] = {
+    config: dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -87,7 +87,7 @@ def setup_logging() -> None:
             "handlers": ["console", "file"],
         },
     }
-    
+
     # Apply configuration
     logging.config.dictConfig(config)
 
@@ -100,16 +100,17 @@ def get_logger(name: str) -> logging.Logger:
 # Performance logging decorator
 def log_performance(func_name: str = None):
     """Decorator to log function performance."""
+
     def decorator(func):
         import functools
         import time
-        
+
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             logger = get_logger("performance")
             name = func_name or f"{func.__module__}.{func.__name__}"
             start_time = time.time()
-            
+
             try:
                 result = await func(*args, **kwargs)
                 duration = time.time() - start_time
@@ -119,13 +120,13 @@ def log_performance(func_name: str = None):
                 duration = time.time() - start_time
                 logger.error(f"{name} failed after {duration:.3f}s: {str(e)}")
                 raise
-        
+
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
             logger = get_logger("performance")
             name = func_name or f"{func.__module__}.{func.__name__}"
             start_time = time.time()
-            
+
             try:
                 result = func(*args, **kwargs)
                 duration = time.time() - start_time
@@ -135,12 +136,13 @@ def log_performance(func_name: str = None):
                 duration = time.time() - start_time
                 logger.error(f"{name} failed after {duration:.3f}s: {str(e)}")
                 raise
-        
+
         # Return appropriate wrapper based on function type
         import asyncio
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
+
     return decorator
