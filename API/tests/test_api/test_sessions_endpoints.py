@@ -41,6 +41,7 @@ class TestSessionCrud:
         assert {m["id"] for m in response.json()["methods"]} == {
             "meta_prompt",
             "dspy",
+            "gepa",
             "simple",
         }
 
@@ -479,5 +480,34 @@ class TestBackgroundOptimization:
     def test_bad_method_is_422(self, client: TestClient, session_id: str):
         response = client.post(
             f"{BASE}/{session_id}/optimize/start", json={"optimization_method": "magic"}
+        )
+        assert response.status_code == 422
+
+
+class TestGepaEndpoint:
+    def test_gepa_without_dataset_is_422(self, client: TestClient, session_id: str):
+        with patch("app.services.lm_manager.LMManager.get_lm") as get_lm:
+            from dspy.utils.dummies import DummyLM
+
+            get_lm.return_value = DummyLM([{"output": "x"}] * 20)
+            response = client.post(
+                f"{BASE}/{session_id}/optimize", json={"optimization_method": "gepa"}
+            )
+        assert response.status_code == 422
+        assert "dataset" in response.json()["error"].lower()
+        assert client.get(f"{BASE}/{session_id}").json()["status"] == "failed"
+
+    def test_methods_list_flags_dataset_requirement(self, client: TestClient):
+        methods = {
+            m["id"]: m
+            for m in client.get(f"{BASE}/optimization-methods").json()["methods"]
+        }
+        assert methods["gepa"]["requires_dataset"] is True
+        assert "requires_dataset" not in methods["simple"]
+
+    def test_gepa_budget_is_bounded(self, client: TestClient, session_id: str):
+        response = client.post(
+            f"{BASE}/{session_id}/optimize",
+            json={"optimization_method": "gepa", "gepa_budget": 5},
         )
         assert response.status_code == 422

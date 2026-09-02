@@ -24,7 +24,7 @@ from app.services.progress import ProgressCallback, no_progress
 
 router = APIRouter(dependencies=[Depends(verify_api_key)])
 
-OPTIMIZATION_METHODS = {"meta_prompt", "dspy", "simple"}
+OPTIMIZATION_METHODS = {"meta_prompt", "dspy", "simple", "gepa"}
 
 
 def _load_dataset_samples(db: Session, dataset_id: str) -> list[Sample]:
@@ -142,6 +142,28 @@ async def get_optimization_methods() -> dict[str, list[dict[str, Any]]]:
                 "returns_reasoning": True,
                 "relative_speed": "slower",
                 "recommended_for": ["structured", "reasoning", "code"],
+            },
+            {
+                "id": "gepa",
+                "name": "GEPA (evolve from feedback)",
+                "description": "Evolves the instructions from written feedback on what the prompt gets wrong. Needs a dataset.",
+                "how_it_works": (
+                    "dspy.teleprompt.GEPA. The prompt runs on a few training samples; "
+                    "the metric writes feedback for each miss (for example 'the label "
+                    "is buried in a paragraph'); a reflection model rewrites the "
+                    "instructions to address that feedback; candidates that win on "
+                    "different samples stay on a Pareto front and can be merged. "
+                    "Every candidate is scored on the held-out samples, and the run "
+                    "returns the whole lineage."
+                ),
+                "best_for": (
+                    "Prompts with a dataset of expected outputs, when you want a "
+                    "measured gain and a visible reason for every edit."
+                ),
+                "returns_reasoning": True,
+                "relative_speed": "slowest",
+                "recommended_for": ["classification", "extraction", "qa"],
+                "requires_dataset": True,
             },
             {
                 "id": "simple",
@@ -296,6 +318,8 @@ async def _run_optimization(
             eval_metric=options.eval_metric,
             max_demos=options.max_demos,
             progress=progress,
+            gepa_budget=options.gepa_budget,
+            reflection_model=options.reflection_model,
         )
     except EvalError as e:
         session.status = SessionStatus.FAILED

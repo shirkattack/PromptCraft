@@ -69,7 +69,9 @@ class OptimizeRequest(BaseModel):
     constraints in the rewrite instructions.
     """
 
-    optimization_method: Literal["meta_prompt", "dspy", "simple"] = "meta_prompt"
+    optimization_method: Literal["meta_prompt", "dspy", "simple", "gepa"] = (
+        "meta_prompt"
+    )
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     max_tokens: int | None = Field(default=None, ge=64, le=8192)
     output_format: OutputFormat = "auto"
@@ -81,6 +83,10 @@ class OptimizeRequest(BaseModel):
     dataset_id: str | None = None
     eval_metric: EvalMetric = "auto"
     max_demos: int = Field(default=4, ge=1, le=8)
+    # GEPA only: how many scored model calls the evolution may spend, and
+    # which model writes the new instructions (defaults to the task model).
+    gepa_budget: int = Field(default=60, ge=10, le=500)
+    reflection_model: str | None = None
 
 
 class OptimizationSessionResponse(OptimizationSessionBase):

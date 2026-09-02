@@ -13,6 +13,7 @@ const CANDIDATE_LABELS: Record<string, string> = {
   rewritten: "Rewrite",
   rewritten_fewshot: "Rewrite + examples",
   original_fewshot: "Original + examples",
+  gepa: "Evolved (GEPA)",
 }
 
 const METRIC_LABELS: Record<string, string> = {
@@ -75,8 +76,10 @@ export function EvalResultsCard({ report }: Props) {
           </Badge>
         </CardTitle>
         <CardDescription className="font-serif">
-          {report.dev_size} held-out sample{report.dev_size === 1 ? "" : "s"} scored each candidate. Few-shot examples were chosen from the
-          other {report.train_size} with DSPy&apos;s BootstrapFewShot (up to {report.max_demos} per prompt).
+          {report.dev_size} held-out sample{report.dev_size === 1 ? "" : "s"} scored each candidate.{" "}
+          {report.max_demos > 0
+            ? `Few-shot examples were chosen from the other ${report.train_size} with DSPy's BootstrapFewShot (up to ${report.max_demos} per prompt).`
+            : `The other ${report.train_size} were the training split the evolution learned from.`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

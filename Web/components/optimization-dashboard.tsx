@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets } from "@/lib/api/hooks"
 import type { AIModel, EvalMetric, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
+import { PromptEvolutionCard } from "@/components/prompt-evolution-card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -92,6 +93,17 @@ const FALLBACK_METHODS: MethodInfo[] = [
     recommended_for: [],
   },
   {
+    id: "gepa",
+    name: "GEPA (evolve from feedback)",
+    description: "Evolves the instructions from written feedback on what the prompt gets wrong. Needs a dataset.",
+    how_it_works: "dspy.teleprompt.GEPA: the metric writes feedback for each miss, a reflection model rewrites the instructions to address it, and candidates that win on different samples are kept on a Pareto front.",
+    best_for: "Prompts with a dataset of expected outputs, when you want a measured gain and a visible reason for every edit.",
+    returns_reasoning: true,
+    relative_speed: "slowest",
+    recommended_for: ["classification", "extraction", "qa"],
+    requires_dataset: true,
+  },
+  {
     id: "simple",
     name: "Simple",
     description: "A plain completion asked to improve the prompt.",
@@ -170,7 +182,7 @@ export function OptimizationDashboard() {
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
-  const [advanced, setAdvanced] = useState<Required<Omit<OptimizeOptions, "dataset_id" | "eval_metric" | "max_demos">>>({
+  const [advanced, setAdvanced] = useState<Required<Omit<OptimizeOptions, "dataset_id" | "eval_metric" | "max_demos" | "gepa_budget" | "reflection_model">>>({
     temperature: 0.7,
     max_tokens: 2048,
     output_format: "auto",
@@ -182,6 +194,8 @@ export function OptimizationDashboard() {
   const [selectedDataset, setSelectedDataset] = useState<string>(NO_DATASET)
   const [evalMetric, setEvalMetric] = useState<EvalMetric>("auto")
   const [maxDemos, setMaxDemos] = useState(4)
+  const [gepaBudget, setGepaBudget] = useState(60)
+  const [reflectionModel, setReflectionModel] = useState<string>("same")
 
   // API hooks
   const { data: providers, loading: providersLoading, error: providersError } = useProviders()
@@ -193,6 +207,8 @@ export function OptimizationDashboard() {
   const { data: optimizationMethods } = useOptimizationMethods()
 
   const activeDataset = trainingDatasets?.find((d) => d.id === selectedDataset) ?? null
+  const methodNeedsDataset = selectedMethod === "gepa"
+  const datasetMissing = methodNeedsDataset && !activeDataset
   // A deleted dataset must not stay selected.
   useEffect(() => {
     if (selectedDataset !== NO_DATASET && trainingDatasets && !activeDataset) setSelectedDataset(NO_DATASET)
@@ -422,7 +438,15 @@ export function OptimizationDashboard() {
       setJobStartedAt(Date.now())
       setJobProgress({ stage: "starting", message: "Starting optimization", current: null, total: null, best_score: null, updated_at: "" })
       const options: OptimizeOptions = activeDataset
-        ? { ...advanced, dataset_id: activeDataset.id, eval_metric: evalMetric, max_demos: maxDemos }
+        ? {
+            ...advanced,
+            dataset_id: activeDataset.id,
+            eval_metric: evalMetric,
+            max_demos: maxDemos,
+            ...(selectedMethod === "gepa"
+              ? { gepa_budget: gepaBudget, reflection_model: reflectionModel === "same" ? null : reflectionModel }
+              : {}),
+          }
         : advanced
       const result = await optimizePrompt(session.id, selectedMethod, options, (progress) => {
         setJobProgress(progress)
@@ -440,7 +464,9 @@ export function OptimizationDashboard() {
         toast({
           title: "Optimization complete!",
           description: evaluation
-            ? `${candidateLabel(evaluation.best)} scored ${Math.round(evaluation.eval_score ?? 0)}% on ${evaluation.dev_size} held-out samples (original: ${Math.round(evaluation.baseline_score ?? 0)}%)`
+            ? evaluation.improved
+              ? `${candidateLabel(evaluation.best)} scored ${Math.round(evaluation.eval_score ?? 0)}% on ${evaluation.dev_size} held-out samples (original: ${Math.round(evaluation.baseline_score ?? 0)}%)`
+              : `No candidate beat the original (${Math.round(evaluation.baseline_score ?? 0)}% on ${evaluation.dev_size} held-out samples), so it was kept`
             : `${methodLabel(result.optimization_details.method)} · heuristic score ${Math.round(result.session.performance_score)}/100`,
           duration: 6000,
         })
@@ -951,6 +977,74 @@ export function OptimizationDashboard() {
                 {!trainingDatasets?.length && (
                   <p className="text-xs text-muted-foreground font-serif">No datasets yet. Create one in the sidebar&apos;s Training Data tab.</p>
                 )}
+                {datasetMissing && (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" />
+                    <span>GEPA evolves the prompt from feedback on a dataset. Pick one above to enable Start Optimization.</span>
+                  </div>
+                )}
+                {selectedMethod === "gepa" && activeDataset && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-md border bg-muted/30 p-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium font-sans flex items-center gap-1">
+                        Evolution budget
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs text-xs">
+                              Scored model calls GEPA may spend proposing and testing new instructions. About 60 calls took a minute on a 3B
+                              model with 16 samples; more budget means more generations.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          min={10}
+                          max={300}
+                          step={10}
+                          value={gepaBudget}
+                          onChange={(e) => setGepaBudget(Number(e.target.value))}
+                          className="flex-1 accent-orange-500"
+                        />
+                        <span className="text-sm text-muted-foreground w-10 font-mono">{gepaBudget}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium font-sans flex items-center gap-1">
+                        Reflection model
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs text-xs">
+                              Writes the new instructions after reading the feedback. A larger model reflects better while the task model
+                              keeps doing the fast scoring calls.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </label>
+                      <Select value={reflectionModel} onValueChange={setReflectionModel}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="same">Same as task model</SelectItem>
+                          {(providerData[selectedProvider]?.models ?? []).map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              {model.name}
+                              {model.parameter_size ? ` · ${model.parameter_size}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
@@ -1043,7 +1137,7 @@ export function OptimizationDashboard() {
                   <TooltipTrigger asChild>
                     <Button
                       onClick={handleStartOptimization}
-                      disabled={isOptimizing || !originalPrompt || (selectedProvider !== "Ollama" && !isOnline)}
+                      disabled={isOptimizing || !originalPrompt || datasetMissing || (selectedProvider !== "Ollama" && !isOnline)}
                       className="font-sans font-semibold bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
                     >
                       {isOptimizing ? (
@@ -1184,6 +1278,7 @@ export function OptimizationDashboard() {
             </Card>
           )}
 
+          {lastResult?.metadata.gepa && <PromptEvolutionCard report={lastResult.metadata.gepa} />}
           {lastResult?.metadata.eval && <EvalResultsCard report={lastResult.metadata.eval} />}
         </div>
 
@@ -1380,7 +1475,7 @@ export function OptimizationDashboard() {
                 <div className="space-y-2">
                   <div className="text-xs font-medium font-sans">Samples by Task Type</div>
                   <div className="h-32">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 300, height: 128 }}>
                       <PieChart>
                         <Pie
                           data={trainingStats.by_task_type.map((entry) => ({ name: taskTypeLabel(entry.task_type), value: entry.sample_count }))}

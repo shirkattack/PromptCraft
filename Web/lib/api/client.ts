@@ -2,7 +2,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'
 
 export type SessionStatus = 'completed' | 'running' | 'failed'
-export type OptimizationMethod = 'meta_prompt' | 'dspy' | 'simple'
+export type OptimizationMethod = 'meta_prompt' | 'dspy' | 'simple' | 'gepa'
 
 export interface OptimizationSession {
   id: string
@@ -79,6 +79,8 @@ export interface OptimizationMethodInfo {
   returns_reasoning?: boolean
   relative_speed?: string
   recommended_for: string[]
+  /** GEPA needs a dataset to evolve against. */
+  requires_dataset?: boolean
 }
 
 export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
@@ -97,6 +99,36 @@ export interface OptimizeOptions {
   dataset_id?: string | null
   eval_metric?: EvalMetric
   max_demos?: number
+  /** GEPA only: scored model calls the evolution may spend (10-500). */
+  gepa_budget?: number
+  /** GEPA only: model that writes new instructions; defaults to the task model. */
+  reflection_model?: string | null
+}
+
+/** One entry of the GEPA lineage (metadata.gepa.timeline). */
+export interface GepaCandidate {
+  index: number
+  parent: number | null
+  generation: number
+  instructions: string
+  score: number | null
+  iteration: number | null
+  feedback: string[]
+}
+
+/** metadata.gepa on a GEPA run. */
+export interface GepaReport {
+  budget: number
+  metric_calls: number | null
+  iterations: number
+  reflection_model: string | null
+  baseline_score: number
+  final_score: number
+  improved: boolean
+  best_index: number | null
+  timeline: GepaCandidate[]
+  instructions: string
+  elapsed_seconds: number
 }
 
 export interface EvalCandidate {
@@ -141,7 +173,7 @@ export interface OptimizeResponse {
     /** "measured" when a dataset was used, otherwise the structural heuristic. */
     score_type: ScoreType
     processing_time: number
-    metadata: Record<string, unknown> & { eval?: EvalReport }
+    metadata: Record<string, unknown> & { eval?: EvalReport; gepa?: GepaReport }
   }
 }
 
