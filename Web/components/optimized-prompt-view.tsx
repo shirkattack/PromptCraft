@@ -165,14 +165,26 @@ export function OptimizedPromptView({ original, optimized, details, methodLabel,
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge className="font-sans cursor-help">
-                    {Math.round(details.improvement_score)}/100
+                    {details.score_type === "measured"
+                      ? `${Math.round(details.improvement_score)}% measured`
+                      : `${Math.round(details.improvement_score)}/100`}
                     <HelpCircle className="w-3 h-3 ml-1 opacity-70" />
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="max-w-xs text-xs space-y-1">
+                    {details.score_type === "measured" && details.metadata.eval ? (
+                      <>
+                        <p className="font-medium">Measured score.</p>
+                        <p>
+                          Share of {details.metadata.eval.dev_size} held-out dataset samples the {details.metadata.eval.metric.replace("_", " ")} metric
+                          accepted. The original prompt scored {Math.round(details.metadata.eval.baseline_score ?? 0)}%.
+                        </p>
+                      </>
+                    ) : (
                     <p className="font-medium">Heuristic score — structural rubric, not a measured gain.</p>
-                    {breakdown ? (
+                    )}
+                    {details.score_type === "measured" ? null : breakdown ? (
                       <ul className="space-y-0.5">
                         {breakdown.map((item) => (
                           <li key={item.label} className={`flex justify-between gap-3 ${item.applied ? "" : "text-muted-foreground line-through"}`}>

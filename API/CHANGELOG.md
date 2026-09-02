@@ -61,6 +61,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the most recently modified datasets, counted from the sample rows.
 - `avg_quality_score` on dataset summaries (`GET /training/`), computed in one
   aggregate query; datasets are now listed newest first.
+- **Measured optimization**: `POST /sessions/{id}/optimize` accepts
+  `dataset_id`, `eval_metric` (`auto` / `exact` / `contains` / `llm_judge`) and
+  `max_demos`. The dataset is split into train and held-out samples; the
+  original prompt, the rewrite and few-shot versions of each (examples chosen by
+  DSPy `BootstrapFewShot` on the train split) are scored on the held-out
+  samples, and the best candidate is returned. `performance_score` is then the
+  measured pass rate, `score_type` says which kind of score it is, and
+  `metadata.eval` carries the scoreboard, demos and per-sample results.
+- Sessions now store `optimization_method`, `processing_time` and, for measured
+  runs, `dataset_id`, `baseline_score`, `eval_score`, `eval_metric` and
+  `eval_sample_count`. `total_processing_time` in the analytics endpoint is
+  summed from the database instead of an in-process history.
+- **Alembic migrations**. `alembic upgrade head` (or just starting the API)
+  brings any database current: `0001` records the pre-migration schema and
+  only creates tables that are missing, `0002` adds the session columns above.
+  Databases created by `create_all` before this release migrate in place.
+- `EVAL_MAX_TRAIN_SAMPLES`, `EVAL_MAX_DEV_SAMPLES` and `EVAL_MAX_DEMOS` settings.
 
 ### Changed
 - `DSPy` optimization now actually calls DSPy (a `ChainOfThought` over a

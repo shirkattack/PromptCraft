@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats } from "@/lib/api/hooks"
-import type { AIModel, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets } from "@/lib/api/hooks"
+import type { AIModel, EvalMetric, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -164,13 +165,18 @@ export function OptimizationDashboard() {
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
-  const [advanced, setAdvanced] = useState<Required<OptimizeOptions>>({
+  const [advanced, setAdvanced] = useState<Required<Omit<OptimizeOptions, "dataset_id" | "eval_metric" | "max_demos">>>({
     temperature: 0.7,
     max_tokens: 2048,
     output_format: "auto",
     target_length: "auto",
     preserve_wording: false,
   })
+  // Dataset-driven evaluation. NONE keeps the structural heuristic score.
+  const NO_DATASET = "none"
+  const [selectedDataset, setSelectedDataset] = useState<string>(NO_DATASET)
+  const [evalMetric, setEvalMetric] = useState<EvalMetric>("auto")
+  const [maxDemos, setMaxDemos] = useState(4)
 
   // API hooks
   const { data: providers, loading: providersLoading, error: providersError } = useProviders()
@@ -178,7 +184,14 @@ export function OptimizationDashboard() {
   const { createSession, optimizePrompt, loading: sessionLoading } = useSessionActions()
   const { data: performanceMetrics } = usePerformanceMetrics()
   const { data: trainingStats } = useTrainingStats(3)
+  const { data: trainingDatasets } = useTrainingDatasets()
   const { data: optimizationMethods } = useOptimizationMethods()
+
+  const activeDataset = trainingDatasets?.find((d) => d.id === selectedDataset) ?? null
+  // A deleted dataset must not stay selected.
+  useEffect(() => {
+    if (selectedDataset !== NO_DATASET && trainingDatasets && !activeDataset) setSelectedDataset(NO_DATASET)
+  }, [trainingDatasets, selectedDataset, activeDataset])
 
   // Transform providers data to match component expectations
   const providerData = useMemo(() => {
@@ -429,8 +442,11 @@ export function OptimizationDashboard() {
       }, 500)
 
       // Optimize the prompt
-      const result = await optimizePrompt(session.id, selectedMethod, advanced)
-      
+      const options: OptimizeOptions = activeDataset
+        ? { ...advanced, dataset_id: activeDataset.id, eval_metric: evalMetric, max_demos: maxDemos }
+        : advanced
+      const result = await optimizePrompt(session.id, selectedMethod, options)
+
       clearInterval(progressInterval)
       setOptimizationProgress(100)
       setIsOptimizing(false)
@@ -438,10 +454,13 @@ export function OptimizationDashboard() {
       if (result.session?.optimized_prompt) {
         setOptimizedPrompt(result.session.optimized_prompt)
         setLastResult(result.optimization_details)
+        const evaluation = result.optimization_details.metadata.eval
         toast({
           title: "Optimization complete!",
-          description: `${methodLabel(result.optimization_details.method)} · heuristic score ${Math.round(result.session.performance_score)}/100`,
-          duration: 5000,
+          description: evaluation
+            ? `${candidateLabel(evaluation.best)} scored ${Math.round(evaluation.eval_score ?? 0)}% on ${evaluation.dev_size} held-out samples (original: ${Math.round(evaluation.baseline_score ?? 0)}%)`
+            : `${methodLabel(result.optimization_details.method)} · heuristic score ${Math.round(result.session.performance_score)}/100`,
+          duration: 6000,
         })
       } else {
         throw new Error('Optimization result not available')
@@ -867,6 +886,87 @@ export function OptimizationDashboard() {
                 </Select>
               </div>
 
+              <div className="space-y-3">
+                <label className="text-sm font-medium font-sans flex items-center gap-2">
+                  Measure against a dataset
+                  <span className="text-xs font-normal text-muted-foreground">optional</span>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <div className="max-w-xs text-xs space-y-1">
+                        <p className="font-medium">Replaces the heuristic score with a measured one.</p>
+                        <p>
+                          The dataset is split into train and held-out samples. The original prompt, the rewrite and few-shot versions of each
+                          (examples picked by DSPy&apos;s BootstrapFewShot on the train split) are all scored on the held-out samples. You get the
+                          best one, with the full scoreboard.
+                        </p>
+                        <p>Takes longer: roughly one model call per sample per candidate.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </label>
+                <div className="flex flex-col md:flex-row gap-2">
+                  <Select value={selectedDataset} onValueChange={setSelectedDataset}>
+                    <SelectTrigger className="w-full md:w-64">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_DATASET}>
+                        <span className="font-sans">None</span>
+                        <span className="ml-2 text-xs text-muted-foreground">heuristic score only</span>
+                      </SelectItem>
+                      {(trainingDatasets ?? []).map((dataset) => (
+                        <SelectItem key={dataset.id} value={dataset.id} disabled={dataset.sample_count < 2}>
+                          <span className="font-sans">{dataset.name}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {dataset.sample_count} sample{dataset.sample_count === 1 ? "" : "s"}
+                            {dataset.sample_count < 2 && " · needs 2+"}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {activeDataset && (
+                    <>
+                      <Select value={evalMetric} onValueChange={(v) => setEvalMetric(v as EvalMetric)}>
+                        <SelectTrigger className="w-full md:w-44">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Auto metric</SelectItem>
+                          <SelectItem value="contains">Contains match</SelectItem>
+                          <SelectItem value="exact">Exact match</SelectItem>
+                          <SelectItem value="llm_judge">Model judge</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={8}
+                          value={maxDemos}
+                          onChange={(e) => setMaxDemos(Math.min(8, Math.max(1, Number(e.target.value) || 1)))}
+                          className="w-20"
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">max examples</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {activeDataset && (
+                  <p className="text-xs text-muted-foreground font-serif">
+                    {activeDataset.sample_count} samples: about {Math.max(1, Math.round(activeDataset.sample_count * 0.2))} held out for scoring, the rest
+                    available as examples.{" "}
+                    {evalMetric === "auto" && "Auto picks contains-match for short expected outputs and the model judge for longer ones."}
+                  </p>
+                )}
+                {!trainingDatasets?.length && (
+                  <p className="text-xs text-muted-foreground font-serif">No datasets yet. Create one in the sidebar&apos;s Training Data tab.</p>
+                )}
+              </div>
+
               <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
                 <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                   <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
@@ -1087,6 +1187,8 @@ export function OptimizationDashboard() {
               </CardContent>
             </Card>
           )}
+
+          {lastResult?.metadata.eval && <EvalResultsCard report={lastResult.metadata.eval} />}
         </div>
 
         {/* Enhanced Right Sidebar */}
@@ -1155,15 +1257,19 @@ export function OptimizationDashboard() {
 
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-serif text-muted-foreground flex items-center gap-1">
-                      Heuristic score
+                      {lastResult.score_type === "measured" ? "Measured score" : "Heuristic score"}
                       <Tooltip>
                         <TooltipTrigger>
                           <HelpCircle className="w-3 h-3" />
                         </TooltipTrigger>
                         <TooltipContent>
                           <div className="max-w-xs text-xs space-y-1">
-                            <p>A structural rubric, not a measured gain — evaluating against a dataset is on the roadmap.</p>
-                            {Array.isArray(lastResult.metadata.score_breakdown) && (
+                            {lastResult.score_type === "measured" ? (
+                              <p>Share of held-out dataset samples the metric accepted. See the Eval Results card for every candidate.</p>
+                            ) : (
+                              <p>A structural rubric, not a measured gain. Pick a dataset above to measure the prompt instead.</p>
+                            )}
+                            {lastResult.score_type !== "measured" && Array.isArray(lastResult.metadata.score_breakdown) && (
                               <ul className="space-y-0.5">
                                 {(lastResult.metadata.score_breakdown as { label: string; points: number; applied: boolean }[]).map((item) => (
                                   <li key={item.label} className={`flex justify-between gap-3 ${item.applied ? "" : "text-muted-foreground line-through"}`}>
@@ -1177,8 +1283,19 @@ export function OptimizationDashboard() {
                         </TooltipContent>
                       </Tooltip>
                     </span>
-                    <span className="font-sans font-semibold">{Math.round(lastResult.improvement_score)}/100</span>
+                    <span className="font-sans font-semibold">
+                      {lastResult.score_type === "measured" ? `${Math.round(lastResult.improvement_score)}%` : `${Math.round(lastResult.improvement_score)}/100`}
+                    </span>
                   </div>
+
+                  {typeof lastResult.metadata.rewrite === "string" && lastResult.metadata.eval && lastResult.metadata.eval.best !== "rewritten" && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium font-sans">Rewrite (not selected: {candidateLabel(lastResult.metadata.eval.best)} scored higher)</p>
+                      <div className="max-h-32 overflow-y-auto rounded-md bg-muted/50 p-3 text-xs font-serif whitespace-pre-wrap">
+                        {lastResult.metadata.rewrite}
+                      </div>
+                    </div>
+                  )}
 
                   {typeof lastResult.metadata.reasoning === "string" && lastResult.metadata.reasoning.trim() && (
                     <div className="space-y-1">

@@ -176,3 +176,144 @@ class TestPerformanceMetrics:
         assert metrics["total_optimizations"] == 2
         assert metrics["success_rate"] == 50.0
         assert metrics["average_improvement"] == 70.0
+
+
+class TestOptimizeAgainstDataset:
+    """POST /optimize with a dataset_id measures the prompt instead of guessing."""
+
+    ORIGINAL = "Classify the ticket priority."
+
+    @pytest.fixture
+    def dataset_id(self, client: TestClient) -> str:
+        response = client.post(
+            "/api/v1/training/",
+            json={
+                "name": "Tickets",
+                "task_type": "classification",
+                "samples": [
+                    {"input_text": "alpha ticket", "expected_output": "high"},
+                    {"input_text": "beta ticket", "expected_output": "low"},
+                    {"input_text": "gamma ticket", "expected_output": "high"},
+                    {"input_text": "delta ticket", "expected_output": "medium"},
+                ],
+            },
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["id"]
+
+    @pytest.fixture
+    def session_id(self, client: TestClient) -> str:
+        response = client.post(
+            f"{BASE}/",
+            json={
+                "name": "Measured",
+                "original_prompt": self.ORIGINAL,
+                "provider": "ollama",
+                "model": "llama3.2:latest",
+                "task_type": "classification",
+            },
+        )
+        return response.json()["id"]
+
+    def _lm(self):
+        from dspy.utils.dummies import DummyLM
+
+        return DummyLM(
+            {
+                # The meta-prompt contains the original prompt; sample inputs
+                # only appear in evaluation calls.
+                self.ORIGINAL: {"optimized_prompt": "Classify as high, medium or low."},
+                "alpha ticket": {"output": "high"},
+                "beta ticket": {"output": "low"},
+                "gamma ticket": {"output": "high"},
+                "delta ticket": {"output": "nope"},
+            }
+        )
+
+    def test_measured_scores_are_stored(
+        self, client: TestClient, session_id: str, dataset_id: str
+    ):
+        with patch("app.services.lm_manager.LMManager.get_lm", return_value=self._lm()):
+            response = client.post(
+                f"{BASE}/{session_id}/optimize",
+                json={
+                    "dataset_id": dataset_id,
+                    "eval_metric": "contains",
+                    "max_demos": 2,
+                },
+            )
+
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        details = payload["optimization_details"]
+        assert details["score_type"] == "measured"
+        evaluation = details["metadata"]["eval"]
+        assert evaluation["metric"] == "contains"
+        assert evaluation["dev_size"] == 1 and evaluation["train_size"] == 3
+        assert {c["name"] for c in evaluation["candidates"]} >= {
+            "original",
+            "rewritten",
+        }
+        assert details["metadata"]["rewrite"] == "Classify as high, medium or low."
+
+        session = payload["session"]
+        assert session["status"] == "completed"
+        assert session["dataset_id"] == dataset_id
+        assert session["eval_metric"] == "contains"
+        assert session["eval_sample_count"] == 1
+        assert session["eval_score"] == details["improvement_score"]
+        assert session["performance_score"] == session["eval_score"]
+        assert session["baseline_score"] is not None
+        assert session["optimization_method"] == "meta_prompt"
+        assert session["processing_time"] is not None
+        assert session["optimized_prompt"].endswith("Input: {input}\nOutput:")
+
+    def test_unknown_dataset_is_404(self, client: TestClient, session_id: str):
+        response = client.post(
+            f"{BASE}/{session_id}/optimize", json={"dataset_id": "nope"}
+        )
+        assert response.status_code == 404
+
+    def test_tiny_dataset_is_422(self, client: TestClient, session_id: str):
+        created = client.post(
+            "/api/v1/training/",
+            json={
+                "name": "One",
+                "task_type": "t",
+                "samples": [{"input_text": "a", "expected_output": "b"}],
+            },
+        ).json()
+        response = client.post(
+            f"{BASE}/{session_id}/optimize", json={"dataset_id": created["id"]}
+        )
+        assert response.status_code == 422
+        assert client.get(f"{BASE}/{session_id}").json()["status"] == "running"
+
+    def test_runs_without_dataset_store_method_and_duration(
+        self, client: TestClient, session_id: str
+    ):
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=AsyncMock(
+                return_value={
+                    "optimized_prompt": "Better",
+                    "method": "simple",
+                    "improvement_score": 70.0,
+                    "score_type": "heuristic",
+                    "processing_time": 2.5,
+                    "metadata": {},
+                    "success": True,
+                }
+            ),
+        ):
+            response = client.post(
+                f"{BASE}/{session_id}/optimize", json={"optimization_method": "simple"}
+            )
+
+        session = response.json()["session"]
+        assert session["optimization_method"] == "simple"
+        assert session["processing_time"] == 2.5
+        assert session["eval_score"] is None and session["dataset_id"] is None
+
+        metrics = client.get(f"{BASE}/analytics/performance").json()
+        assert metrics["total_processing_time"] == 2.5

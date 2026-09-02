@@ -97,9 +97,17 @@ extend-exclude = '''
 '''
 
 # isort configuration
+[tool.ruff.lint.isort]
+known-third-party = ["alembic"]
+known-first-party = ["app"]
+
 [tool.isort]
 profile = "black"
 line_length = 88
+# The alembic/ directory next to app/ makes isort guess the alembic package is
+# first-party; ruff (correctly) does not.
+known_third_party = ["alembic"]
+known_first_party = ["app"]
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
