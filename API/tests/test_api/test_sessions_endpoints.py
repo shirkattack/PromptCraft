@@ -317,3 +317,24 @@ class TestOptimizeAgainstDataset:
 
         metrics = client.get(f"{BASE}/analytics/performance").json()
         assert metrics["total_processing_time"] == 2.5
+
+
+class TestOrphanedSessions:
+    def test_running_sessions_fail_on_startup(self, client: TestClient, test_db):
+        from app.api.v1.endpoints.sessions import fail_orphaned_sessions
+
+        running = client.post(
+            f"{BASE}/",
+            json={
+                "name": "interrupted",
+                "original_prompt": "p",
+                "provider": "ollama",
+                "model": "m",
+                "task_type": "general",
+            },
+        ).json()
+        assert running["status"] == "running"
+
+        assert fail_orphaned_sessions(test_db) == 1
+        assert client.get(f"{BASE}/{running['id']}").json()["status"] == "failed"
+        assert fail_orphaned_sessions(test_db) == 0

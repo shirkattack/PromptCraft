@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Ollama models are listed with the configured default first, then smallest to
+  largest. Clients take the first entry as the default; Ollama's own order (by
+  download time) put a 35B model ahead of llama3.2 and made the default run
+  ten times slower.
+- Sessions left in `running` by an interrupted process are marked `failed` at
+  startup instead of staying "running" forever.
 - **Dataset sample counts were inflated**: bulk sample creation and synthetic
   generation added `len(new_samples)` on top of a `COUNT(*)` that already
   included the flushed rows, so `sample_count` and `size` roughly doubled.

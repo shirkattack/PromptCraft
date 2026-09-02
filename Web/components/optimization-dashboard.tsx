@@ -1313,7 +1313,7 @@ export function OptimizationDashboard() {
                 <span className="font-sans font-semibold">{performanceMetrics?.total_optimizations ?? "—"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-serif text-muted-foreground">Avg. Heuristic Score</span>
+                <span className="text-sm font-serif text-muted-foreground">Avg. Score</span>
                 <span className="font-sans font-bold text-2xl text-green-500">
                   {performanceMetrics ? Math.round(performanceMetrics.average_improvement) : "—"}
                 </span>
@@ -1328,7 +1328,7 @@ export function OptimizationDashboard() {
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-serif text-muted-foreground">Processing Time (this server)</span>
+                <span className="text-sm font-serif text-muted-foreground">Processing Time (all runs)</span>
                 <span className="font-sans font-semibold">
                   {performanceMetrics?.total_processing_time != null ? `${performanceMetrics.total_processing_time.toFixed(1)}s` : "—"}
                 </span>

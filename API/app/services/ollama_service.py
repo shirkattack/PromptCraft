@@ -34,11 +34,12 @@ class OllamaService:
                 )
 
             data = response.json()
-            return [
+            models = [
                 self._to_model_response(model)
                 for model in data.get("models", [])
                 if self._can_complete(model)
             ]
+            return self._sort_models(models)
         except httpx.ConnectError as e:
             self.logger.error(f"Cannot connect to Ollama at {self.base_url}: {e}")
             raise OllamaConnectionError(
@@ -115,6 +116,29 @@ class OllamaService:
         except Exception as e:
             self.logger.warning(f"Ollama health check failed: {e}")
             return False
+
+    @classmethod
+    def _sort_models(cls, models: list[AIModelResponse]) -> list[AIModelResponse]:
+        """Configured default first, then smallest to largest.
+
+        Clients take the first entry as the default selection; Ollama's own
+        order is by download time, which put a 35B model ahead of llama3.2 on a
+        real machine and made every default run ten times slower.
+        """
+
+        def key(model: AIModelResponse) -> tuple[int, float, str]:
+            is_default = model.id in (
+                settings.default_model_name,
+                settings.default_model_name.removesuffix(":latest"),
+            )
+            params = cls._parse_parameter_count(model.parameter_size)
+            return (
+                0 if is_default else 1,
+                params if params is not None else 1e9,
+                model.id,
+            )
+
+        return sorted(models, key=key)
 
     @staticmethod
     def _can_complete(model: dict[str, Any]) -> bool:
