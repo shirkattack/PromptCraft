@@ -51,6 +51,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exceptions raised while handling another exception now chain with `from`.
 
 ### Added
+- **Coverage-based example selection.** BootstrapFewShot now validates a pool
+  of up to `EVAL_DEMO_POOL` (12) examples; the `max_demos` that best span the
+  training inputs are kept, chosen by farthest-point sampling over
+  `EMBEDDING_MODEL` (nomic-embed-text) vectors, one per class first for label
+  datasets. Each kept example carries `covers`, the training inputs it stands
+  closest to, and the report carries `demo_selection`. Falls back to the first
+  validated examples, with the reason, when the embedding model is missing.
+- **Near-duplicate rejection in synthetic generation.** Generated samples whose
+  embedding similarity to an existing sample (or an earlier new one) reaches
+  `SYNTHETIC_DUPLICATE_THRESHOLD` (0.92) are dropped; the response lists them
+  under `duplicates` with what they matched, or `dedup_skipped_reason` when
+  embeddings were unavailable.
 - **Stratified splits and k-fold evaluation.** Label datasets (a small set of
   short expected outputs) are split so the held-out samples cover the classes
   instead of, say, two samples with the same label. `eval_strategy: "kfold"`

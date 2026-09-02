@@ -271,3 +271,81 @@ class TestTrainingStats:
         # "/stats" must not be treated as a dataset id.
         assert client.get(f"{BASE}/stats").status_code == 200
         assert client.get(f"{BASE}/definitely-missing").status_code == 404
+
+
+class TestSyntheticDeduplication:
+    def _generated(self, *inputs):
+        from app.schemas.training import TrainingSampleCreate
+
+        return [
+            TrainingSampleCreate(input_text=i, expected_output="high") for i in inputs
+        ]
+
+    def test_near_duplicates_are_rejected_and_reported(
+        self, client: TestClient, dataset_id: str
+    ):
+        from unittest.mock import AsyncMock, patch
+
+        client.post(
+            f"{BASE}/{dataset_id}/samples",
+            json={"input_text": "the server is down", "expected_output": "high"},
+        )
+        generated = self._generated(
+            "server is down", "billing question about invoices", "server is down"
+        )
+        with patch(
+            "app.api.v1.endpoints.training.training_service.generate_synthetic_data",
+            new=AsyncMock(return_value=generated),
+        ):
+            response = client.post(
+                f"{BASE}/{dataset_id}/generate",
+                json={
+                    "dataset_id": dataset_id,
+                    "sample_count": 3,
+                    "base_prompt": "p",
+                    "task_type": "t",
+                },
+            )
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["rejected_duplicates"] >= 1
+        assert body["generated_count"] + body["rejected_duplicates"] == 3
+        assert body["dedup_skipped_reason"] is None
+        assert all(
+            {"input", "similar_to", "similarity"} <= d.keys()
+            for d in body["duplicates"]
+        )
+        assert (
+            client.get(f"{BASE}/{dataset_id}").json()["sample_count"]
+            == 1 + body["generated_count"]
+        )
+
+    def test_generation_still_works_without_embeddings(
+        self, client: TestClient, dataset_id: str, monkeypatch
+    ):
+        from unittest.mock import AsyncMock, patch
+
+        from app.api.v1.endpoints import training as module
+        from app.services.embedding_service import EmbeddingUnavailable
+
+        def boom(*args, **kwargs):
+            raise EmbeddingUnavailable("no embedding model")
+
+        monkeypatch.setattr(module, "filter_near_duplicates", boom)
+        with patch(
+            "app.api.v1.endpoints.training.training_service.generate_synthetic_data",
+            new=AsyncMock(return_value=self._generated("a", "a")),
+        ):
+            body = client.post(
+                f"{BASE}/{dataset_id}/generate",
+                json={
+                    "dataset_id": dataset_id,
+                    "sample_count": 2,
+                    "base_prompt": "p",
+                    "task_type": "t",
+                },
+            ).json()
+        assert body["generated_count"] == 2
+        assert body["rejected_duplicates"] == 0
+        assert "no embedding model" in body["dedup_skipped_reason"]

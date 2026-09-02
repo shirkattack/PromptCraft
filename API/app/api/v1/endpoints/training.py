@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import func
 from sqlalchemy.orm import Session, noload, selectinload
 
@@ -18,6 +19,7 @@ from app.schemas.training import (
     DatasetExportRequest,
     DatasetExportResponse,
     DatasetImportRequest,
+    RejectedDuplicate,
     SyntheticDataRequest,
     SyntheticDataResponse,
     TaskTypeStats,
@@ -32,6 +34,7 @@ from app.schemas.training import (
     TrainingSampleUpdate,
     TrainingStatsResponse,
 )
+from app.services.embedding_service import EmbeddingUnavailable, filter_near_duplicates
 from app.services.training_service import training_service
 
 router = APIRouter(dependencies=[Depends(verify_api_key)])
@@ -414,6 +417,28 @@ async def generate_synthetic_data(
     # Generate synthetic samples (raises SyntheticDataGenerationError on failure)
     synthetic_samples = await training_service.generate_synthetic_data(request)
 
+    # Drop near-duplicates of what the dataset already holds (and of each
+    # other) so repeated generation adds variety instead of restating.
+    existing_inputs = [
+        row[0]
+        for row in db.query(TrainingSample.input_text)
+        .filter(TrainingSample.dataset_id == dataset_id)
+        .all()
+    ]
+    duplicates: list[dict[str, Any]] = []
+    dedup_skipped_reason: str | None = None
+    try:
+        kept, duplicates = await run_in_threadpool(
+            filter_near_duplicates,
+            [s.input_text for s in synthetic_samples],
+            existing_inputs,
+            settings.synthetic_duplicate_threshold,
+        )
+        synthetic_samples = [synthetic_samples[i] for i in kept]
+    except EmbeddingUnavailable as exc:
+        dedup_skipped_reason = str(exc)
+        logger.warning(f"Synthetic de-duplication skipped: {exc}")
+
     created_samples = []
     failed_count = 0
 
@@ -442,6 +467,9 @@ async def generate_synthetic_data(
         failed_count=failed_count,
         samples=[TrainingSampleResponse.model_validate(s) for s in created_samples],
         processing_time=(datetime.now(UTC) - start_time).total_seconds(),
+        rejected_duplicates=len(duplicates),
+        duplicates=[RejectedDuplicate(**d) for d in duplicates],
+        dedup_skipped_reason=dedup_skipped_reason,
     )
 
 

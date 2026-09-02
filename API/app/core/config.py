@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     eval_max_demos: int = 8
     # k-fold evaluation scores every sample once; folds are capped to bound cost.
     eval_max_folds: int = 5
+    # Few-shot examples: BootstrapFewShot validates up to eval_demo_pool
+    # candidates, then the max_demos that best cover the inputs are kept.
+    eval_demo_pool: int = 12
+    # Embeddings (Ollama) for coverage-based example selection and synthetic
+    # de-duplication. Features fall back gracefully if the model is missing.
+    embedding_model: str = "nomic-embed-text:latest"
+    synthetic_duplicate_threshold: float = 0.92
 
     # Ollama-specific settings
     ollama_timeout: int = 120  # Longer timeout for local models

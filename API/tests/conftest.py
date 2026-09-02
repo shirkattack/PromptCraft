@@ -160,3 +160,33 @@ def mock_failing_llm():
             raise Exception("Mock LLM failure")
 
     return FailingLLM()
+
+
+# --- embeddings ---------------------------------------------------------------
+
+
+def fake_embed(texts: list[str]) -> list[list[float]]:
+    """Deterministic stand-in for Ollama embeddings.
+
+    Texts sharing words get similar vectors, identical texts identical ones,
+    so coverage selection and de-duplication behave sensibly without a model.
+    """
+    import hashlib
+
+    vectors = []
+    for text in texts:
+        vector = [0.0] * 32
+        for word in text.lower().split():
+            digest = hashlib.md5(word.encode()).digest()
+            for i in range(32):
+                vector[i] += (digest[i % 16] / 255.0) - 0.5
+        vectors.append(vector)
+    return vectors
+
+
+@pytest.fixture(autouse=True)
+def hermetic_embeddings(monkeypatch):
+    """Keep every test off the network: embeddings come from fake_embed."""
+    from app.services import embedding_service as module
+
+    monkeypatch.setattr(module.embedding_service, "embed", fake_embed)

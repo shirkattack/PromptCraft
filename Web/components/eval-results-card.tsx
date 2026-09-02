@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { FlaskConical, HelpCircle, Check, X, ArrowRight } from "lucide-react"
+import { FlaskConical, HelpCircle, Check, X, ArrowRight, Sparkles } from "lucide-react"
 import type { EvalReport } from "@/lib/api/client"
 
 const CANDIDATE_LABELS: Record<string, string> = {
@@ -151,6 +151,66 @@ export function EvalResultsCard({ report }: Props) {
             })}
           </div>
         </div>
+
+        {/* Examples kept in the returned prompt */}
+        {report.demos.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-medium font-sans">
+                Examples in the returned prompt · {report.demos.length}
+              </div>
+              {report.demo_selection && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="font-mono text-[10px] cursor-help">
+                      {report.demo_selection.method === "coverage" ? "chosen for coverage" : "first to pass"}
+                      <HelpCircle className="w-3 h-3 ml-1 opacity-70" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs text-xs">
+                      {report.demo_selection.method === "coverage"
+                        ? `BootstrapFewShot validated ${report.demo_selection.pool} examples the model could reproduce; the ${report.demo_selection.kept} that best span the training inputs (farthest-point sampling over ${report.demo_selection.embedding_model ?? "embedding"} vectors${report.demo_selection.label_balanced ? ", one per class first" : ""}) were kept.`
+                        : report.demo_selection.reason
+                          ? `Kept the first ${report.demo_selection.kept} of ${report.demo_selection.pool} validated examples. Coverage selection was skipped: ${report.demo_selection.reason}`
+                          : `All ${report.demo_selection.pool} validated examples fit within the limit.`}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {report.demos.map((demo, index) => (
+                <div key={index} className="rounded-md border px-3 py-2 text-xs space-y-1">
+                  <div className="flex items-start gap-2">
+                    <span className="font-serif flex-1 min-w-0">{demo.input}</span>
+                    <span className="font-mono shrink-0 max-w-[40%] truncate" title={demo.output}>
+                      → {demo.output}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                    {demo.bootstrapped && (
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                        <Sparkles className="w-2.5 h-2.5 mr-0.5" /> reproduced by the model
+                      </Badge>
+                    )}
+                    {demo.covers && demo.covers.length > 0 && (
+                      <span>
+                        covers inputs like{" "}
+                        {demo.covers.map((text, i) => (
+                          <span key={i}>
+                            <span className="font-serif text-foreground/80">&ldquo;{text.length > 48 ? `${text.slice(0, 48)}…` : text}&rdquo;</span>
+                            {i < demo.covers!.length - 1 ? ", " : ""}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Per-sample results */}
         <div className="space-y-2">
