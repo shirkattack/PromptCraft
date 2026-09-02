@@ -5,6 +5,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session, noload, selectinload
 
 from app.core.auth import verify_api_key
@@ -18,6 +19,7 @@ from app.schemas.training import (
     DatasetImportRequest,
     SyntheticDataRequest,
     SyntheticDataResponse,
+    TaskTypeStats,
     TrainingDatasetCreate,
     TrainingDatasetResponse,
     TrainingDatasetSummary,
@@ -27,6 +29,7 @@ from app.schemas.training import (
     TrainingSampleCreate,
     TrainingSampleResponse,
     TrainingSampleUpdate,
+    TrainingStatsResponse,
 )
 from app.services.training_service import training_service
 
@@ -98,6 +101,31 @@ def create_dataset(
     return db_dataset
 
 
+def _summaries_with_quality(
+    db: Session, datasets: list[TrainingDataset]
+) -> list[TrainingDatasetSummary]:
+    """Attach the mean sample quality to each dataset in one aggregate query."""
+    if not datasets:
+        return []
+
+    ids = [dataset.id for dataset in datasets]
+    rows = (
+        db.query(TrainingSample.dataset_id, func.avg(TrainingSample.quality_score))
+        .filter(TrainingSample.dataset_id.in_(ids))
+        .group_by(TrainingSample.dataset_id)
+        .all()
+    )
+    averages = dict(rows)
+
+    summaries = []
+    for dataset in datasets:
+        summary = TrainingDatasetSummary.model_validate(dataset)
+        avg = averages.get(dataset.id)
+        summary.avg_quality_score = round(float(avg), 4) if avg is not None else None
+        summaries.append(summary)
+    return summaries
+
+
 @router.get("/", response_model=list[TrainingDatasetSummary])
 def get_datasets(
     skip: int = Query(0, ge=0),
@@ -105,13 +133,60 @@ def get_datasets(
     task_type: str | None = None,
     db: Session = Depends(get_db),
 ):
-    """Get all training datasets with optional filtering"""
+    """Get all training datasets with optional filtering, newest first"""
     query = db.query(TrainingDataset)
 
     if task_type:
         query = query.filter(TrainingDataset.task_type == task_type)
 
-    return query.offset(skip).limit(limit).all()
+    datasets = (
+        query.order_by(TrainingDataset.last_modified.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return _summaries_with_quality(db, datasets)
+
+
+@router.get("/stats", response_model=TrainingStatsResponse)
+def get_training_stats(
+    recent_limit: int = Query(5, ge=1, le=50), db: Session = Depends(get_db)
+):
+    """Aggregate counts across all datasets, plus the most recently modified ones.
+
+    Counts come from the sample rows rather than the cached ``sample_count``
+    column so they stay right even if that column drifts.
+    """
+    by_task_type = (
+        db.query(
+            TrainingDataset.task_type,
+            func.count(func.distinct(TrainingDataset.id)),
+            func.count(TrainingSample.id),
+        )
+        .outerjoin(TrainingSample, TrainingSample.dataset_id == TrainingDataset.id)
+        .group_by(TrainingDataset.task_type)
+        .order_by(func.count(TrainingSample.id).desc(), TrainingDataset.task_type)
+        .all()
+    )
+
+    recent = (
+        db.query(TrainingDataset)
+        .order_by(TrainingDataset.last_modified.desc())
+        .limit(recent_limit)
+        .all()
+    )
+
+    return TrainingStatsResponse(
+        dataset_count=sum(datasets for _, datasets, _ in by_task_type),
+        sample_count=sum(samples for _, _, samples in by_task_type),
+        by_task_type=[
+            TaskTypeStats(
+                task_type=task_type, dataset_count=datasets, sample_count=samples
+            )
+            for task_type, datasets, samples in by_task_type
+        ],
+        recent_datasets=_summaries_with_quality(db, recent),
+    )
 
 
 @router.get("/{dataset_id}", response_model=TrainingDatasetResponse)
