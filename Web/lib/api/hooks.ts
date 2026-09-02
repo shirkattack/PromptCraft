@@ -50,6 +50,10 @@ export function useOllamaHealth() {
   return useAsyncData(() => apiClient.checkOllamaHealth())
 }
 
+export function useOptimizationMethods() {
+  return useAsyncData(() => apiClient.getOptimizationMethods().then((r) => r.methods))
+}
+
 // Analytics hooks
 export function usePerformanceMetrics() {
   return useAsyncData(() => apiClient.getPerformanceMetrics())

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useProviders, useOllamaHealth, useSessionActions } from "@/lib/api/hooks"
-import type { AIModel } from "@/lib/api/client"
+import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods } from "@/lib/api/hooks"
+import type { AIModel, OptimizationMethod, OptimizeResponse } from "@/lib/api/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,10 +20,6 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  ScatterChart,
-  Scatter,
   PieChart,
   Pie,
   Cell,
@@ -47,7 +43,6 @@ import {
   CheckCircle,
   XCircle,
   ChevronDown,
-  Wifi,
   Cloud,
   CloudOff,
   Copy,
@@ -55,195 +50,10 @@ import {
   Upload,
   HelpCircle,
   Keyboard,
+  Sparkles,
+  BarChart3,
+  AlertTriangle,
 } from "lucide-react"
-
-const providerData = {
-  OpenAI: {
-    icon: "🤖",
-    models: [
-      {
-        id: "gpt-4o",
-        name: "GPT-4o",
-        contextWindow: "128K",
-        costPer1K: "$0.005",
-        speed: "Fast",
-        bestFor: "Complex reasoning, analysis, creative tasks",
-      },
-      {
-        id: "gpt-4-turbo",
-        name: "GPT-4 Turbo",
-        contextWindow: "128K",
-        costPer1K: "$0.01",
-        speed: "Medium",
-        bestFor: "Advanced reasoning, code generation",
-      },
-      {
-        id: "gpt-3.5-turbo",
-        name: "GPT-3.5 Turbo",
-        contextWindow: "16K",
-        costPer1K: "$0.001",
-        speed: "Fast",
-        bestFor: "General tasks, quick responses",
-      },
-      {
-        id: "gpt-4o-mini",
-        name: "GPT-4o Mini",
-        contextWindow: "128K",
-        costPer1K: "$0.0001",
-        speed: "Very Fast",
-        bestFor: "Simple tasks, high volume processing",
-      },
-    ],
-  },
-  Anthropic: {
-    icon: "🧠",
-    models: [
-      {
-        id: "claude-3-5-sonnet",
-        name: "Claude 3.5 Sonnet",
-        contextWindow: "200K",
-        costPer1K: "$0.003",
-        speed: "Fast",
-        bestFor: "Writing, analysis, complex reasoning",
-      },
-      {
-        id: "claude-3-opus",
-        name: "Claude 3 Opus",
-        contextWindow: "200K",
-        costPer1K: "$0.015",
-        speed: "Slow",
-        bestFor: "Highest quality reasoning, research",
-      },
-      {
-        id: "claude-3-haiku",
-        name: "Claude 3 Haiku",
-        contextWindow: "200K",
-        costPer1K: "$0.00025",
-        speed: "Very Fast",
-        bestFor: "Quick tasks, simple queries",
-      },
-    ],
-  },
-  Google: {
-    icon: "🔍",
-    models: [
-      {
-        id: "gemini-1.5-pro",
-        name: "Gemini 1.5 Pro",
-        contextWindow: "2M",
-        costPer1K: "$0.007",
-        speed: "Medium",
-        bestFor: "Long context, multimodal tasks",
-      },
-      {
-        id: "gemini-1.5-flash",
-        name: "Gemini 1.5 Flash",
-        contextWindow: "1M",
-        costPer1K: "$0.0007",
-        speed: "Fast",
-        bestFor: "Quick responses, general tasks",
-      },
-      {
-        id: "gemini-1.0-pro",
-        name: "Gemini 1.0 Pro",
-        contextWindow: "32K",
-        costPer1K: "$0.0005",
-        speed: "Fast",
-        bestFor: "Standard reasoning tasks",
-      },
-    ],
-  },
-  Ollama: {
-    icon: "🏠",
-    models: [
-      {
-        id: "llama3.2",
-        name: "Llama 3.2",
-        contextWindow: "128K",
-        costPer1K: "FREE",
-        speed: "Medium",
-        bestFor: "Local processing, privacy-focused",
-      },
-      {
-        id: "llama2",
-        name: "Llama 2",
-        contextWindow: "4K",
-        costPer1K: "FREE",
-        speed: "Fast",
-        bestFor: "General tasks, local deployment",
-      },
-      {
-        id: "vicuna",
-        name: "Vicuna",
-        contextWindow: "2K",
-        costPer1K: "FREE",
-        speed: "Fast",
-        bestFor: "Conversational AI, chatbots",
-      },
-      {
-        id: "gemma",
-        name: "Gemma",
-        contextWindow: "8K",
-        costPer1K: "FREE",
-        speed: "Fast",
-        bestFor: "Lightweight tasks, edge deployment",
-      },
-      {
-        id: "mixtral",
-        name: "Mixtral",
-        contextWindow: "32K",
-        costPer1K: "FREE",
-        speed: "Medium",
-        bestFor: "Complex reasoning, multilingual",
-      },
-      {
-        id: "codellama",
-        name: "Code Llama",
-        contextWindow: "16K",
-        costPer1K: "FREE",
-        speed: "Medium",
-        bestFor: "Code generation, programming tasks",
-      },
-      {
-        id: "wizard-vicuna",
-        name: "Wizard Vicuna",
-        contextWindow: "2K",
-        costPer1K: "FREE",
-        speed: "Fast",
-        bestFor: "Instruction following, Q&A",
-      },
-    ],
-  },
-  Cohere: {
-    icon: "⚡",
-    models: [
-      {
-        id: "command-r-plus",
-        name: "Command R+",
-        contextWindow: "128K",
-        costPer1K: "$0.003",
-        speed: "Fast",
-        bestFor: "RAG, search, enterprise tasks",
-      },
-      {
-        id: "command-r",
-        name: "Command R",
-        contextWindow: "128K",
-        costPer1K: "$0.0005",
-        speed: "Fast",
-        bestFor: "General business tasks, summaries",
-      },
-      {
-        id: "command-light",
-        name: "Command Light",
-        contextWindow: "4K",
-        costPer1K: "$0.0001",
-        speed: "Very Fast",
-        bestFor: "Simple tasks, high throughput",
-      },
-    ],
-  },
-}
 
 const taskTypes = [
   { id: "auto", name: "Auto-detect", icon: "🪄" },
@@ -263,20 +73,6 @@ const mockOptimizationData = [
   { step: 5, score: 92, time: "8s" },
 ]
 
-const mockProviderData = [
-  { provider: "OpenAI", score: 92, latency: 1.2 },
-  { provider: "Anthropic", score: 89, latency: 0.8 },
-  { provider: "Cohere", score: 85, latency: 1.5 },
-]
-
-const mockScatterData = [
-  { provider: "OpenAI", quality: 92, speed: 85, cost: 75, x: 85, y: 92 },
-  { provider: "Anthropic", quality: 89, speed: 78, cost: 65, x: 78, y: 89 },
-  { provider: "Google", quality: 86, speed: 90, cost: 85, x: 90, y: 86 },
-  { provider: "Cohere", quality: 85, speed: 88, cost: 90, x: 88, y: 85 },
-  { provider: "Ollama", quality: 78, speed: 70, cost: 100, x: 70, y: 78 },
-]
-
 const mockTaskTypeData = [
   { name: "Classification", value: 35, color: "#f97316" },
   { name: "Generation", value: 25, color: "#fb923c" },
@@ -285,13 +81,21 @@ const mockTaskTypeData = [
   { name: "Q&A", value: 5, color: "#ffedd5" },
 ]
 
-const apiStatus = {
-  OpenAI: { connected: true, quota: "85%", lastTest: "2 min ago" },
-  Anthropic: { connected: true, quota: "62%", lastTest: "5 min ago" },
-  Google: { connected: false, quota: "0%", lastTest: "Never" },
-  Cohere: { connected: true, quota: "91%", lastTest: "1 min ago" },
-  Ollama: { connected: true, quota: "N/A", lastTest: "Connected", ping: "12ms" },
-}
+type MethodInfo = { id: OptimizationMethod; name: string; description: string; recommended_for: string[] }
+
+// Mirrors GET /sessions/optimization-methods so the selector renders before the request lands.
+const FALLBACK_METHODS: MethodInfo[] = [
+  { id: "meta_prompt", name: "Meta-Prompt Optimization", description: "Uses meta-prompting techniques to improve prompt effectiveness", recommended_for: [] },
+  { id: "dspy", name: "DSPy Optimization", description: "Uses DSPy framework for systematic prompt optimization", recommended_for: [] },
+  { id: "simple", name: "Simple Optimization", description: "Basic prompt improvement using direct language model feedback", recommended_for: [] },
+]
+
+const formatContext = (tokens: number) => (tokens >= 1000 ? `${Math.round(tokens / 1000)}K tokens` : `${tokens} tokens`)
+const formatCost = (model: AIModel) => (model.is_free ? "Free" : `$${model.cost_per_1k_tokens}/1K tokens`)
+const formatSpeed = (rating: number) => `${rating}/5 speed`
+
+const methodLabel = (id: string, methods?: MethodInfo[] | null) =>
+  (methods ?? FALLBACK_METHODS).find((m) => m.id === id)?.name ?? id
 
 interface ProviderView {
   id: string
@@ -304,9 +108,7 @@ interface ProviderView {
 
 interface ApiStatus {
   connected: boolean
-  quota: string
   lastTest: string
-  ping?: string
 }
 
 const getCurrentModel = (providerData: Record<string, ProviderView>, selectedProvider: string, selectedModel: string) => {
@@ -321,11 +123,15 @@ export function OptimizationDashboard() {
   const [selectedTaskType, setSelectedTaskType] = useState("auto")
   const [originalPrompt, setOriginalPrompt] = useState("")
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
+  const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
+  const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
 
   // API hooks
   const { data: providers, loading: providersLoading, error: providersError } = useProviders()
   const { data: ollamaHealth } = useOllamaHealth()
   const { createSession, optimizePrompt, loading: sessionLoading } = useSessionActions()
+  const { data: performanceMetrics } = usePerformanceMetrics()
+  const { data: optimizationMethods } = useOptimizationMethods()
 
   // Transform providers data to match component expectations
   const providerData = useMemo(() => {
@@ -349,15 +155,13 @@ export function OptimizationDashboard() {
 
     return providers.reduce<Record<string, ApiStatus>>((acc, provider) => {
       const status: ApiStatus = {
-        connected: provider.models.length > 0,
-        quota: provider.id === 'ollama' ? 'N/A' : '75%',
-        lastTest: provider.models.length > 0 ? '1 min ago' : 'Never'
+        connected: provider.available && provider.models.length > 0,
+        lastTest: provider.available ? 'Available' : 'Unavailable',
       }
-      
+
       if (provider.id === 'ollama' && ollamaHealth) {
         status.connected = ollamaHealth.healthy
         status.lastTest = ollamaHealth.healthy ? 'Connected' : 'Disconnected'
-        status.ping = '12ms'
       }
       
       acc[provider.name] = status
@@ -374,13 +178,6 @@ export function OptimizationDashboard() {
       }
     }
   }, [providerData, selectedProvider, selectedModel])
-  const [apiKeys, setApiKeys] = useState({
-    OpenAI: "",
-    Anthropic: "",
-    Google: "",
-    Cohere: "",
-  })
-  const [testingConnection, setTestingConnection] = useState("")
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -585,7 +382,7 @@ export function OptimizationDashboard() {
       }, 500)
 
       // Optimize the prompt
-      const result = await optimizePrompt(session.id, 'meta_prompt')
+      const result = await optimizePrompt(session.id, selectedMethod)
       
       clearInterval(progressInterval)
       setOptimizationProgress(100)
@@ -593,9 +390,10 @@ export function OptimizationDashboard() {
 
       if (result.session?.optimized_prompt) {
         setOptimizedPrompt(result.session.optimized_prompt)
+        setLastResult(result.optimization_details)
         toast({
           title: "Optimization complete!",
-          description: `Improvement score: +${Math.round(result.session.performance_score)} points`,
+          description: `${methodLabel(result.optimization_details.method)} · heuristic score ${Math.round(result.session.performance_score)}/100`,
           duration: 5000,
         })
       } else {
@@ -624,49 +422,6 @@ export function OptimizationDashboard() {
       title: "Provider changed",
       description: `Switched to ${provider}`,
       duration: 2000,
-    })
-  }
-
-  const handleApiKeyChange = (provider, value) => {
-    setApiKeys((prev) => ({ ...prev, [provider]: value }))
-  }
-
-  const handleTestConnection = async (provider) => {
-    setTestingConnection(provider)
-
-    toast({
-      title: "Testing connection",
-      description: `Verifying ${provider} API connection...`,
-      duration: 2000,
-    })
-
-    // Simulate API test
-    setTimeout(() => {
-      setTestingConnection("")
-      const success = true // Assume connection test succeeds
-
-      if (success) {
-        toast({
-          title: "Connection successful",
-          description: `${provider} API is working correctly.`,
-          duration: 3000,
-        })
-      } else {
-        toast({
-          title: "Connection failed",
-          description: `Unable to connect to ${provider}. Please check your API key.`,
-          variant: "destructive",
-          duration: 5000,
-        })
-      }
-    }, 2000)
-  }
-
-  const handleSaveConfiguration = () => {
-    toast({
-      title: "Configuration saved",
-      description: "API keys and settings have been securely saved.",
-      duration: 3000,
     })
   }
 
@@ -919,7 +674,7 @@ export function OptimizationDashboard() {
                           <div className="flex flex-col items-start">
                             <span className="font-sans font-medium">{model.name}</span>
                             <span className="text-xs text-muted-foreground">
-                              {model.contextWindow} context • {model.costPer1K} • {model.speed}
+                              {formatContext(model.context_window)} • {formatCost(model)} • {formatSpeed(model.speed_rating)}
                             </span>
                           </div>
                         </SelectItem>
@@ -939,7 +694,7 @@ export function OptimizationDashboard() {
                           <div>
                             <div className="font-sans font-medium">Context Window</div>
                             <div className="text-muted-foreground">
-                              {getCurrentModel(providerData, selectedProvider, selectedModel)?.contextWindow}
+                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? formatContext(m.context_window) : null })()}
                             </div>
                           </div>
                         </TooltipTrigger>
@@ -954,7 +709,7 @@ export function OptimizationDashboard() {
                           <div>
                             <div className="font-sans font-medium">Cost per 1K tokens</div>
                             <div className="text-muted-foreground">
-                              {getCurrentModel(providerData, selectedProvider, selectedModel)?.costPer1K}
+                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? formatCost(m) : null })()}
                             </div>
                           </div>
                         </TooltipTrigger>
@@ -969,7 +724,7 @@ export function OptimizationDashboard() {
                           <div>
                             <div className="font-sans font-medium">Speed</div>
                             <div className="text-muted-foreground">
-                              {getCurrentModel(providerData, selectedProvider, selectedModel)?.speed}
+                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? formatSpeed(m.speed_rating) : null })()}
                             </div>
                           </div>
                         </TooltipTrigger>
@@ -984,7 +739,7 @@ export function OptimizationDashboard() {
                           <div>
                             <div className="font-sans font-medium">Best for</div>
                             <div className="text-muted-foreground text-xs">
-                              {getCurrentModel(providerData, selectedProvider, selectedModel)?.bestFor}
+                              {getCurrentModel(providerData, selectedProvider, selectedModel)?.best_use_case}
                             </div>
                           </div>
                         </TooltipTrigger>
@@ -1014,6 +769,40 @@ export function OptimizationDashboard() {
                         <div className="flex items-center gap-2">
                           <span>{taskType.icon}</span>
                           <span className="font-sans">{taskType.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium font-sans flex items-center gap-2">
+                  Optimization Method
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs text-xs">
+                        {optimizationMethods?.find((m) => m.id === selectedMethod)?.description ??
+                          "How the rewrite is produced."}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </label>
+                <Select value={selectedMethod} onValueChange={(value) => setSelectedMethod(value as OptimizationMethod)}>
+                  <SelectTrigger className="w-full md:w-64">
+                    <SelectValue>
+                      <span className="font-sans">{methodLabel(selectedMethod, optimizationMethods)}</span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(optimizationMethods ?? FALLBACK_METHODS).map((method) => (
+                      <SelectItem key={method.id} value={method.id}>
+                        <div className="flex flex-col">
+                          <span className="font-sans">{method.name}</span>
+                          <span className="text-xs text-muted-foreground">{method.description}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -1268,92 +1057,124 @@ export function OptimizationDashboard() {
 
         {/* Enhanced Right Sidebar */}
         <div className="space-y-6">
-          {/* Provider Performance - Enhanced with Interactive Chart */}
+          {/* Optimization Insights: what the last run actually did */}
           <Card>
             <CardHeader>
               <CardTitle className="font-sans font-bold text-sm flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Provider Performance
+                <Sparkles className="w-4 h-4" />
+                Optimization Insights
               </CardTitle>
-              <CardDescription className="text-xs">Real-time performance comparison</CardDescription>
+              <CardDescription className="text-xs">How the last rewrite was produced</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="quality" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="quality" className="text-xs">
-                    Quality
-                  </TabsTrigger>
-                  <TabsTrigger value="scatter" className="text-xs">
-                    Speed vs Quality
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="quality" className="space-y-0">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={mockProviderData}>
-                        <XAxis dataKey="provider" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <ChartTooltip />
-                        <Bar dataKey="score" fill="#f97316" radius={[2, 2, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+            <CardContent className="space-y-4">
+              {!lastResult ? (
+                <div className="space-y-2 text-sm text-muted-foreground font-serif">
+                  <p>Run an optimization to see the method, timing and reasoning behind the rewrite.</p>
+                  <p className="text-xs">
+                    Selected: <span className="font-sans font-medium text-foreground">{methodLabel(selectedMethod, optimizationMethods)}</span>
+                    {" — "}
+                    {optimizationMethods?.find((m) => m.id === selectedMethod)?.description}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary" className="font-sans text-xs">
+                      {methodLabel(lastResult.method, optimizationMethods)}
+                    </Badge>
+                    {typeof lastResult.metadata.predictor === "string" && (
+                      <Badge variant="outline" className="font-mono text-xs">{lastResult.metadata.predictor}</Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground font-sans ml-auto">
+                      {lastResult.processing_time.toFixed(1)}s
+                    </span>
                   </div>
-                </TabsContent>
 
-                <TabsContent value="scatter" className="space-y-0">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart data={mockScatterData}>
-                        <XAxis dataKey="x" name="Speed" tick={{ fontSize: 10 }} />
-                        <YAxis dataKey="y" name="Quality" tick={{ fontSize: 10 }} />
-                        <ChartTooltip cursor={{ strokeDasharray: "3 3" }} />
-                        <Scatter dataKey="y" fill="#f97316" />
-                      </ScatterChart>
-                    </ResponsiveContainer>
+                  {(lastResult.metadata.predictor === "template_fallback" || lastResult.metadata.fallback === true) && (
+                    <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" />
+                      <div>
+                        <p className="font-medium font-sans">Fell back to a simpler strategy</p>
+                        {typeof lastResult.metadata.fallback_reason === "string" && (
+                          <p className="text-muted-foreground font-mono break-words">{lastResult.metadata.fallback_reason}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-serif text-muted-foreground flex items-center gap-1">
+                      Heuristic score
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="w-3 h-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs text-xs">
+                            A structural check (length, formatting, sections) — not a measured gain. Evaluating against a dataset is on the roadmap.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
+                    <span className="font-sans font-semibold">{Math.round(lastResult.improvement_score)}/100</span>
                   </div>
-                </TabsContent>
-              </Tabs>
+
+                  {typeof lastResult.metadata.reasoning === "string" && lastResult.metadata.reasoning.trim() && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium font-sans">Model reasoning</p>
+                      <div className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-3 text-xs font-serif leading-relaxed whitespace-pre-wrap">
+                        {lastResult.metadata.reasoning}
+                      </div>
+                    </div>
+                  )}
+
+                  {typeof lastResult.metadata.meta_prompt_used === "string" && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium font-sans">Meta-prompt (excerpt)</p>
+                      <div className="max-h-32 overflow-y-auto rounded-md bg-muted/50 p-3 text-xs font-mono whitespace-pre-wrap">
+                        {lastResult.metadata.meta_prompt_used}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 
-          {/* Enhanced Session Stats */}
+          {/* Session Stats: from /sessions/analytics/performance */}
           <Card>
             <CardHeader>
               <CardTitle className="font-sans font-bold text-sm flex items-center gap-2">
-                <BarChart className="w-4 h-4" />
+                <BarChart3 className="w-4 h-4" />
                 Session Stats
               </CardTitle>
-              <CardDescription className="text-xs">Live updating metrics</CardDescription>
+              <CardDescription className="text-xs">Across all stored sessions</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-serif text-muted-foreground">Total Optimizations</span>
-                <div className="flex items-center gap-1">
-                  <span className="font-sans font-semibold">127</span>
-                  <TrendingUp className="w-3 h-3 text-green-500" />
-                </div>
+                <span className="font-sans font-semibold">{performanceMetrics?.total_optimizations ?? "—"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-serif text-muted-foreground">Avg. Improvement</span>
-                <div className="flex items-center gap-1">
-                  <span className="font-sans font-bold text-2xl text-green-500">+31%</span>
-                </div>
+                <span className="text-sm font-serif text-muted-foreground">Avg. Heuristic Score</span>
+                <span className="font-sans font-bold text-2xl text-green-500">
+                  {performanceMetrics ? Math.round(performanceMetrics.average_improvement) : "—"}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-serif text-muted-foreground">Success Rate</span>
+                <span className="text-sm font-serif text-muted-foreground">Completed</span>
                 <div className="flex items-center gap-1">
-                  <span className="font-sans font-semibold text-green-500">96%</span>
+                  <span className="font-sans font-semibold text-green-500">
+                    {performanceMetrics ? `${Math.round(performanceMetrics.success_rate)}%` : "—"}
+                  </span>
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm font-serif text-muted-foreground">Processing Time</span>
-                <span className="font-sans font-semibold">8m 42s</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-serif text-muted-foreground">Cost Savings</span>
-                <span className="font-sans font-semibold text-green-500">$127.50</span>
+                <span className="text-sm font-serif text-muted-foreground">Processing Time (this server)</span>
+                <span className="font-sans font-semibold">
+                  {performanceMetrics?.total_processing_time != null ? `${performanceMetrics.total_processing_time.toFixed(1)}s` : "—"}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -1445,56 +1266,15 @@ export function OptimizationDashboard() {
                         ) : (
                           <XCircle className="w-3 h-3 text-red-500" />
                         )}
-                        {provider === "Ollama" && apiStatus[provider]?.connected && (
-                          <Badge variant="secondary" className="text-xs">
-                            {apiStatus[provider]?.ping}
-                          </Badge>
-                        )}
                       </div>
                     </div>
                     <ChevronDown className="w-4 h-4" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-3 pt-2">
-                    {provider !== "Ollama" ? (
-                      <>
-                        <div className="space-y-2">
-                          <label className="text-xs font-medium font-sans">API Key</label>
-                          <Input
-                            type="password"
-                            placeholder={`${provider.toLowerCase()}-api-key...`}
-                            value={apiKeys[provider]}
-                            onChange={(e) => handleApiKeyChange(provider, e.target.value)}
-                            className="text-xs font-mono"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Usage Quota:</span>
-                          <span className="font-medium">{apiStatus[provider]?.quota}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Last Test:</span>
-                          <span className="font-medium">{apiStatus[provider]?.lastTest}</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full text-xs bg-transparent"
-                          onClick={() => handleTestConnection(provider)}
-                          disabled={testingConnection === provider}
-                        >
-                          {testingConnection === provider ? (
-                            <>
-                              <Clock className="w-3 h-3 mr-1 animate-spin" />
-                              Testing...
-                            </>
-                          ) : (
-                            <>
-                              <Wifi className="w-3 h-3 mr-1" />
-                              Test Connection
-                            </>
-                          )}
-                        </Button>
-                      </>
+                    {!data.available ? (
+                      <p className="text-xs text-muted-foreground font-serif">
+                        {data.unavailableReason ?? "Not available in this build."}
+                      </p>
                     ) : (
                       <>
                         <div className="flex items-center justify-between text-xs">
@@ -1505,10 +1285,6 @@ export function OptimizationDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Ping:</span>
-                          <span className="font-medium">{apiStatus[provider]?.ping}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Models Available:</span>
                           <span className="font-medium">{data.models.length}</span>
                         </div>
@@ -1517,15 +1293,6 @@ export function OptimizationDashboard() {
                   </CollapsibleContent>
                 </Collapsible>
               ))}
-
-              <Button
-                size="sm"
-                className="w-full font-sans bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                onClick={handleSaveConfiguration}
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Save Configuration
-              </Button>
             </CardContent>
           </Card>
         </div>
