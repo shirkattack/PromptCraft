@@ -23,6 +23,18 @@ export interface PromptStats {
 
 // Cheap, model-agnostic estimates. Token count uses the ~4 chars/token rule of
 // thumb; the real number depends on the tokenizer and is not worth a request.
+/**
+ * Markdown folds a single newline into a space, which turns the few-shot
+ * "Input: ...\nOutput: ..." pairs into one run-on line. Outside fenced code
+ * blocks, mark every lone newline as a hard break (two trailing spaces).
+ */
+export function withHardBreaks(text: string): string {
+  return text
+    .split(/(```[\s\S]*?```)/)
+    .map((chunk) => (chunk.startsWith("```") ? chunk : chunk.replace(/([^\n])\n(?!\n)/g, "$1  \n")))
+    .join("")
+}
+
 export function promptStats(text: string): PromptStats {
   const trimmed = text.trim()
   return {
@@ -216,7 +228,7 @@ export function OptimizedPromptView({ original, optimized, details, methodLabel,
       {/* Main pane */}
       {mode === "rendered" && (
         <div className="min-h-[24rem] rounded-md border border-secondary/30 bg-secondary/5 p-5">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{optimized}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{withHardBreaks(optimized)}</ReactMarkdown>
         </div>
       )}
       {mode === "raw" && (

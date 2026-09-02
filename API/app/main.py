@@ -39,6 +39,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     create_tables()
     logger.info("Database schema migrated and verified")
 
+    from app.api.v1.endpoints.sessions import fail_orphaned_sessions
+    from app.core.database import SessionLocal
+
+    with SessionLocal() as db:
+        orphaned = fail_orphaned_sessions(db)
+    if orphaned:
+        logger.warning(f"Marked {orphaned} interrupted optimization(s) as failed")
+
     yield
 
     # Shutdown

@@ -10,6 +10,7 @@ import httpx
 import pytest
 
 from app.core.exceptions import OllamaConnectionError, ProviderError
+from app.schemas.optimization import AIModelResponse
 from app.services.ollama_service import OllamaService
 
 
@@ -152,3 +153,31 @@ class TestOllamaService:
         assert "chat" in service._best_use_case("llama2-chat:7b", "llama", []).lower()
         assert "general" in service._best_use_case("unknown:model", None, []).lower()
         assert "images" in service._best_use_case("llava", "llama", ["vision"])
+
+
+class TestModelOrder:
+    def _model(self, id: str, size: str | None) -> AIModelResponse:
+        return AIModelResponse(
+            id=id,
+            name=id,
+            context_window=4096,
+            cost_per_1k_tokens=0.0,
+            speed_rating=3,
+            best_use_case="x",
+            is_free=True,
+            parameter_size=size,
+        )
+
+    def test_default_model_first_then_smallest(self):
+        models = [
+            self._model("huge:Q2", "35B"),
+            self._model("mid:7b", "7.2B"),
+            self._model("llama3.2:latest", "3.2B"),
+            self._model("tiny:1b", "1.0B"),
+            self._model("mystery", None),
+        ]
+        with patch("app.services.ollama_service.settings") as s:
+            s.default_model_name = "llama3.2:latest"
+            ordered = [m.id for m in OllamaService._sort_models(models)]
+
+        assert ordered == ["llama3.2:latest", "tiny:1b", "mid:7b", "huge:Q2", "mystery"]

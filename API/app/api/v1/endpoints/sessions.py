@@ -50,6 +50,22 @@ def _load_dataset_samples(db: Session, dataset_id: str) -> list[Sample]:
     return samples
 
 
+def fail_orphaned_sessions(db: Session) -> int:
+    """Mark sessions still RUNNING as FAILED.
+
+    Optimizations run inside the API process, so after a restart nothing can
+    still be running; without this a killed run stays "running" forever.
+    Called at startup.
+    """
+    count = (
+        db.query(OptimizationSession)
+        .filter(OptimizationSession.status == SessionStatus.RUNNING)
+        .update({OptimizationSession.status: SessionStatus.FAILED})
+    )
+    db.commit()
+    return count
+
+
 def _get_session_or_404(db: Session, session_id: str) -> OptimizationSession:
     session = (
         db.query(OptimizationSession)
