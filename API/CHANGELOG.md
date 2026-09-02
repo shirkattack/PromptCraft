@@ -80,6 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EVAL_MAX_TRAIN_SAMPLES`, `EVAL_MAX_DEV_SAMPLES` and `EVAL_MAX_DEMOS` settings.
 
 ### Changed
+- OpenAI and Anthropic are no longer listed by `GET /providers/`. They were
+  placeholder catalogue entries with `available=False`; nothing could drive them.
 - `DSPy` optimization now actually calls DSPy (a `ChainOfThought` over a
   `PromptRewrite` signature) instead of returning a fixed template string; the
   template remains as a fallback and says so in the response metadata.

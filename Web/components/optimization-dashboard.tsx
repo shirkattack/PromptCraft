@@ -203,7 +203,7 @@ export function OptimizationDashboard() {
         models: provider.models,
         available: provider.available,
         unavailableReason: provider.unavailable_reason,
-        icon: provider.id === 'ollama' ? '🦙' : provider.id === 'openai' ? '🤖' : provider.id === 'anthropic' ? '🧠' : '⚡'
+        icon: provider.id === 'ollama' ? '🦙' : '⚡'
       }
       return acc
     }, {})

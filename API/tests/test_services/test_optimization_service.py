@@ -27,16 +27,16 @@ class TestPromptOptimizationService:
         ):
             result = await service.optimize_prompt(
                 original_prompt="Hello world",
-                provider="openai",
-                model="gpt-3.5-turbo",
+                provider="ollama",
+                model="llama3.2:latest",
                 optimization_method="meta_prompt",
             )
 
         assert result["success"] is True
         assert result["original_prompt"] == "Hello world"
         assert result["method"] == "meta_prompt"
-        assert result["provider"] == "openai"
-        assert result["model"] == "gpt-3.5-turbo"
+        assert result["provider"] == "ollama"
+        assert result["model"] == "llama3.2:latest"
         assert "optimized_prompt" in result
         assert "improvement_score" in result
         assert "processing_time" in result
@@ -49,8 +49,8 @@ class TestPromptOptimizationService:
         ):
             result = await service.optimize_prompt(
                 original_prompt="Explain AI",
-                provider="openai",
-                model="gpt-4",
+                provider="ollama",
+                model="llama3.2:latest",
                 optimization_method="dspy",
             )
 
@@ -66,8 +66,8 @@ class TestPromptOptimizationService:
         ):
             result = await service.optimize_prompt(
                 original_prompt="Write code",
-                provider="anthropic",
-                model="claude-3",
+                provider="ollama",
+                model="mistral:7b",
                 optimization_method="simple",
             )
 
@@ -81,7 +81,9 @@ class TestPromptOptimizationService:
             "app.services.lm_manager.LMManager.get_lm", return_value=mock_failing_llm
         ):
             result = await service.optimize_prompt(
-                original_prompt="Test prompt", provider="openai", model="gpt-3.5-turbo"
+                original_prompt="Test prompt",
+                provider="ollama",
+                model="llama3.2:latest",
             )
 
         assert result["success"] is False
