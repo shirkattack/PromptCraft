@@ -39,8 +39,7 @@ import {
   CheckCircle,
   XCircle,
   ChevronDown,
-  Cloud,
-  CloudOff,
+  HardDrive,
   Copy,
   Share2,
   Upload,
@@ -60,6 +59,8 @@ const taskTypes = [
   { id: "code", name: "Code", icon: "💻" },
   { id: "translation", name: "Translation", icon: "🌐" },
 ]
+
+const DRAFT_KEY = "promptcraft:draft"
 
 const CHART_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5"]
 
@@ -238,42 +239,46 @@ export function OptimizationDashboard() {
       }
     }
   }, [providerData, selectedProvider, selectedModel])
-  const [isAutoSaving, setIsAutoSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState(null)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [ollamaModelsAvailable, setOllamaModelsAvailable] = useState(true)
   const [isOnline, setIsOnline] = useState(true)
-  const [textareaRef] = useState(useRef(null))
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // From the real health probe; assume fine until it answers.
+  const ollamaModelsAvailable = ollamaHealth ? ollamaHealth.healthy : true
 
-  const autoSave = useCallback(async () => {
-    if (!originalPrompt.trim()) return
-
-    setIsAutoSaving(true)
-    // Simulate auto-save
-    setTimeout(() => {
-      setIsAutoSaving(false)
-      setLastSaved(new Date())
-      toast({
-        title: "Draft saved",
-        description: "Your prompt has been automatically saved to the cloud.",
-        duration: 2000,
-      })
-    }, 1000)
-  }, [originalPrompt])
-
+  // The prompt draft lives in this browser's localStorage so a reload does
+  // not lose it. Nothing is sent anywhere.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (originalPrompt.trim()) {
-        autoSave()
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY)
+      if (saved) setOriginalPrompt((current) => current || saved)
+    } catch {
+      // Storage unavailable (private mode, blocked); drafts just don't persist.
+    }
+  }, [])
+
+  const saveDraft = useCallback(
+    (announce: boolean) => {
+      if (!originalPrompt.trim()) return
+      try {
+        localStorage.setItem(DRAFT_KEY, originalPrompt)
+        setLastSaved(new Date())
+        if (announce) toast({ title: "Draft saved", description: "Stored in this browser only.", duration: 2000 })
+      } catch {
+        if (announce) toast({ title: "Could not save draft", description: "Browser storage is unavailable.", variant: "destructive", duration: 3000 })
       }
-    }, 3000) // Auto-save after 3 seconds of inactivity
-
-    return () => clearTimeout(timer)
-  }, [originalPrompt, autoSave])
+    },
+    [originalPrompt],
+  )
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const timer = setTimeout(() => saveDraft(false), 1500)
+    return () => clearTimeout(timer)
+  }, [originalPrompt, saveDraft])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+Enter to start optimization
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault()
@@ -290,7 +295,7 @@ export function OptimizationDashboard() {
       // Ctrl+S to save (prevent default browser save)
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault()
-        autoSave()
+        saveDraft(true)
       }
 
       // Ctrl+Shift+C to copy optimized result
@@ -302,7 +307,7 @@ export function OptimizationDashboard() {
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [isOptimizing, originalPrompt, optimizedPrompt, autoSave])
+  }, [isOptimizing, originalPrompt, optimizedPrompt, saveDraft])
 
   useEffect(() => {
     const handleOnline = () => {
@@ -332,45 +337,17 @@ export function OptimizationDashboard() {
     }
   }, [])
 
-  useEffect(() => {
-    const checkOllamaAvailability = async () => {
-      if (selectedProvider === "Ollama") {
-        try {
-          // Simulate checking Ollama availability
-          const available = true // Assume Ollama is available
-          setOllamaModelsAvailable(available)
-
-          if (!available) {
-            toast({
-              title: "Ollama unavailable",
-              description: "Local Ollama server is not responding. Please check your installation.",
-              variant: "destructive",
-              duration: 5000,
-            })
-          }
-        } catch (error) {
-          setOllamaModelsAvailable(false)
-        }
-      }
-    }
-
-    const interval = setInterval(checkOllamaAvailability, 30000) // Check every 30 seconds
-    checkOllamaAvailability() // Initial check
-
-    return () => clearInterval(interval)
-  }, [selectedProvider])
-
-  const handleDragOver = useCallback((e) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>) => {
     e.preventDefault()
     setIsDragOver(true)
   }, [])
 
-  const handleDragLeave = useCallback((e) => {
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLElement>) => {
     e.preventDefault()
     setIsDragOver(false)
   }, [])
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLElement>) => {
     e.preventDefault()
     setIsDragOver(false)
 
@@ -379,8 +356,8 @@ export function OptimizationDashboard() {
 
     if (textFile) {
       const reader = new FileReader()
-      reader.onload = (event) => {
-        setOriginalPrompt(event.target.result)
+      reader.onload = () => {
+        if (typeof reader.result === "string") setOriginalPrompt(reader.result)
         toast({
           title: "File imported",
           description: `Loaded prompt from ${textFile.name}`,
@@ -470,13 +447,13 @@ export function OptimizationDashboard() {
       setOptimizationProgress(0)
       toast({
         title: "Optimization failed",
-        description: error.message || "An error occurred during optimization",
+        description: error instanceof Error ? error.message : "An error occurred during optimization",
         duration: 5000,
       })
     }
   }
 
-  const handleProviderChange = (provider) => {
+  const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider)
     // Auto-select first model when provider changes
     const firstModel = providerData[provider]?.models[0]
@@ -600,16 +577,18 @@ export function OptimizationDashboard() {
                   <CardDescription className="font-serif">Enter your raw prompt for AI optimization</CardDescription>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {isAutoSaving ? (
-                    <>
-                      <Cloud className="w-4 h-4 animate-pulse" />
-                      <span>Saving...</span>
-                    </>
-                  ) : lastSaved ? (
-                    <>
-                      {isOnline ? <Cloud className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
-                      <span>Saved {lastSaved.toLocaleTimeString()}</span>
-                    </>
+                  {lastSaved ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1 cursor-help">
+                          <HardDrive className="w-4 h-4" />
+                          <span>Draft saved {lastSaved.toLocaleTimeString()}</span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Kept in this browser&apos;s local storage. Ctrl+S saves immediately.</p>
+                      </TooltipContent>
+                    </Tooltip>
                   ) : null}
                 </div>
               </div>
