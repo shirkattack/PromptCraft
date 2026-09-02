@@ -86,6 +86,8 @@ export interface OptimizationMethodInfo {
 export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
 export type TargetLength = 'auto' | 'concise' | 'balanced' | 'detailed'
 export type EvalMetric = 'auto' | 'exact' | 'contains' | 'llm_judge'
+/** holdout: one held-out split. kfold: every sample held out once (k times the cost). */
+export type EvalStrategy = 'holdout' | 'kfold'
 export type ScoreType = 'measured' | 'heuristic'
 
 /** Advanced settings for an optimization run; mirrors OptimizeRequest on the API. */
@@ -99,6 +101,7 @@ export interface OptimizeOptions {
   dataset_id?: string | null
   eval_metric?: EvalMetric
   max_demos?: number
+  eval_strategy?: EvalStrategy
   /** GEPA only: scored model calls the evolution may spend (10-500). */
   gepa_budget?: number
   /** GEPA only: model that writes new instructions; defaults to the task model. */
@@ -162,6 +165,16 @@ export interface EvalReport {
   baseline_results: EvalSampleResult[]
   results: EvalSampleResult[]
   instructions: string
+  /** How the samples were split for scoring. */
+  split?: {
+    strategy: EvalStrategy
+    folds: number | null
+    stratified: boolean
+    labels: Record<string, number> | null
+    dev_labels: Record<string, number> | null
+    train_size: number
+    dev_size: number
+  }
 }
 
 export interface OptimizeResponse {

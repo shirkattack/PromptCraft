@@ -285,6 +285,8 @@ Pick a dataset and the GEPA method, and the prompt is evolved rather than rewrit
 
 Pick a training dataset when optimizing and the score stops being a heuristic. The dataset is split into train and held-out samples; the original prompt, the rewrite, and few-shot versions of each (examples selected by DSPy's `BootstrapFewShot` on the train split) are all scored on the held-out samples with the chosen metric (`exact`, `contains`, or a model judge; `auto` picks by answer length). The best candidate is returned as a plain-text prompt with a `{input}` placeholder, alongside the full scoreboard and per-sample results. Each candidate costs roughly one model call per held-out sample, so a 10-sample dataset on a local 3B model takes about 20 seconds.
 
+For label datasets the split is class-balanced, so a two-sample held-out set is not two samples of the same label. Small datasets can use **k-fold** instead: every sample is held out once across up to five folds, each candidate type is scored on all of them, and the winner is refit on the whole dataset. The score then moves in steps of 1/N instead of 1/held-out, at about five times the model calls.
+
 ### Database migrations
 
 The schema is managed with Alembic. The API applies pending migrations on startup, so an existing `app.db` is upgraded in place; to run them by hand:

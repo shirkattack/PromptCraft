@@ -76,10 +76,24 @@ export function EvalResultsCard({ report }: Props) {
           </Badge>
         </CardTitle>
         <CardDescription className="font-serif">
-          {report.dev_size} held-out sample{report.dev_size === 1 ? "" : "s"} scored each candidate.{" "}
+          {report.split?.strategy === "kfold"
+            ? `Cross-validated: all ${report.dev_size} samples scored, each held out once across ${report.split.folds} folds. `
+            : `${report.dev_size} held-out sample${report.dev_size === 1 ? "" : "s"} scored each candidate. `}
           {report.max_demos > 0
-            ? `Few-shot examples were chosen from the other ${report.train_size} with DSPy's BootstrapFewShot (up to ${report.max_demos} per prompt).`
+            ? report.split?.strategy === "kfold"
+              ? `Few-shot examples were chosen per fold with DSPy's BootstrapFewShot, then refit on all samples for the returned prompt (up to ${report.max_demos}).`
+              : `Few-shot examples were chosen from the other ${report.train_size} with DSPy's BootstrapFewShot (up to ${report.max_demos} per prompt).`
             : `The other ${report.train_size} were the training split the evolution learned from.`}
+          {report.split?.stratified && report.split.dev_labels && (
+            <>
+              {" "}
+              Split is class-balanced:{" "}
+              {Object.entries(report.split.dev_labels)
+                .map(([label, count]) => `${label} ×${count}`)
+                .join(", ")}{" "}
+              held out.
+            </>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

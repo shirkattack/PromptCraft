@@ -51,6 +51,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exceptions raised while handling another exception now chain with `from`.
 
 ### Added
+- **Stratified splits and k-fold evaluation.** Label datasets (a small set of
+  short expected outputs) are split so the held-out samples cover the classes
+  instead of, say, two samples with the same label. `eval_strategy: "kfold"`
+  holds every sample out once across up to `EVAL_MAX_FOLDS` (5) folds, scores
+  each candidate type on all of them, and refits the winner on the whole
+  dataset for the returned prompt; scores then move in steps of 1/N rather
+  than 1/dev_size. The eval report carries a `split` block (strategy, folds,
+  stratified, class counts). GEPA uses the stratified hold-out split.
 - **GEPA optimization method** (`optimization_method: "gepa"`, needs
   `dataset_id`). Wraps `dspy.teleprompt.GEPA`: the prompt runs on training
   samples, the metric writes feedback for each miss (for example "the label is

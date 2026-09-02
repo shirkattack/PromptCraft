@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets } from "@/lib/api/hooks"
-import type { AIModel, EvalMetric, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import type { AIModel, EvalMetric, EvalStrategy, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { PromptEvolutionCard } from "@/components/prompt-evolution-card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -182,7 +182,7 @@ export function OptimizationDashboard() {
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
-  const [advanced, setAdvanced] = useState<Required<Omit<OptimizeOptions, "dataset_id" | "eval_metric" | "max_demos" | "gepa_budget" | "reflection_model">>>({
+  const [advanced, setAdvanced] = useState<Required<Omit<OptimizeOptions, "dataset_id" | "eval_metric" | "max_demos" | "gepa_budget" | "reflection_model" | "eval_strategy">>>({
     temperature: 0.7,
     max_tokens: 2048,
     output_format: "auto",
@@ -193,6 +193,7 @@ export function OptimizationDashboard() {
   const NO_DATASET = "none"
   const [selectedDataset, setSelectedDataset] = useState<string>(NO_DATASET)
   const [evalMetric, setEvalMetric] = useState<EvalMetric>("auto")
+  const [evalStrategy, setEvalStrategy] = useState<EvalStrategy>("holdout")
   const [maxDemos, setMaxDemos] = useState(4)
   const [gepaBudget, setGepaBudget] = useState(60)
   const [reflectionModel, setReflectionModel] = useState<string>("same")
@@ -443,6 +444,7 @@ export function OptimizationDashboard() {
             dataset_id: activeDataset.id,
             eval_metric: evalMetric,
             max_demos: maxDemos,
+            eval_strategy: selectedMethod === "gepa" ? "holdout" : evalStrategy,
             ...(selectedMethod === "gepa"
               ? { gepa_budget: gepaBudget, reflection_model: reflectionModel === "same" ? null : reflectionModel }
               : {}),
@@ -953,6 +955,17 @@ export function OptimizationDashboard() {
                           <SelectItem value="llm_judge">Model judge</SelectItem>
                         </SelectContent>
                       </Select>
+                      {selectedMethod !== "gepa" && (
+                        <Select value={evalStrategy} onValueChange={(v) => setEvalStrategy(v as EvalStrategy)}>
+                          <SelectTrigger className="w-full md:w-48">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="holdout">Hold-out split</SelectItem>
+                            <SelectItem value="kfold">K-fold, score every sample</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -967,13 +980,23 @@ export function OptimizationDashboard() {
                     </>
                   )}
                 </div>
-                {activeDataset && (
-                  <p className="text-xs text-muted-foreground font-serif">
-                    {activeDataset.sample_count} samples: about {Math.max(1, Math.round(activeDataset.sample_count * 0.2))} held out for scoring, the rest
-                    available as examples.{" "}
-                    {evalMetric === "auto" && "Auto picks contains-match for short expected outputs and the model judge for longer ones."}
-                  </p>
-                )}
+                {activeDataset && (() => {
+                  const heldOut = Math.max(1, Math.round(activeDataset.sample_count * 0.2))
+                  const kfold = evalStrategy === "kfold" && selectedMethod !== "gepa"
+                  return (
+                    <p className="text-xs text-muted-foreground font-serif">
+                      {kfold
+                        ? `${activeDataset.sample_count} samples, each held out once across up to 5 folds, so the score moves in steps of 1/${activeDataset.sample_count}. About 5x the model calls of a hold-out run.`
+                        : `${activeDataset.sample_count} samples: about ${heldOut} held out for scoring (class-balanced for label datasets), the rest available as examples.`}{" "}
+                      {!kfold && heldOut <= 3 && selectedMethod !== "gepa" && (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          Only {heldOut} scored sample{heldOut === 1 ? "" : "s"}, so scores move in steps of {Math.round(100 / heldOut)} points. K-fold scores every sample.{" "}
+                        </span>
+                      )}
+                      {evalMetric === "auto" && "Auto picks contains-match for short expected outputs and the model judge for longer ones."}
+                    </p>
+                  )
+                })()}
                 {!trainingDatasets?.length && (
                   <p className="text-xs text-muted-foreground font-serif">No datasets yet. Create one in the sidebar&apos;s Training Data tab.</p>
                 )}

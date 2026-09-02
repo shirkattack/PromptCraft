@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     eval_max_train_samples: int = 40
     eval_max_dev_samples: int = 20
     eval_max_demos: int = 8
+    # k-fold evaluation scores every sample once; folds are capped to bound cost.
+    eval_max_folds: int = 5
 
     # Ollama-specific settings
     ollama_timeout: int = 120  # Longer timeout for local models
