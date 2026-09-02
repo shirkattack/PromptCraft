@@ -127,6 +127,45 @@ class TestPromptOptimizationService:
             == 0.0
         )
 
+    def test_score_breakdown_lists_every_criterion(self, service):
+        """The breakdown is what the UI shows, so it must sum to the score."""
+        original = "Hello"
+        optimized = "## Task\nHello, with an example and a clear format.\n- one\n- two"
+
+        breakdown = service._score_breakdown(original, optimized)
+        applied = [item for item in breakdown if item["applied"]]
+
+        assert {item["label"] for item in breakdown} >= {
+            "Base",
+            "Markdown formatting (## or **)",
+        }
+        assert sum(
+            item["points"] for item in applied
+        ) == service._calculate_improvement_score(original, optimized)
+        assert all({"label", "points", "applied"} <= item.keys() for item in breakdown)
+
+    def test_score_breakdown_for_unchanged_prompt(self, service):
+        assert service._score_breakdown("same", "same") == [
+            {"label": "Prompt unchanged", "points": 0, "applied": True}
+        ]
+
+    @pytest.mark.asyncio
+    async def test_result_metadata_carries_breakdown(
+        self, service, mock_successful_llm
+    ):
+        with patch(
+            "app.services.lm_manager.LMManager.get_lm", return_value=mock_successful_llm
+        ):
+            result = await service.optimize_prompt(
+                original_prompt="Write code",
+                provider="ollama",
+                model="llama3.2:latest",
+                optimization_method="simple",
+            )
+
+        assert result["success"] is True
+        assert isinstance(result["metadata"]["score_breakdown"], list)
+
     def test_calculate_improvement_score(self, service):
         """Test improvement score calculation."""
         original = "Hello"

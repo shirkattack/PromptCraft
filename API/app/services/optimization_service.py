@@ -106,7 +106,12 @@ class PromptOptimizationService:
             "task_type": task_type,
             "improvement_score": improvement_score,
             "processing_time": processing_time,
-            "metadata": result.get("metadata", {}),
+            "metadata": {
+                **result.get("metadata", {}),
+                "score_breakdown": self._score_breakdown(
+                    original_prompt, result["optimized_prompt"]
+                ),
+            },
             "success": True,
             "timestamp": datetime.now(UTC).isoformat(),
         }
@@ -324,39 +329,57 @@ Rewrite the prompt to be significantly more effective. Focus on:
 
 ## Optimized Prompt:"""
 
-    def _calculate_improvement_score(self, original: str, optimized: str) -> float:
-        """Heuristic 0-100 quality signal for the rewrite.
+    def _score_breakdown(self, original: str, optimized: str) -> list[dict[str, Any]]:
+        """Itemised rubric behind the heuristic score.
 
-        This is a structural heuristic (length, formatting, sectioning), not a
-        measured performance gain -- it does not evaluate the prompt against any
-        task. Treat it as a sanity check, not a benchmark.
+        Every criterion is listed with whether it applied, so a client can show
+        the user exactly what the number rewards. This is a structural check
+        (length, formatting, sectioning), not a measured performance gain -- it
+        does not evaluate the prompt against any task.
         """
-
         if optimized.strip() == original.strip():
-            # Nothing changed, so there is nothing to score.
-            return 0.0
+            return [{"label": "Prompt unchanged", "points": 0, "applied": True}]
 
-        score = 50.0  # Base score
-
-        # Length improvement (more detailed prompts are often better)
         length_ratio = len(optimized) / len(original) if len(original) > 0 else 1.0
-        if 1.2 <= length_ratio <= 3.0:  # Good length increase
-            score += 20.0
-        elif length_ratio > 3.0:  # Too verbose
-            score += 10.0
+        lowered = optimized.lower()
 
-        # Structure improvements (simple heuristics)
-        if "##" in optimized or "**" in optimized:  # Has formatting
-            score += 10.0
+        return [
+            {"label": "Base", "points": 50, "applied": True},
+            {
+                "label": "Length 1.2-3x the original",
+                "points": 20,
+                "applied": 1.2 <= length_ratio <= 3.0,
+            },
+            {
+                "label": "Longer than 3x (verbose)",
+                "points": 10,
+                "applied": length_ratio > 3.0,
+            },
+            {
+                "label": "Markdown formatting (## or **)",
+                "points": 10,
+                "applied": "##" in optimized or "**" in optimized,
+            },
+            {
+                "label": "Mentions examples or a format",
+                "points": 10,
+                "applied": "example" in lowered or "format" in lowered,
+            },
+            {
+                "label": "More lines than the original",
+                "points": 10,
+                "applied": len(optimized.split("\n")) > len(original.split("\n")),
+            },
+        ]
 
-        if "example" in optimized.lower() or "format" in optimized.lower():
-            score += 10.0
-
-        if len(optimized.split("\n")) > len(original.split("\n")):  # Better structure
-            score += 10.0
-
-        # Cap the score
-        return min(score, 100.0)
+    def _calculate_improvement_score(self, original: str, optimized: str) -> float:
+        """Heuristic 0-100 quality signal for the rewrite; see _score_breakdown."""
+        total = sum(
+            item["points"]
+            for item in self._score_breakdown(original, optimized)
+            if item["applied"]
+        )
+        return float(min(total, 100))
 
     def get_optimization_history(self) -> list[dict[str, Any]]:
         """Get the history of optimizations performed."""

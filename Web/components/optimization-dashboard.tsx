@@ -1021,9 +1021,19 @@ export function OptimizationDashboard() {
                           <HelpCircle className="w-3 h-3" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            A structural check (length, formatting, sections) — not a measured gain. Evaluating against a dataset is on the roadmap.
-                          </p>
+                          <div className="max-w-xs text-xs space-y-1">
+                            <p>A structural rubric, not a measured gain — evaluating against a dataset is on the roadmap.</p>
+                            {Array.isArray(lastResult.metadata.score_breakdown) && (
+                              <ul className="space-y-0.5">
+                                {(lastResult.metadata.score_breakdown as { label: string; points: number; applied: boolean }[]).map((item) => (
+                                  <li key={item.label} className={`flex justify-between gap-3 ${item.applied ? "" : "text-muted-foreground line-through"}`}>
+                                    <span>{item.label}</span>
+                                    <span className="font-mono">+{item.points}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         </TooltipContent>
                       </Tooltip>
                     </span>
