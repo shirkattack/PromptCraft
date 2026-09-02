@@ -1,6 +1,6 @@
 // React hooks for API data fetching
 import { useState, useEffect, useCallback } from 'react'
-import apiClient, { CreateSessionRequest, OptimizationMethod } from './client'
+import apiClient, { CreateSessionRequest, OptimizationMethod, OptimizeOptions } from './client'
 
 // Generic hook for async data fetching
 function useAsyncData<T>(
@@ -78,11 +78,11 @@ export function useSessionActions() {
     }
   }
 
-  const optimizePrompt = async (sessionId: string, method?: OptimizationMethod) => {
+  const optimizePrompt = async (sessionId: string, method?: OptimizationMethod, options?: OptimizeOptions) => {
     try {
       setLoading(true)
       setError(null)
-      const result = await apiClient.optimizePrompt(sessionId, method)
+      const result = await apiClient.optimizePrompt(sessionId, method, options)
       return result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to optimize prompt')

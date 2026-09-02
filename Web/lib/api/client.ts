@@ -55,6 +55,18 @@ export interface CreateSessionRequest {
   task_type: string
 }
 
+export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
+export type TargetLength = 'auto' | 'concise' | 'balanced' | 'detailed'
+
+/** Advanced settings for an optimization run; mirrors OptimizeRequest on the API. */
+export interface OptimizeOptions {
+  temperature?: number
+  max_tokens?: number
+  output_format?: OutputFormat
+  target_length?: TargetLength
+  preserve_wording?: boolean
+}
+
 export interface OptimizeResponse {
   message: string
   session: OptimizationSession
@@ -148,13 +160,11 @@ class APIClient {
   async optimizePrompt(
     sessionId: string,
     optimizationMethod: OptimizationMethod = 'meta_prompt',
+    options: OptimizeOptions = {},
   ): Promise<OptimizeResponse> {
-    // The backend reads optimization_method from the query string, not the
-    // body. Sending it in the body was silently ignored, so every run used
-    // the default method regardless of what the UI selected.
-    const params = new URLSearchParams({ optimization_method: optimizationMethod })
-    return this.request<OptimizeResponse>(`/sessions/${sessionId}/optimize?${params}`, {
+    return this.request<OptimizeResponse>(`/sessions/${sessionId}/optimize`, {
       method: 'POST',
+      body: JSON.stringify({ optimization_method: optimizationMethod, ...options }),
     })
   }
 

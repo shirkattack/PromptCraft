@@ -176,6 +176,42 @@ class TestPromptOptimizationService:
         assert 0.0 <= score <= 100.0
         assert score > 50.0  # Should be higher due to length and structure
 
+    def test_constraints_reach_the_meta_prompt(self, service):
+        constraints = service._build_constraints("json", "concise", True)
+
+        assert "JSON" in constraints
+        assert "concise" in constraints.lower()
+        assert "Preserve the original wording" in constraints
+
+        meta_prompt = service._generate_meta_prompt(
+            "Write a story", "creative", constraints
+        )
+        assert "## Constraints:" in meta_prompt
+        assert "JSON" in meta_prompt
+
+    def test_no_constraints_means_no_section(self, service):
+        assert service._build_constraints("auto", "auto", False) == ""
+        assert "## Constraints:" not in service._generate_meta_prompt("x", "general")
+
+    @pytest.mark.asyncio
+    async def test_settings_are_echoed_in_metadata(self, service, mock_successful_llm):
+        with patch(
+            "app.services.lm_manager.LMManager.get_lm", return_value=mock_successful_llm
+        ) as get_lm:
+            result = await service.optimize_prompt(
+                original_prompt="Write code",
+                provider="ollama",
+                model="llama3.2:latest",
+                optimization_method="simple",
+                temperature=0.1,
+                max_tokens=256,
+            )
+
+        assert get_lm.call_args.kwargs["temperature"] == 0.1
+        assert get_lm.call_args.kwargs["max_tokens"] == 256
+        assert result["metadata"]["settings"]["temperature"] == 0.1
+        assert result["metadata"]["settings"]["max_tokens"] == 256
+
     def test_generate_meta_prompt(self, service):
         """Test meta-prompt generation."""
         meta_prompt = service._generate_meta_prompt("Write a story", "creative")

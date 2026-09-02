@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SessionStatus(StrEnum):
@@ -48,6 +49,25 @@ class OptimizationSessionUpdate(BaseModel):
     optimized_prompt: str | None = None
     performance_score: float | None = None
     status: SessionStatus | None = None
+
+
+OutputFormat = Literal["auto", "markdown", "plain", "json"]
+TargetLength = Literal["auto", "concise", "balanced", "detailed"]
+
+
+class OptimizeRequest(BaseModel):
+    """Options for POST /sessions/{id}/optimize.
+
+    temperature / max_tokens go straight to the model. The rest become explicit
+    constraints in the rewrite instructions.
+    """
+
+    optimization_method: Literal["meta_prompt", "dspy", "simple"] = "meta_prompt"
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(default=None, ge=64, le=8192)
+    output_format: OutputFormat = "auto"
+    target_length: TargetLength = "auto"
+    preserve_wording: bool = False
 
 
 class OptimizationSessionResponse(OptimizationSessionBase):

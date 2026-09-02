@@ -12,6 +12,7 @@ from app.schemas.optimization import (
     OptimizationSessionCreate,
     OptimizationSessionResponse,
     OptimizationSessionUpdate,
+    OptimizeRequest,
     PerformanceMetrics,
 )
 from app.services.optimization_service import optimization_service
@@ -166,11 +167,17 @@ def delete_session(session_id: str, db: Session = Depends(get_db)):
 @router.post("/{session_id}/optimize")
 async def optimize_prompt(
     session_id: str,
-    optimization_method: str = Query("meta_prompt"),
+    options: OptimizeRequest | None = None,
+    optimization_method: str | None = Query(
+        None,
+        description="Overrides options.optimization_method; kept for older clients.",
+    ),
     db: Session = Depends(get_db),
 ):
     """Optimize a prompt using Promptomatix algorithms"""
-    if optimization_method not in OPTIMIZATION_METHODS:
+    options = options or OptimizeRequest()
+    method = optimization_method or options.optimization_method
+    if method not in OPTIMIZATION_METHODS:
         raise HTTPException(
             status_code=422,
             detail=f"Unknown optimization method. Expected one of: {sorted(OPTIMIZATION_METHODS)}",
@@ -188,7 +195,12 @@ async def optimize_prompt(
             provider=session.provider,
             model=session.model,
             task_type=session.task_type,
-            optimization_method=optimization_method,
+            optimization_method=method,
+            temperature=options.temperature,
+            max_tokens=options.max_tokens,
+            output_format=options.output_format,
+            target_length=options.target_length,
+            preserve_wording=options.preserve_wording,
         )
     except Exception as e:
         session.status = SessionStatus.FAILED

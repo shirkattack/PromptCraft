@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods } from "@/lib/api/hooks"
-import type { AIModel, OptimizationMethod, OptimizeResponse } from "@/lib/api/client"
+import type { AIModel, OptimizationMethod, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -111,6 +112,13 @@ export function OptimizationDashboard() {
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
+  const [advanced, setAdvanced] = useState<Required<OptimizeOptions>>({
+    temperature: 0.7,
+    max_tokens: 2048,
+    output_format: "auto",
+    target_length: "auto",
+    preserve_wording: false,
+  })
 
   // API hooks
   const { data: providers, loading: providersLoading, error: providersError } = useProviders()
@@ -368,7 +376,7 @@ export function OptimizationDashboard() {
       }, 500)
 
       // Optimize the prompt
-      const result = await optimizePrompt(session.id, selectedMethod)
+      const result = await optimizePrompt(session.id, selectedMethod, advanced)
       
       clearInterval(progressInterval)
       setOptimizationProgress(100)
@@ -803,29 +811,80 @@ export function OptimizationDashboard() {
                 <CollapsibleContent className="space-y-4 pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium font-sans">Temperature</label>
+                      <label className="text-sm font-medium font-sans flex items-center gap-2">
+                        Temperature
+                        <Tooltip>
+                          <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                          <TooltipContent><p className="max-w-xs text-xs">Sampling temperature for the rewrite. Lower is more deterministic; 0.7 is the default.</p></TooltipContent>
+                        </Tooltip>
+                      </label>
                       <div className="flex items-center gap-2">
-                        <input type="range" min="0" max="1" step="0.1" defaultValue="0.7" className="flex-1" />
-                        <span className="text-sm text-muted-foreground w-8">0.7</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          value={advanced.temperature}
+                          onChange={(e) => setAdvanced((a) => ({ ...a, temperature: Number(e.target.value) }))}
+                          className="flex-1 accent-orange-500"
+                        />
+                        <span className="text-sm text-muted-foreground w-8 font-mono">{advanced.temperature.toFixed(1)}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium font-sans">Max Tokens</label>
-                      <Input type="number" defaultValue="2048" className="text-sm" />
+                      <label className="text-sm font-medium font-sans flex items-center gap-2">
+                        Max Tokens
+                        <Tooltip>
+                          <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                          <TooltipContent><p className="max-w-xs text-xs">Upper bound on the rewritten prompt's length, in model tokens (64–8192).</p></TooltipContent>
+                        </Tooltip>
+                      </label>
+                      <Input
+                        type="number"
+                        min={64}
+                        max={8192}
+                        step={64}
+                        value={advanced.max_tokens}
+                        onChange={(e) => setAdvanced((a) => ({ ...a, max_tokens: Math.min(8192, Math.max(64, Number(e.target.value) || 64)) }))}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium font-sans">Output Format</label>
+                      <Select value={advanced.output_format} onValueChange={(v) => setAdvanced((a) => ({ ...a, output_format: v as OutputFormat }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Let the model decide</SelectItem>
+                          <SelectItem value="markdown">Ask for Markdown</SelectItem>
+                          <SelectItem value="plain">Ask for plain text</SelectItem>
+                          <SelectItem value="json">Ask for JSON (with schema)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium font-sans">Target Length</label>
+                      <Select value={advanced.target_length} onValueChange={(v) => setAdvanced((a) => ({ ...a, target_length: v as TargetLength }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">No preference</SelectItem>
+                          <SelectItem value="concise">Concise — close to the original</SelectItem>
+                          <SelectItem value="balanced">Balanced — about 1.5–2×</SelectItem>
+                          <SelectItem value="detailed">Detailed — context, constraints, example</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium font-sans">Training Data</label>
-                    <Select defaultValue="existing">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="existing">Use existing dataset</SelectItem>
-                        <SelectItem value="generate">Generate new (2-50 samples)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <label className="flex items-start gap-2 text-sm font-sans cursor-pointer">
+                    <Checkbox
+                      checked={advanced.preserve_wording}
+                      onCheckedChange={(checked) => setAdvanced((a) => ({ ...a, preserve_wording: checked === true }))}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      Preserve my wording
+                      <span className="block text-xs text-muted-foreground">Improve structure and add instructions around the request instead of rephrasing it.</span>
+                    </span>
+                  </label>
                 </CollapsibleContent>
               </Collapsible>
 
@@ -1000,6 +1059,25 @@ export function OptimizationDashboard() {
                       {lastResult.processing_time.toFixed(1)}s
                     </span>
                   </div>
+
+                  {(() => {
+                    const st = lastResult.metadata.settings as Partial<Required<OptimizeOptions>> | undefined
+                    if (!st) return null
+                    const chips = [
+                      `temp ${st.temperature}`,
+                      `${st.max_tokens} tokens max`,
+                      st.output_format && st.output_format !== "auto" ? `${st.output_format} output` : null,
+                      st.target_length && st.target_length !== "auto" ? `${st.target_length} length` : null,
+                      st.preserve_wording ? "wording preserved" : null,
+                    ].filter(Boolean) as string[]
+                    return (
+                      <div className="flex flex-wrap gap-1">
+                        {chips.map((c) => (
+                          <Badge key={c} variant="outline" className="font-mono text-[10px]">{c}</Badge>
+                        ))}
+                      </div>
+                    )
+                  })()}
 
                   {(lastResult.metadata.predictor === "template_fallback" || lastResult.metadata.fallback === true) && (
                     <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
