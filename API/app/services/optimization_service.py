@@ -7,7 +7,8 @@ import dspy
 from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import settings
-from app.services.eval_service import DatasetOptimizer, EvalMetric, Sample
+from app.services.eval_service import DatasetOptimizer, EvalError, EvalMetric, Sample
+from app.services.gepa_service import GepaOptimizer
 from app.services.lm_manager import LMManager
 from app.services.progress import ProgressCallback, no_progress
 
@@ -44,6 +45,8 @@ class PromptOptimizationService:
         eval_metric: EvalMetric = "auto",
         max_demos: int = 4,
         progress: ProgressCallback = no_progress,
+        gepa_budget: int = 60,
+        reflection_model: str | None = None,
     ) -> dict[str, Any]:
         """
         Optimize a prompt using the specified method and provider.
@@ -86,6 +89,23 @@ class PromptOptimizationService:
                 temperature=run_settings["temperature"],
                 max_tokens=run_settings["max_tokens"],
             )
+            reflection_lm = None
+            if optimization_method == "gepa":
+                if not dataset_samples:
+                    raise EvalError(
+                        "GEPA evolves the prompt from feedback on a dataset; pick a "
+                        "dataset with at least 2 samples."
+                    )
+                # Reflection writes whole new instructions, so it gets a longer
+                # output budget and a higher temperature than the task model.
+                reflection_lm = LMManager.get_lm(
+                    provider=provider,
+                    model_name=reflection_model or model,
+                    temperature=1.0,
+                    max_tokens=2500,
+                )
+                run_settings["gepa_budget"] = gepa_budget
+                run_settings["reflection_model"] = reflection_model or model
 
             # Model calls are synchronous and can run for minutes against a
             # local model, so they must not run on the event loop.
@@ -100,7 +120,11 @@ class PromptOptimizationService:
                 eval_metric,
                 max_demos,
                 progress,
+                gepa_budget,
+                reflection_lm,
             )
+        except EvalError:
+            raise
         except Exception as e:
             logger.error(f"Optimization failed: {e}")
             return self._failure_result(
@@ -216,6 +240,8 @@ class PromptOptimizationService:
         eval_metric: EvalMetric = "auto",
         max_demos: int = 4,
         progress: ProgressCallback = no_progress,
+        gepa_budget: int = 60,
+        reflection_lm: dspy.LM | None = None,
     ) -> dict[str, Any]:
         """Run the selected optimization strategy. Executed in a worker thread.
 
@@ -223,6 +249,16 @@ class PromptOptimizationService:
         configured LM is bound to the thread that actually makes the calls.
         """
         with dspy.context(lm=lm):
+            if optimization_method == "gepa":
+                return self._optimize_with_gepa(
+                    original_prompt,
+                    dataset_samples or [],
+                    eval_metric,
+                    gepa_budget,
+                    reflection_lm,
+                    progress,
+                )
+
             progress("rewrite", f"Rewriting the prompt ({optimization_method})")
             if optimization_method == "meta_prompt":
                 result = self._optimize_with_meta_prompt(
@@ -248,6 +284,35 @@ class PromptOptimizationService:
                 max_demos,
                 progress,
             )
+
+    @staticmethod
+    def _optimize_with_gepa(
+        original_prompt: str,
+        samples: list[Sample],
+        eval_metric: EvalMetric,
+        budget: int,
+        reflection_lm: dspy.LM | None,
+        progress: ProgressCallback,
+    ) -> dict[str, Any]:
+        """Evolve the instructions with GEPA; no separate rewrite step."""
+        optimizer = GepaOptimizer(
+            samples,
+            metric=eval_metric,
+            budget=budget,
+            reflection_lm=reflection_lm,
+            progress=progress,
+        )
+        outcome = optimizer.run(original_prompt)
+        return {
+            "optimized_prompt": outcome["optimized_prompt"],
+            "metadata": {
+                "method": "gepa",
+                "predictor": "GEPA",
+                "rewrite": outcome["instructions"],
+                "gepa": outcome["gepa"],
+                "eval": outcome["eval"],
+            },
+        }
 
     @staticmethod
     def _optimize_against_dataset(

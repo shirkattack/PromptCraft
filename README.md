@@ -272,9 +272,14 @@ curl http://127.0.0.1:8000/api/v1/providers/
 
 The application supports multiple optimization techniques:
 
-- **Meta-Prompt**: Uses meta-prompting for prompt improvement
-- **DSPy**: Systematic prompt optimization using DSPy framework
-- **Simple**: Basic prompt enhancement using direct LM feedback
+- **Meta-Prompt**: One structured rewrite guided by a prompt-engineering rubric
+- **DSPy Chain-of-Thought**: The model reasons about the prompt first, then rewrites it
+- **GEPA**: Evolves the instructions from written feedback on a dataset (see below)
+- **Simple**: A plain completion asked to improve the prompt
+
+### GEPA: reflective prompt evolution
+
+Pick a dataset and the GEPA method, and the prompt is evolved rather than rewritten once. Each generation runs the current prompt on a few training samples, the metric writes feedback for every miss (for example "the right label is buried in a 40-word answer"), and a reflection model rewrites the instructions to address that feedback. Candidates that win on different samples stay on a Pareto front and can be merged. The Prompt Evolution card shows the whole lineage: every candidate, its score on the held-out split, its parent, and the feedback it was bred from, with changes highlighted against the parent. A budget of 60 scored calls takes about a minute on a 3B model with 16 samples; a larger reflection model can be chosen separately from the task model. Based on [GEPA (Agrawal et al., 2025)](https://arxiv.org/abs/2507.19457).
 
 ### Measuring a prompt against a dataset
 

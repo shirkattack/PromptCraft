@@ -51,6 +51,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exceptions raised while handling another exception now chain with `from`.
 
 ### Added
+- **GEPA optimization method** (`optimization_method: "gepa"`, needs
+  `dataset_id`). Wraps `dspy.teleprompt.GEPA`: the prompt runs on training
+  samples, the metric writes feedback for each miss (for example "the label is
+  buried in a 40-word answer"), a reflection model rewrites the instructions to
+  address it, and candidates that win on different samples are kept on a Pareto
+  front. `gepa_budget` (10-500 scored calls, default 60) and `reflection_model`
+  (defaults to the task model) are new request fields. The response's
+  `metadata.gepa` carries the lineage: every candidate's instructions, score,
+  parent, generation and the feedback that preceded it, plus `metadata.eval`
+  in the same shape as measured runs. Each GEPA iteration is reported as
+  progress on the background job. `GET /optimization-methods` marks it with
+  `requires_dataset`.
 - **Background optimization**: `POST /sessions/{id}/optimize/start` returns 202
   and a job snapshot; `GET /sessions/{id}/optimize/status` reports the stage,
   a step counter, the best score so far, the full step history and, when done,
