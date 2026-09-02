@@ -1,12 +1,14 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
-from enum import Enum
+from enum import StrEnum
 
-class SessionStatus(str, Enum):
+from pydantic import BaseModel
+
+
+class SessionStatus(StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     FAILED = "failed"
+
 
 class AIModelResponse(BaseModel):
     id: str
@@ -15,13 +17,20 @@ class AIModelResponse(BaseModel):
     cost_per_1k_tokens: float
     speed_rating: int
     best_use_case: str
-    is_free: Optional[bool] = False
+    is_free: bool | None = False
+
 
 class AIProviderResponse(BaseModel):
     id: str
     name: str
     logo: str
-    models: List[AIModelResponse]
+    models: list[AIModelResponse]
+    # The backend can only drive providers it has an LM adapter for. Listing a
+    # provider without this flag let clients pick a model that was guaranteed
+    # to fail at optimization time.
+    available: bool = True
+    unavailable_reason: str | None = None
+
 
 class OptimizationSessionBase(BaseModel):
     name: str
@@ -30,17 +39,20 @@ class OptimizationSessionBase(BaseModel):
     model: str
     task_type: str
 
+
 class OptimizationSessionCreate(OptimizationSessionBase):
     pass
 
+
 class OptimizationSessionUpdate(BaseModel):
-    optimized_prompt: Optional[str] = None
-    performance_score: Optional[float] = None
-    status: Optional[SessionStatus] = None
+    optimized_prompt: str | None = None
+    performance_score: float | None = None
+    status: SessionStatus | None = None
+
 
 class OptimizationSessionResponse(OptimizationSessionBase):
     id: str
-    optimized_prompt: Optional[str] = None
+    optimized_prompt: str | None = None
     performance_score: float
     created_at: datetime
     status: SessionStatus
@@ -48,31 +60,39 @@ class OptimizationSessionResponse(OptimizationSessionBase):
     class Config:
         from_attributes = True
 
+
 class TrainingDatasetBase(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     task_type: str
+
 
 class TrainingDatasetCreate(TrainingDatasetBase):
     sample_count: int = 0
-    size: Optional[str] = None
+    size: str | None = None
+
 
 class TrainingDatasetResponse(TrainingDatasetBase):
     id: str
     sample_count: int
     created_at: datetime
     last_modified: datetime
-    size: Optional[str] = None
+    size: str | None = None
 
     class Config:
         from_attributes = True
+
 
 class PerformanceMetrics(BaseModel):
     total_optimizations: int
     average_improvement: float
     success_rate: float
-    total_processing_time: float
-    cost_savings: float
+    # Wall-clock time is only tracked for optimizations run by the current
+    # process; it is not persisted per session yet. `cost_savings` has no
+    # source of truth at all, so it stays null rather than being invented.
+    total_processing_time: float | None = None
+    cost_savings: float | None = None
+
 
 class ProviderPerformance(BaseModel):
     provider: str

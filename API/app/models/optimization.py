@@ -1,16 +1,20 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Enum
-from sqlalchemy.sql import func
-from app.core.database import Base
 import enum
 
-class SessionStatus(str, enum.Enum):
+from sqlalchemy import Column, DateTime, Enum, Float, String, Text
+from sqlalchemy.sql import func
+
+from app.core.database import Base
+
+
+class SessionStatus(enum.StrEnum):
     COMPLETED = "completed"
     RUNNING = "running"
     FAILED = "failed"
 
+
 class OptimizationSession(Base):
     __tablename__ = "optimization_sessions"
-    
+
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
     original_prompt = Column(Text, nullable=False)
@@ -21,4 +25,3 @@ class OptimizationSession(Base):
     performance_score = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(Enum(SessionStatus), default=SessionStatus.RUNNING)
-

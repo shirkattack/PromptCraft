@@ -6,11 +6,13 @@ Can be disabled for local development by setting REQUIRE_API_KEY=false
 """
 
 from fastapi import Header, HTTPException, status
-from typing import Optional
+
 from app.core.config import settings
 
 
-async def verify_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> str:
+async def verify_api_key(
+    x_api_key: str | None = Header(None, alias="X-API-Key")
+) -> str:
     """
     Verify API key from request header.
 
@@ -34,7 +36,7 @@ async def verify_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Ke
     if not settings.api_key:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="API key authentication is enabled but API_KEY is not configured"
+            detail="API key authentication is enabled but API_KEY is not configured",
         )
 
     # Validate API key
@@ -55,7 +57,9 @@ async def verify_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Ke
 
 
 # Optional: Dependency for endpoints that should always be public (health checks, etc.)
-async def optional_verify_api_key(x_api_key: Optional[str] = Header(None, alias="X-API-Key")) -> Optional[str]:
+async def optional_verify_api_key(
+    x_api_key: str | None = Header(None, alias="X-API-Key")
+) -> str | None:
     """
     Optional API key verification - doesn't fail if key is missing.
     Useful for endpoints that should be public even when auth is enabled.
