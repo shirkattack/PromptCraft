@@ -4,51 +4,46 @@ Pytest configuration and fixtures for PromptCraft API tests.
 This module provides common fixtures and configuration for all tests.
 """
 
+from collections.abc import AsyncGenerator
+
+import httpx
 import pytest
-import asyncio
-from typing import AsyncGenerator, Generator
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi.testclient import TestClient
-import httpx
+from sqlalchemy.pool import StaticPool
 
-from app.main import app
 from app.core.database import Base, get_db
-from app.core.config import settings
+from app.main import app
 
-
-# Test database URL
-TEST_DATABASE_URL = "sqlite:///./test.db"
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# In-memory so tests never leave a test.db behind or inherit state from one.
+TEST_DATABASE_URL = "sqlite://"
 
 
 @pytest.fixture(scope="function")
 def test_db():
     """Create a test database for each test function."""
-    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,  # one shared in-memory database across connections
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
+
     # Create tables
     Base.metadata.create_all(bind=engine)
-    
+
     def override_get_db():
         try:
             db = TestingSessionLocal()
             yield db
         finally:
             db.close()
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     yield TestingSessionLocal()
-    
+
     # Clean up
     Base.metadata.drop_all(bind=engine)
     app.dependency_overrides.clear()
@@ -63,7 +58,9 @@ def client(test_db) -> TestClient:
 @pytest.fixture(scope="function")
 async def async_client(test_db) -> AsyncGenerator[httpx.AsyncClient, None]:
     """Create an async test client for the FastAPI app."""
-    async with httpx.AsyncClient(app=app, base_url="http://test") as ac:
+    # httpx >= 0.28 dropped the `app=` shortcut in favour of an explicit transport.
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
 
@@ -75,7 +72,7 @@ def sample_optimization_session():
         "original_prompt": "Write a hello world program",
         "provider": "openai",
         "model": "gpt-3.5-turbo",
-        "task_type": "code"
+        "task_type": "code",
     }
 
 
@@ -86,7 +83,7 @@ def sample_training_data():
         "input_text": "What is Python?",
         "expected_output": "Python is a high-level programming language.",
         "extra_data": {"category": "programming"},
-        "quality_score": 0.9
+        "quality_score": 0.9,
     }
 
 
@@ -99,21 +96,25 @@ def mock_ollama_response():
                 "name": "llama3.2:latest",
                 "size": 4661224676,
                 "digest": "sha256:abc123",
-                "modified_at": "2024-01-01T00:00:00Z"
+                "modified_at": "2024-01-01T00:00:00Z",
             }
         ]
     }
 
 
 class MockLLM:
-    """Mock language model for testing."""
-    
+    """Mock language model for testing.
+
+    Deliberately not a `dspy.BaseLM`: DSPy rejects it, which exercises the
+    services' fallback paths without needing a running model.
+    """
+
     def __init__(self, response: str = "Mock response"):
         self.response = response
-    
+
     def __call__(self, prompt: str, **kwargs) -> str:
         return self.response
-    
+
     async def acall(self, prompt: str, **kwargs) -> str:
         return self.response
 
@@ -127,17 +128,20 @@ def mock_llm():
 @pytest.fixture
 def mock_successful_llm():
     """Mock LLM that returns successful optimization."""
-    return MockLLM("This is an improved version of your prompt that is more specific and clear.")
+    return MockLLM(
+        "This is an improved version of your prompt that is more specific and clear."
+    )
 
 
 @pytest.fixture
 def mock_failing_llm():
     """Mock LLM that raises an exception."""
+
     class FailingLLM:
         def __call__(self, prompt: str, **kwargs):
             raise Exception("Mock LLM failure")
-        
+
         async def acall(self, prompt: str, **kwargs):
             raise Exception("Mock LLM failure")
-    
+
     return FailingLLM()
