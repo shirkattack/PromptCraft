@@ -1,6 +1,6 @@
 // React hooks for API data fetching
 import { useState, useEffect, useCallback } from 'react'
-import apiClient, { CreateSessionRequest, OptimizationMethod, OptimizeOptions } from './client'
+import apiClient, { APIError, CreateSessionRequest, JobProgress, OptimizationMethod, OptimizeOptions } from './client'
 
 // Components that fetch the same resource each hold their own copy, so a
 // mutation in one place (the dashboard finishing an optimization, the sidebar
@@ -106,13 +106,32 @@ export function useSessionActions() {
     }
   }
 
-  const optimizePrompt = async (sessionId: string, method?: OptimizationMethod, options?: OptimizeOptions) => {
+  /**
+   * Run an optimization as a background job and resolve with its result.
+   * `onProgress` receives every progress snapshot while the job runs.
+   */
+  const optimizePrompt = async (
+    sessionId: string,
+    method?: OptimizationMethod,
+    options?: OptimizeOptions,
+    onProgress?: (progress: JobProgress) => void,
+    pollIntervalMs = 1000,
+  ) => {
     try {
       setLoading(true)
       setError(null)
-      const result = await apiClient.optimizePrompt(sessionId, method, options)
+      let job = await apiClient.startOptimization(sessionId, method, options)
+      onProgress?.(job.progress)
+      while (job.status === 'queued' || job.status === 'running') {
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+        job = await apiClient.getOptimizationStatus(sessionId)
+        onProgress?.(job.progress)
+      }
       notifySessionsChanged()
-      return result
+      if (job.status === 'failed' || !job.result) {
+        throw new APIError(job.error_status ?? 500, job.error ?? 'Optimization failed')
+      }
+      return job.result
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to optimize prompt')
       throw err

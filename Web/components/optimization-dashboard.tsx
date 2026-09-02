@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets } from "@/lib/api/hooks"
-import type { AIModel, EvalMetric, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import type { AIModel, EvalMetric, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,6 +40,7 @@ import {
   XCircle,
   ChevronDown,
   HardDrive,
+  Loader2,
   Copy,
   Share2,
   Upload,
@@ -159,6 +160,9 @@ const getCurrentModel = (providerData: Record<string, ProviderView>, selectedPro
 export function OptimizationDashboard() {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState(0)
+  const [jobProgress, setJobProgress] = useState<JobProgress | null>(null)
+  const [jobStartedAt, setJobStartedAt] = useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [selectedProvider, setSelectedProvider] = useState("Ollama")
   const [selectedModel, setSelectedModel] = useState("")
   const [selectedTaskType, setSelectedTaskType] = useState("auto")
@@ -246,6 +250,13 @@ export function OptimizationDashboard() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   // From the real health probe; assume fine until it answers.
   const ollamaModelsAvailable = ollamaHealth ? ollamaHealth.healthy : true
+
+  useEffect(() => {
+    if (jobStartedAt == null) return
+    setElapsedSeconds(0)
+    const timer = setInterval(() => setElapsedSeconds(Math.round((Date.now() - jobStartedAt) / 1000)), 1000)
+    return () => clearInterval(timer)
+  }, [jobStartedAt])
 
   // The prompt draft lives in this browser's localStorage so a reload does
   // not lose it. Nothing is sent anywhere.
@@ -407,26 +418,20 @@ export function OptimizationDashboard() {
         task_type: selectedTaskType === 'auto' ? 'general' : selectedTaskType
       })
 
-      // Start optimization progress simulation
-      const progressInterval = setInterval(() => {
-        setOptimizationProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 500)
-
-      // Optimize the prompt
+      // Run as a background job; the API reports each stage while it works.
+      setJobStartedAt(Date.now())
+      setJobProgress({ stage: "starting", message: "Starting optimization", current: null, total: null, best_score: null, updated_at: "" })
       const options: OptimizeOptions = activeDataset
         ? { ...advanced, dataset_id: activeDataset.id, eval_metric: evalMetric, max_demos: maxDemos }
         : advanced
-      const result = await optimizePrompt(session.id, selectedMethod, options)
+      const result = await optimizePrompt(session.id, selectedMethod, options, (progress) => {
+        setJobProgress(progress)
+        if (progress.total) setOptimizationProgress(Math.round(((progress.current ?? 0) / progress.total) * 100))
+      })
 
-      clearInterval(progressInterval)
       setOptimizationProgress(100)
       setIsOptimizing(false)
+      setJobStartedAt(null)
 
       if (result.session?.optimized_prompt) {
         setOptimizedPrompt(result.session.optimized_prompt)
@@ -445,6 +450,8 @@ export function OptimizationDashboard() {
     } catch (error) {
       setIsOptimizing(false)
       setOptimizationProgress(0)
+      setJobStartedAt(null)
+      setJobProgress(null)
       toast({
         title: "Optimization failed",
         description: error instanceof Error ? error.message : "An error occurred during optimization",
@@ -1083,12 +1090,22 @@ export function OptimizationDashboard() {
               {isOptimizing && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-sans">
-                    <span>Optimization Progress</span>
-                    <span>{optimizationProgress}%</span>
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+                      {jobProgress?.message ?? "Working..."}
+                    </span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {jobProgress?.total ? `${jobProgress.current ?? 0}/${jobProgress.total} · ` : ""}
+                      {elapsedSeconds}s
+                    </span>
                   </div>
-                  <Progress value={optimizationProgress} className="w-full" />
-                  <div className="text-xs text-muted-foreground font-serif">
-                    Estimated time remaining: {Math.max(0, Math.ceil((100 - optimizationProgress) / 10))}s
+                  <Progress value={jobProgress?.total ? optimizationProgress : undefined} className={`w-full ${jobProgress?.total ? "" : "animate-pulse"}`} />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-serif">
+                    <span className="capitalize">{jobProgress?.stage ?? "starting"}</span>
+                    {jobProgress?.best_score != null && (
+                      <Badge variant="outline" className="font-mono text-[10px]">best so far {Math.round(jobProgress.best_score)}%</Badge>
+                    )}
+                    {activeDataset && <span>Measured runs make one model call per sample per candidate.</span>}
                   </div>
                 </div>
               )}

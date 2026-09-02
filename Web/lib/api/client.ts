@@ -145,6 +145,31 @@ export interface OptimizeResponse {
   }
 }
 
+export type JobStatus = 'queued' | 'running' | 'completed' | 'failed'
+
+export interface JobProgress {
+  stage: string
+  message: string
+  current: number | null
+  total: number | null
+  best_score: number | null
+  updated_at: string
+}
+
+/** Snapshot of a background optimization (GET /sessions/{id}/optimize/status). */
+export interface OptimizationJob {
+  session_id: string
+  status: JobStatus
+  progress: JobProgress
+  history: { stage: string; message: string; current: number | null; total: number | null; best_score: number | null; at: string }[]
+  result: OptimizeResponse | null
+  error: string | null
+  error_status: number | null
+  started_at: string
+  finished_at: string | null
+  elapsed_seconds: number
+}
+
 export interface OllamaHealth {
   status: string
   healthy: boolean
@@ -314,6 +339,22 @@ class APIClient {
       method: 'POST',
       body: JSON.stringify({ optimization_method: optimizationMethod, ...options }),
     })
+  }
+
+  /** Start an optimization in the background; poll getOptimizationStatus. */
+  async startOptimization(
+    sessionId: string,
+    optimizationMethod: OptimizationMethod = 'meta_prompt',
+    options: OptimizeOptions = {},
+  ): Promise<OptimizationJob> {
+    return this.request<OptimizationJob>(`/sessions/${sessionId}/optimize/start`, {
+      method: 'POST',
+      body: JSON.stringify({ optimization_method: optimizationMethod, ...options }),
+    })
+  }
+
+  async getOptimizationStatus(sessionId: string): Promise<OptimizationJob> {
+    return this.request<OptimizationJob>(`/sessions/${sessionId}/optimize/status`)
   }
 
   // Provider endpoints

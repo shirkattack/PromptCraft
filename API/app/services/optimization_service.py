@@ -9,6 +9,7 @@ from fastapi.concurrency import run_in_threadpool
 from app.core.config import settings
 from app.services.eval_service import DatasetOptimizer, EvalMetric, Sample
 from app.services.lm_manager import LMManager
+from app.services.progress import ProgressCallback, no_progress
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ class PromptOptimizationService:
         dataset_samples: list[Sample] | None = None,
         eval_metric: EvalMetric = "auto",
         max_demos: int = 4,
+        progress: ProgressCallback = no_progress,
     ) -> dict[str, Any]:
         """
         Optimize a prompt using the specified method and provider.
@@ -97,6 +99,7 @@ class PromptOptimizationService:
                 dataset_samples,
                 eval_metric,
                 max_demos,
+                progress,
             )
         except Exception as e:
             logger.error(f"Optimization failed: {e}")
@@ -212,6 +215,7 @@ class PromptOptimizationService:
         dataset_samples: list[Sample] | None = None,
         eval_metric: EvalMetric = "auto",
         max_demos: int = 4,
+        progress: ProgressCallback = no_progress,
     ) -> dict[str, Any]:
         """Run the selected optimization strategy. Executed in a worker thread.
 
@@ -219,6 +223,7 @@ class PromptOptimizationService:
         configured LM is bound to the thread that actually makes the calls.
         """
         with dspy.context(lm=lm):
+            progress("rewrite", f"Rewriting the prompt ({optimization_method})")
             if optimization_method == "meta_prompt":
                 result = self._optimize_with_meta_prompt(
                     original_prompt, task_type, lm, constraints
@@ -236,7 +241,12 @@ class PromptOptimizationService:
                 return result
 
             return self._optimize_against_dataset(
-                original_prompt, result, dataset_samples, eval_metric, max_demos
+                original_prompt,
+                result,
+                dataset_samples,
+                eval_metric,
+                max_demos,
+                progress,
             )
 
     @staticmethod
@@ -246,6 +256,7 @@ class PromptOptimizationService:
         samples: list[Sample],
         eval_metric: EvalMetric,
         max_demos: int,
+        progress: ProgressCallback = no_progress,
     ) -> dict[str, Any]:
         """Measure the rewrite on the dataset and return the best candidate.
 
@@ -253,7 +264,9 @@ class PromptOptimizationService:
         show it even when a few-shot variant of the original prompt scored
         higher.
         """
-        optimizer = DatasetOptimizer(samples, metric=eval_metric, max_demos=max_demos)
+        optimizer = DatasetOptimizer(
+            samples, metric=eval_metric, max_demos=max_demos, progress=progress
+        )
         report = optimizer.run(original_prompt, rewrite["optimized_prompt"])
 
         return {

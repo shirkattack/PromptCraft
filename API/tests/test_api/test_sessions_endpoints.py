@@ -338,3 +338,146 @@ class TestOrphanedSessions:
         assert fail_orphaned_sessions(test_db) == 1
         assert client.get(f"{BASE}/{running['id']}").json()["status"] == "failed"
         assert fail_orphaned_sessions(test_db) == 0
+
+
+class TestBackgroundOptimization:
+    """POST /optimize/start returns 202; GET /optimize/status is polled."""
+
+    def _result(self, **overrides):
+        result = {
+            "optimized_prompt": "Background result",
+            "method": "meta_prompt",
+            "improvement_score": 70.0,
+            "score_type": "heuristic",
+            "processing_time": 0.5,
+            "metadata": {"method": "meta_prompt"},
+            "success": True,
+        }
+        result.update(overrides)
+        return result
+
+    def _poll(self, client: TestClient, session_id: str, tries: int = 50):
+        import time
+
+        for _ in range(tries):
+            snapshot = client.get(f"{BASE}/{session_id}/optimize/status").json()
+            if snapshot["status"] in ("completed", "failed"):
+                return snapshot
+            time.sleep(0.05)
+        raise AssertionError(f"job did not finish: {snapshot}")
+
+    def test_start_then_poll_to_completion(self, client: TestClient, session_id: str):
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=AsyncMock(return_value=self._result()),
+        ):
+            response = client.post(
+                f"{BASE}/{session_id}/optimize/start",
+                json={"optimization_method": "meta_prompt"},
+            )
+            assert response.status_code == 202, response.text
+            assert response.headers["Location"].endswith("/optimize/status")
+            started = response.json()
+            assert started["status"] in ("queued", "running")
+            assert started["session_id"] == session_id
+
+            snapshot = self._poll(client, session_id)
+
+        assert snapshot["status"] == "completed"
+        assert snapshot["progress"]["stage"] == "done"
+        assert snapshot["error"] is None
+        result = snapshot["result"]
+        assert result["session"]["optimized_prompt"] == "Background result"
+        assert result["session"]["status"] == "completed"
+        assert result["optimization_details"]["improvement_score"] == 70.0
+        assert snapshot["elapsed_seconds"] >= 0
+        # The database reflects the job's outcome.
+        assert client.get(f"{BASE}/{session_id}").json()["status"] == "completed"
+
+    def test_progress_is_recorded(self, client: TestClient, session_id: str):
+        async def fake_optimize(**kwargs):
+            progress = kwargs["progress"]
+            progress("rewrite", "Rewriting")
+            progress("evaluate", "Scoring", current=1, total=4, best_score=50.0)
+            return self._result()
+
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=fake_optimize,
+        ):
+            client.post(f"{BASE}/{session_id}/optimize/start", json={})
+            snapshot = self._poll(client, session_id)
+
+        stages = [h["stage"] for h in snapshot["history"]]
+        assert stages[:2] == ["rewrite", "evaluate"]
+        assert snapshot["history"][1]["best_score"] == 50.0
+        assert snapshot["history"][1]["total"] == 4
+
+    def test_failure_is_reported_with_status(self, client: TestClient, session_id: str):
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=AsyncMock(
+                return_value=self._result(success=False, error="model exploded")
+            ),
+        ):
+            client.post(f"{BASE}/{session_id}/optimize/start", json={})
+            snapshot = self._poll(client, session_id)
+
+        assert snapshot["status"] == "failed"
+        assert snapshot["error_status"] == 502
+        assert "model exploded" in snapshot["error"]
+        assert snapshot["result"] is None
+        assert client.get(f"{BASE}/{session_id}").json()["status"] == "failed"
+
+    def test_second_start_while_running_is_409(
+        self, client: TestClient, session_id: str
+    ):
+        import asyncio
+        import threading
+
+        from app.main import app
+
+        release = threading.Event()
+
+        async def slow_optimize(**kwargs):
+            await asyncio.get_running_loop().run_in_executor(None, release.wait)
+            return self._result()
+
+        # A `with` client keeps one event loop across requests, like the real
+        # server; the bare fixture client would wait for the job to finish
+        # before returning the first response.
+        with (
+            patch(
+                "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+                new=slow_optimize,
+            ),
+            TestClient(app) as live,
+        ):
+            assert (
+                live.post(f"{BASE}/{session_id}/optimize/start", json={}).status_code
+                == 202
+            )
+            second = live.post(f"{BASE}/{session_id}/optimize/start", json={})
+            assert second.status_code == 409
+
+            release.set()
+            snapshot = self._poll(live, session_id)
+        assert snapshot["status"] == "completed"
+
+    def test_unknown_session_and_dataset_are_rejected_up_front(
+        self, client: TestClient, session_id: str
+    ):
+        assert client.post(f"{BASE}/nope/optimize/start", json={}).status_code == 404
+        assert (
+            client.post(
+                f"{BASE}/{session_id}/optimize/start", json={"dataset_id": "nope"}
+            ).status_code
+            == 404
+        )
+        assert client.get(f"{BASE}/{session_id}/optimize/status").status_code == 404
+
+    def test_bad_method_is_422(self, client: TestClient, session_id: str):
+        response = client.post(
+            f"{BASE}/{session_id}/optimize/start", json={"optimization_method": "magic"}
+        )
+        assert response.status_code == 422

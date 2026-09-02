@@ -27,6 +27,7 @@ import dspy
 from dspy.teleprompt import BootstrapFewShot
 
 from app.core.config import settings
+from app.services.progress import ProgressCallback, no_progress
 
 logger = logging.getLogger(__name__)
 
@@ -194,10 +195,12 @@ class DatasetOptimizer:
         max_demos: int = 4,
         train_ratio: float | None = None,
         seed: int = 13,
+        progress: ProgressCallback = no_progress,
     ) -> None:
         if not samples:
             raise EvalError("The dataset has no samples")
         self.samples = samples
+        self.progress = progress
         self.metric_name = choose_metric(metric, samples)
         self.max_demos = max(1, min(max_demos, settings.eval_max_demos))
         self.train, self.dev = split_samples(
@@ -271,20 +274,38 @@ class DatasetOptimizer:
 
     def run(self, original: str, rewritten: str | None = None) -> dict[str, Any]:
         """Measure the original prompt and every candidate; return the report."""
+        has_rewrite = bool(rewritten and rewritten.strip() != original.strip())
+        total_steps = 1 + (3 if has_rewrite else 1)
+        step = 0
+
+        def report(message: str, best: float | None = None) -> None:
+            self.progress(
+                "evaluate", message, current=step, total=total_steps, best_score=best
+            )
+
+        report(f"Scoring the original prompt on {len(self.dev)} held-out samples")
         baseline = Candidate(BASELINE, original, self._program(original))
         self._evaluate(baseline)
+        step += 1
+        report("Original prompt scored", baseline.score)
 
         candidates: list[Candidate] = []
 
         def add(name: str, instructions: str, few_shot: bool) -> None:
+            nonlocal step
+            label = name.replace("_", " ")
             try:
                 if few_shot:
+                    report(
+                        f"Choosing examples for '{label}' from {len(self.train)} train samples"
+                    )
                     program, demos = self._compile(instructions)
                     candidate = Candidate(name, instructions, program, demos)
                 else:
                     candidate = Candidate(
                         name, instructions, self._program(instructions)
                     )
+                report(f"Scoring '{label}' on {len(self.dev)} held-out samples")
                 self._evaluate(candidate)
             except Exception as exc:  # one bad candidate must not sink the run
                 logger.warning(f"Candidate {name} failed: {exc}")
@@ -293,8 +314,12 @@ class DatasetOptimizer:
                 )
                 candidate.error = str(exc)
             candidates.append(candidate)
+            step += 1
+            best = max(
+                (c.score for c in candidates if c.score is not None), default=None
+            )
+            report(f"'{label}' scored", best)
 
-        has_rewrite = bool(rewritten and rewritten.strip() != original.strip())
         if has_rewrite:
             add("rewritten", rewritten, few_shot=False)  # type: ignore[arg-type]
             add("rewritten_fewshot", rewritten, few_shot=True)  # type: ignore[arg-type]

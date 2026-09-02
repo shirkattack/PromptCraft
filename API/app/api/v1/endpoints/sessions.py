@@ -1,9 +1,9 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.auth import verify_api_key
 from app.core.config import settings
@@ -18,7 +18,9 @@ from app.schemas.optimization import (
     PerformanceMetrics,
 )
 from app.services.eval_service import EvalError, Sample
+from app.services.job_manager import JobAlreadyRunning, OptimizationJob, job_manager
 from app.services.optimization_service import optimization_service
+from app.services.progress import ProgressCallback, no_progress
 
 router = APIRouter(dependencies=[Depends(verify_api_key)])
 
@@ -246,31 +248,33 @@ def delete_session(session_id: str, db: Session = Depends(get_db)) -> dict[str, 
     return {"message": "Session deleted successfully"}
 
 
-@router.post("/{session_id}/optimize")
-async def optimize_prompt(
-    session_id: str,
-    options: OptimizeRequest | None = None,
-    optimization_method: str | None = Query(
-        None,
-        description="Overrides options.optimization_method; kept for older clients.",
-    ),
-    db: Session = Depends(get_db),
-) -> dict[str, Any]:
-    """Optimize a prompt using Promptomatix algorithms"""
-    options = options or OptimizeRequest()
-    method = optimization_method or options.optimization_method
+def _resolve_method(options: OptimizeRequest, override: str | None) -> str:
+    method = override or options.optimization_method
     if method not in OPTIMIZATION_METHODS:
         raise HTTPException(
             status_code=422,
             detail=f"Unknown optimization method. Expected one of: {sorted(OPTIMIZATION_METHODS)}",
         )
+    return method
 
+
+async def _run_optimization(
+    db: Session,
+    session_id: str,
+    options: OptimizeRequest,
+    method: str,
+    progress: ProgressCallback = no_progress,
+) -> dict[str, Any]:
+    """Optimize a session's prompt and persist the outcome.
+
+    Shared by the synchronous route and the background job. Raises
+    HTTPException with the status the client should see.
+    """
     session = _get_session_or_404(db, session_id)
     dataset_samples = (
         _load_dataset_samples(db, options.dataset_id) if options.dataset_id else None
     )
 
-    # Update session status to running
     session.status = SessionStatus.RUNNING
     session.optimization_method = method
     session.dataset_id = options.dataset_id
@@ -291,6 +295,7 @@ async def optimize_prompt(
             dataset_samples=dataset_samples,
             eval_metric=options.eval_metric,
             max_demos=options.max_demos,
+            progress=progress,
         )
     except EvalError as e:
         session.status = SessionStatus.FAILED
@@ -323,11 +328,11 @@ async def optimize_prompt(
     db.commit()
     db.refresh(session)
 
-    # No response_model on this route, so the return annotation is the
-    # response schema; the ORM row must be converted explicitly.
     return {
         "message": "Prompt optimized successfully",
-        "session": OptimizationSessionResponse.model_validate(session),
+        "session": OptimizationSessionResponse.model_validate(session).model_dump(
+            mode="json"
+        ),
         "optimization_details": {
             "method": optimization_result["method"],
             "improvement_score": optimization_result["improvement_score"],
@@ -336,3 +341,72 @@ async def optimize_prompt(
             "metadata": optimization_result.get("metadata", {}),
         },
     }
+
+
+@router.post("/{session_id}/optimize")
+async def optimize_prompt(
+    session_id: str,
+    options: OptimizeRequest | None = None,
+    optimization_method: str | None = Query(
+        None,
+        description="Overrides options.optimization_method; kept for older clients.",
+    ),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Optimize a prompt and wait for the result.
+
+    Fine for quick runs; dataset-measured runs can take minutes, so clients
+    should prefer ``/optimize/start`` and poll ``/optimize/status``.
+    """
+    options = options or OptimizeRequest()
+    method = _resolve_method(options, optimization_method)
+    return await _run_optimization(db, session_id, options, method)
+
+
+@router.post("/{session_id}/optimize/start", status_code=202)
+async def start_optimization(
+    session_id: str,
+    response: Response,
+    options: OptimizeRequest | None = None,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Start an optimization in the background; poll ``/optimize/status``.
+
+    Returns 202 with the job snapshot, or 409 if one is already running for
+    the session. The session must exist (404 otherwise) and the dataset, if
+    given, is validated before the job is accepted.
+    """
+    options = options or OptimizeRequest()
+    method = _resolve_method(options, None)
+    _get_session_or_404(db, session_id)
+    if options.dataset_id:
+        _load_dataset_samples(db, options.dataset_id)
+
+    # The request's session closes when this handler returns, so the job
+    # opens its own on the same engine.
+    session_factory = sessionmaker(bind=db.get_bind(), autoflush=False)
+
+    async def body(job: OptimizationJob) -> dict[str, Any]:
+        with session_factory() as job_db:
+            return await _run_optimization(
+                job_db, session_id, options, method, job.reporter()
+            )
+
+    try:
+        job = job_manager.start(session_id, body)
+    except JobAlreadyRunning as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+    response.headers["Location"] = f"/api/v1/sessions/{session_id}/optimize/status"
+    return job.snapshot()
+
+
+@router.get("/{session_id}/optimize/status")
+async def optimization_status(session_id: str) -> dict[str, Any]:
+    """Snapshot of the session's latest background optimization."""
+    job = job_manager.get(session_id)
+    if job is None:
+        raise HTTPException(
+            status_code=404, detail="No optimization has been started for this session"
+        )
+    return job.snapshot()
