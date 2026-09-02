@@ -19,6 +19,12 @@ class AIModelResponse(BaseModel):
     speed_rating: int
     best_use_case: str
     is_free: bool | None = False
+    # Reported by the runtime (Ollama /api/tags) rather than guessed from the name.
+    parameter_size: str | None = None  # e.g. "3.2B"
+    quantization: str | None = None  # e.g. "Q4_K_M"
+    family: str | None = None  # e.g. "llama"
+    size_bytes: int | None = None  # on-disk size
+    capabilities: list[str] = []  # e.g. ["completion", "tools", "vision"]
 
 
 class AIProviderResponse(BaseModel):

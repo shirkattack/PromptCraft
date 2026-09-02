@@ -80,6 +80,14 @@ const FALLBACK_METHODS: MethodInfo[] = [
 const formatContext = (tokens: number) => (tokens >= 1000 ? `${Math.round(tokens / 1000)}K tokens` : `${tokens} tokens`)
 const formatCost = (model: AIModel) => (model.is_free ? "Free" : `$${model.cost_per_1k_tokens}/1K tokens`)
 const formatSpeed = (rating: number) => `${rating}/5 speed`
+const formatSize = (bytes: number | null) => {
+  if (bytes == null) return null
+  const gb = bytes / 1_073_741_824
+  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${Math.round(bytes / 1_048_576)} MB`
+}
+// "3.2B · Q4_K_M · 1.9 GB" — whatever the runtime reported, nothing guessed.
+const modelSpecLine = (model: AIModel) =>
+  [model.parameter_size, model.quantization, formatSize(model.size_bytes)].filter(Boolean).join(" · ")
 
 const methodLabel = (id: string, methods?: MethodInfo[] | null) =>
   (methods ?? FALLBACK_METHODS).find((m) => m.id === id)?.name ?? id
@@ -667,7 +675,9 @@ export function OptimizationDashboard() {
                           <div className="flex flex-col items-start">
                             <span className="font-sans font-medium">{model.name}</span>
                             <span className="text-xs text-muted-foreground">
-                              {formatContext(model.context_window)} • {formatCost(model)} • {formatSpeed(model.speed_rating)}
+                              {[modelSpecLine(model), formatContext(model.context_window), model.is_free ? null : formatCost(model)]
+                                .filter(Boolean)
+                                .join(" • ")}
                             </span>
                           </div>
                         </SelectItem>
@@ -692,22 +702,22 @@ export function OptimizationDashboard() {
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Maximum number of tokens the model can process at once</p>
+                          <p className="text-xs">Context length reported by the model runtime (prompt + response)</p>
                         </TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-2 cursor-help">
-                          <DollarSign className="w-4 h-4 text-muted-foreground" />
+                          <Database className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <div className="font-sans font-medium">Cost per 1K tokens</div>
+                            <div className="font-sans font-medium">Model</div>
                             <div className="text-muted-foreground">
-                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? formatCost(m) : null })()}
+                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? (modelSpecLine(m) || formatCost(m)) : null })()}
                             </div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Pricing for input and output tokens combined</p>
+                          <p className="text-xs">Parameter count, quantization and on-disk size as reported by Ollama</p>
                         </TooltipContent>
                       </Tooltip>
 
@@ -722,7 +732,7 @@ export function OptimizationDashboard() {
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Typical response time for this model</p>
+                          <p className="text-xs">Relative speed from parameter count: smaller models answer faster</p>
                         </TooltipContent>
                       </Tooltip>
 

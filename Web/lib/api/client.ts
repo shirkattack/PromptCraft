@@ -35,6 +35,12 @@ export interface AIModel {
   speed_rating: number
   best_use_case: string
   is_free: boolean
+  /** Reported by the runtime (Ollama /api/tags); null when unknown. */
+  parameter_size: string | null
+  quantization: string | null
+  family: string | null
+  size_bytes: number | null
+  capabilities: string[]
 }
 
 export interface PerformanceMetrics {
