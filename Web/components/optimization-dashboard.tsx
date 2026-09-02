@@ -9,16 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartTooltip } from "@/components/ui/chart"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
+import { OptimizedPromptView } from "@/components/optimized-prompt-view"
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -30,8 +26,6 @@ import {
   Pause,
   RotateCcw,
   Download,
-  ThumbsUp,
-  ThumbsDown,
   Settings,
   Zap,
   Info,
@@ -63,14 +57,6 @@ const taskTypes = [
   { id: "qa", name: "Q&A", icon: "❓" },
   { id: "code", name: "Code", icon: "💻" },
   { id: "translation", name: "Translation", icon: "🌐" },
-]
-
-const mockOptimizationData = [
-  { step: 1, score: 65, time: "0s" },
-  { step: 2, score: 72, time: "2s" },
-  { step: 3, score: 78, time: "4s" },
-  { step: 4, score: 85, time: "6s" },
-  { step: 5, score: 92, time: "8s" },
 ]
 
 const mockTaskTypeData = [
@@ -466,6 +452,14 @@ export function OptimizationDashboard() {
     }
   }
 
+  const handleReset = () => {
+    setOriginalPrompt("")
+    setOptimizedPrompt("")
+    setLastResult(null)
+    setOptimizationProgress(0)
+    setIsOptimizing(false)
+  }
+
   const handleExportResults = () => {
     const data = {
       original: originalPrompt,
@@ -567,15 +561,6 @@ export function OptimizationDashboard() {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{originalPrompt.length} characters</span>
-                  <Tooltip>
-                    <TooltipTrigger className="flex items-center gap-1 hover:text-foreground cursor-help">
-                      <span>AI suggestions available</span>
-                      <HelpCircle className="w-3 h-3" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">AI will analyze your prompt and suggest improvements as you type</p>
-                    </TooltipContent>
-                  </Tooltip>
                 </div>
               </div>
 
@@ -872,7 +857,7 @@ export function OptimizationDashboard() {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" onClick={handleReset}>
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
@@ -914,142 +899,68 @@ export function OptimizationDashboard() {
               <CardHeader>
                 <CardTitle className="font-sans font-bold flex items-center gap-2">
                   <Zap className="w-5 h-5 text-secondary" />
-                  Optimization Results
+                  Optimized Prompt
                 </CardTitle>
                 <CardDescription className="font-serif">
-                  AI-optimized prompt with performance improvements
+                  Rendered as the model will read it. Switch to Raw to copy exact text, or Compare to see what changed.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="comparison" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="comparison" className="font-sans">
-                      Comparison
-                    </TabsTrigger>
-                    <TabsTrigger value="metrics" className="font-sans">
-                      Metrics
-                    </TabsTrigger>
-                    <TabsTrigger value="feedback" className="font-sans">
-                      Feedback
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="comparison" className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <h4 className="font-sans font-semibold text-sm">Original</h4>
-                        <div className="p-3 bg-muted rounded-md">
-                          <p className="text-sm font-serif text-muted-foreground">
-                            {originalPrompt || "No original prompt"}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="font-sans">
-                          Score: 65
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-sans font-semibold text-sm">Optimized</h4>
-                        <div className="p-3 bg-secondary/10 border border-secondary/20 rounded-md">
-                          <p className="text-sm font-serif">{optimizedPrompt}</p>
-                        </div>
-                        <Badge className="font-sans">Score: 92 (+27)</Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
+                <OptimizedPromptView
+                  original={originalPrompt}
+                  optimized={optimizedPrompt}
+                  details={lastResult}
+                  methodLabel={methodLabel(lastResult?.method ?? selectedMethod, optimizationMethods)}
+                  actions={
+                    <>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" className="font-sans" onClick={handleExportResults}>
-                            <Download className="w-4 h-4" />
-                            Export
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Download results as JSON file</p>
-                        </TooltipContent>
-                      </Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button size="sm" className="font-sans" onClick={handleExportResults}>
+                                            <Download className="w-4 h-4" />
+                                            Export
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">Download results as JSON file</p>
+                                        </TooltipContent>
+                                      </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="font-sans bg-transparent"
-                            onClick={handleCopyOptimized}
-                          >
-                            <Copy className="w-4 h-4" />
-                            Copy Optimized
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Copy optimized prompt to clipboard (Ctrl+Shift+C)</p>
-                        </TooltipContent>
-                      </Tooltip>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="font-sans bg-transparent"
+                                            onClick={handleCopyOptimized}
+                                          >
+                                            <Copy className="w-4 h-4" />
+                                            Copy Optimized
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">Copy optimized prompt to clipboard (Ctrl+Shift+C)</p>
+                                        </TooltipContent>
+                                      </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="font-sans bg-transparent"
-                            onClick={handleShareResults}
-                          >
-                            <Share2 className="w-4 h-4" />
-                            Share
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Share optimization results</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="metrics" className="space-y-4">
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={mockOptimizationData}>
-                          <XAxis dataKey="step" />
-                          <YAxis />
-                          <ChartTooltip />
-                          <Line
-                            type="monotone"
-                            dataKey="score"
-                            stroke="#f97316"
-                            strokeWidth={2}
-                            dot={{ fill: "#f97316" }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="feedback" className="space-y-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="font-sans bg-transparent">
-                        <ThumbsUp className="w-4 h-4" />
-                        Good Result
-                      </Button>
-                      <Button variant="outline" size="sm" className="font-sans bg-transparent">
-                        <ThumbsDown className="w-4 h-4" />
-                        Needs Work
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium font-sans">Additional Feedback</label>
-                      <Textarea
-                        placeholder="Provide feedback to improve future optimizations..."
-                        className="font-serif"
-                      />
-                    </div>
-
-                    <Button size="sm" className="font-sans">
-                      Submit Feedback
-                    </Button>
-                  </TabsContent>
-                </Tabs>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="font-sans bg-transparent"
+                                            onClick={handleShareResults}
+                                          >
+                                            <Share2 className="w-4 h-4" />
+                                            Share
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">Share optimization results</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                    </>
+                  }
+                />
               </CardContent>
             </Card>
           )}
