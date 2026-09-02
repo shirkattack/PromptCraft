@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class TrainingDataService:
     """Service for training data management and synthetic data generation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.synthetic_prompts = {
             "general": self._generate_general_prompt,
             "creative": self._generate_creative_prompt,

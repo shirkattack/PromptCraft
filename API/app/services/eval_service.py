@@ -19,6 +19,7 @@ import logging
 import random
 import re
 import statistics
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -64,7 +65,7 @@ class Candidate:
     name: str
     instructions: str
     program: dspy.Module
-    demos: list[dict[str, str]] = field(default_factory=list)
+    demos: list[dict[str, Any]] = field(default_factory=list)
     score: float | None = None
     results: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
@@ -81,9 +82,9 @@ class Candidate:
 
 def normalize(text: Any) -> str:
     """Lower-case, collapse whitespace and strip surrounding punctuation."""
-    text = str(text or "").strip().lower()
-    text = re.sub(r"\s+", " ", text)
-    return text.strip(" .!?:;,\"'`*_")
+    normalized: str = str(text or "").strip().lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip(" .!?:;,\"'`*_")
 
 
 def exact_metric(example: dspy.Example, pred: Any, trace: Any = None) -> bool:
@@ -116,7 +117,10 @@ class JudgeOutput(dspy.Signature):
     verdict = dspy.OutputField(desc="'yes' if the response is correct, otherwise 'no'")
 
 
-def make_judge_metric():
+MetricFn = Callable[[dspy.Example, Any, Any], bool]
+
+
+def make_judge_metric() -> MetricFn:
     judge = dspy.Predict(JudgeOutput)
 
     def llm_judge_metric(example: dspy.Example, pred: Any, trace: Any = None) -> bool:
@@ -161,7 +165,7 @@ def split_samples(
     return train, dev
 
 
-def render_prompt(instructions: str, demos: list[dict[str, str]]) -> str:
+def render_prompt(instructions: str, demos: list[dict[str, Any]]) -> str:
     """Turn instructions plus demos into a copy-pasteable prompt.
 
     ``{input}`` marks where the caller's data goes. This is a rendering of the
@@ -205,7 +209,7 @@ class DatasetOptimizer:
         )
         self.metric = self._build_metric()
 
-    def _build_metric(self):
+    def _build_metric(self) -> MetricFn:
         if self.metric_name == "exact":
             return exact_metric
         if self.metric_name == "contains":
@@ -221,7 +225,7 @@ class DatasetOptimizer:
         signature = dspy.Signature("input -> output", instructions.strip())
         return dspy.Predict(signature)
 
-    def _compile(self, instructions: str) -> tuple[dspy.Predict, list[dict[str, str]]]:
+    def _compile(self, instructions: str) -> tuple[dspy.Predict, list[dict[str, Any]]]:
         """Bootstrap few-shot demos for ``instructions`` on the train split."""
         demo_cap = min(self.max_demos, len(self.train))
         teleprompter = BootstrapFewShot(

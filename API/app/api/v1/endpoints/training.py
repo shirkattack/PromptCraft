@@ -3,6 +3,7 @@ import io
 import json
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -77,7 +78,7 @@ def _new_sample(dataset_id: str, sample_data: TrainingSampleCreate) -> TrainingS
 def create_dataset(
     dataset_data: TrainingDatasetCreate,
     db: Session = Depends(get_db),
-):
+) -> TrainingDataset:
     """Create a new training dataset with optional initial samples"""
     dataset_id = str(uuid.uuid4())
 
@@ -132,7 +133,7 @@ def get_datasets(
     limit: int = Query(100, ge=1, le=settings.max_page_size),
     task_type: str | None = None,
     db: Session = Depends(get_db),
-):
+) -> list[TrainingDatasetSummary]:
     """Get all training datasets with optional filtering, newest first"""
     query = db.query(TrainingDataset)
 
@@ -151,7 +152,7 @@ def get_datasets(
 @router.get("/stats", response_model=TrainingStatsResponse)
 def get_training_stats(
     recent_limit: int = Query(5, ge=1, le=50), db: Session = Depends(get_db)
-):
+) -> TrainingStatsResponse:
     """Aggregate counts across all datasets, plus the most recently modified ones.
 
     Counts come from the sample rows rather than the cached ``sample_count``
@@ -192,7 +193,7 @@ def get_training_stats(
 @router.get("/{dataset_id}", response_model=TrainingDatasetResponse)
 def get_dataset(
     dataset_id: str, include_samples: bool = False, db: Session = Depends(get_db)
-):
+) -> TrainingDatasetResponse:
     """Get a specific training dataset"""
     # Load (or explicitly skip) samples in the query. Assigning to
     # `dataset.samples` afterwards would mark the existing rows as orphans on a
@@ -223,7 +224,7 @@ def update_dataset(
     dataset_id: str,
     dataset_update: TrainingDatasetUpdate,
     db: Session = Depends(get_db),
-):
+) -> TrainingDataset:
     """Update a training dataset"""
     dataset = _get_dataset_or_404(db, dataset_id)
 
@@ -238,7 +239,7 @@ def update_dataset(
 
 
 @router.delete("/{dataset_id}")
-def delete_dataset(dataset_id: str, db: Session = Depends(get_db)):
+def delete_dataset(dataset_id: str, db: Session = Depends(get_db)) -> dict[str, str]:
     """Delete a training dataset and all its samples"""
     dataset = _get_dataset_or_404(db, dataset_id)
 
@@ -257,7 +258,7 @@ def create_sample(
     dataset_id: str,
     sample_data: TrainingSampleCreate,
     db: Session = Depends(get_db),
-):
+) -> TrainingSample:
     """Add a single sample to a dataset"""
     dataset = _get_dataset_or_404(db, dataset_id)
 
@@ -282,7 +283,7 @@ def create_samples_bulk(
     dataset_id: str,
     bulk_data: TrainingSampleBulkCreate,
     db: Session = Depends(get_db),
-):
+) -> TrainingSampleBulkResponse:
     """Add multiple samples to a dataset"""
     dataset = _get_dataset_or_404(db, dataset_id)
 
@@ -310,7 +311,9 @@ def create_samples_bulk(
     return TrainingSampleBulkResponse(
         created_count=len(created_samples),
         failed_count=len(errors),
-        created_samples=created_samples,
+        created_samples=[
+            TrainingSampleResponse.model_validate(s) for s in created_samples
+        ],
         errors=errors,
     )
 
@@ -322,7 +325,7 @@ def get_samples(
     limit: int = Query(100, ge=1, le=settings.max_page_size),
     min_quality: float | None = Query(None, ge=0.0, le=1.0),
     db: Session = Depends(get_db),
-):
+) -> list[TrainingSample]:
     """Get samples from a dataset"""
     _get_dataset_or_404(db, dataset_id)
 
@@ -340,7 +343,7 @@ def update_sample(
     sample_id: str,
     sample_update: TrainingSampleUpdate,
     db: Session = Depends(get_db),
-):
+) -> TrainingSample:
     """Update a training sample"""
     sample = (
         db.query(TrainingSample)
@@ -369,7 +372,9 @@ def update_sample(
 
 
 @router.delete("/{dataset_id}/samples/{sample_id}")
-def delete_sample(dataset_id: str, sample_id: str, db: Session = Depends(get_db)):
+def delete_sample(
+    dataset_id: str, sample_id: str, db: Session = Depends(get_db)
+) -> dict[str, str]:
     """Delete a training sample"""
     sample = (
         db.query(TrainingSample)
@@ -397,7 +402,7 @@ async def generate_synthetic_data(
     dataset_id: str,
     request: SyntheticDataRequest,
     db: Session = Depends(get_db),
-):
+) -> SyntheticDataResponse:
     """Generate synthetic training data for a dataset"""
     dataset = _get_dataset_or_404(db, dataset_id)
 
@@ -435,7 +440,7 @@ async def generate_synthetic_data(
         dataset_id=dataset_id,
         generated_count=len(created_samples),
         failed_count=failed_count,
-        samples=created_samples,
+        samples=[TrainingSampleResponse.model_validate(s) for s in created_samples],
         processing_time=(datetime.now(UTC) - start_time).total_seconds(),
     )
 
@@ -445,7 +450,7 @@ async def generate_synthetic_data(
 def import_dataset(
     request: DatasetImportRequest,
     db: Session = Depends(get_db),
-):
+) -> TrainingDataset:
     """Import a dataset from external data"""
     # Parse the import data (raises TrainingDataError on malformed input)
     samples = training_service.parse_import_data(request)
@@ -476,7 +481,7 @@ def export_dataset(
     dataset_id: str,
     request: DatasetExportRequest,
     db: Session = Depends(get_db),
-):
+) -> DatasetExportResponse:
     """Export a dataset in various formats"""
     dataset = _get_dataset_or_404(db, dataset_id)
 
@@ -485,9 +490,12 @@ def export_dataset(
     )
 
     if request.format == "json":
-        export_data = []
+        export_data: list[dict[str, Any]] = []
         for sample in samples:
-            item = {"input": sample.input_text, "output": sample.expected_output}
+            item: dict[str, Any] = {
+                "input": sample.input_text,
+                "output": sample.expected_output,
+            }
             if request.include_metadata and sample.extra_data:
                 try:
                     item["extra_data"] = json.loads(sample.extra_data)

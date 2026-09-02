@@ -37,13 +37,14 @@ class TrainingSampleResponse(TrainingSampleBase):
 
     @field_validator("extra_data", mode="before")
     @classmethod
-    def parse_extra_data(cls, v):
+    def parse_extra_data(cls, v: Any) -> dict[str, Any]:
         if isinstance(v, str) and v:
             try:
-                return json.loads(v)
+                loaded = json.loads(v)
             except json.JSONDecodeError:
                 return {}
-        return v or {}
+            return loaded if isinstance(loaded, dict) else {}
+        return dict(v) if isinstance(v, dict) else {}
 
     class Config:
         from_attributes = True

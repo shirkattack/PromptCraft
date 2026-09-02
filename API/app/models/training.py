@@ -1,5 +1,7 @@
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from datetime import datetime
+
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -8,33 +10,37 @@ from app.core.database import Base
 class TrainingDataset(Base):
     __tablename__ = "training_datasets"
 
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    sample_count = Column(Integer, default=0)
-    task_type = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_modified = Column(
+    id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sample_count: Mapped[int] = mapped_column(Integer, default=0)
+    task_type: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    last_modified: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    size = Column(String, nullable=True)
+    size: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    # Relationship to training samples
-    samples = relationship(
-        "TrainingSample", back_populates="dataset", cascade="all, delete-orphan"
+    samples: Mapped[list["TrainingSample"]] = relationship(
+        back_populates="dataset", cascade="all, delete-orphan"
     )
 
 
 class TrainingSample(Base):
     __tablename__ = "training_samples"
 
-    id = Column(String, primary_key=True, index=True)
-    dataset_id = Column(String, ForeignKey("training_datasets.id"), nullable=False)
-    input_text = Column(Text, nullable=False)
-    expected_output = Column(Text, nullable=False)
-    extra_data = Column(Text, nullable=True)  # JSON string for additional data
-    quality_score = Column(Float, default=0.0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    dataset_id: Mapped[str] = mapped_column(
+        String, ForeignKey("training_datasets.id"), nullable=False
+    )
+    input_text: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_output: Mapped[str] = mapped_column(Text, nullable=False)
+    extra_data: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON
+    quality_score: Mapped[float] = mapped_column(Float, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
-    # Relationship back to dataset
-    dataset = relationship("TrainingDataset", back_populates="samples")
+    dataset: Mapped["TrainingDataset"] = relationship(back_populates="samples")

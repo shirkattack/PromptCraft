@@ -23,7 +23,7 @@ class PromptOptimizationService:
         self.optimized_prompt = None
         # Bounded: this lives on a module-level singleton for the process
         # lifetime, so an unbounded list would grow without limit.
-        self.optimization_history: deque = deque(
+        self.optimization_history: deque[dict[str, Any]] = deque(
             maxlen=settings.optimization_history_size
         )
 
@@ -64,7 +64,7 @@ class PromptOptimizationService:
             no method produced a prompt that differs from the original.
         """
         start_time = datetime.now(UTC)
-        run_settings = {
+        run_settings: dict[str, Any] = {
             "temperature": (
                 settings.default_temperature if temperature is None else temperature
             ),
@@ -204,7 +204,7 @@ class PromptOptimizationService:
 
     def _run_optimization(
         self,
-        lm,
+        lm: dspy.LM,
         original_prompt: str,
         task_type: str,
         optimization_method: str,
@@ -266,7 +266,7 @@ class PromptOptimizationService:
         }
 
     def _optimize_with_meta_prompt(
-        self, original_prompt: str, task_type: str, lm, constraints: str = ""
+        self, original_prompt: str, task_type: str, lm: dspy.LM, constraints: str = ""
     ) -> dict[str, Any]:
         """Optimize using meta-prompt technique from Promptomatix."""
 
@@ -296,7 +296,7 @@ class PromptOptimizationService:
             )
 
     def _optimize_with_dspy(
-        self, original_prompt: str, task_type: str, lm, constraints: str = ""
+        self, original_prompt: str, task_type: str, lm: dspy.LM, constraints: str = ""
     ) -> dict[str, Any]:
         """Optimize using DSPy's ChainOfThought over an explicit rewrite signature."""
 
@@ -352,7 +352,7 @@ class PromptOptimizationService:
             }
 
     def _simple_optimization(
-        self, original_prompt: str, task_type: str, lm, constraints: str = ""
+        self, original_prompt: str, task_type: str, lm: dspy.LM, constraints: str = ""
     ) -> dict[str, Any]:
         """Simple optimization using direct LM completion."""
 
