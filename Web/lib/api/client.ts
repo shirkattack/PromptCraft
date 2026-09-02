@@ -101,6 +101,87 @@ export interface OllamaHealth {
   healthy: boolean
 }
 
+// Training data (GET/POST /training)
+
+export interface TrainingDatasetSummary {
+  id: string
+  name: string
+  description: string | null
+  task_type: string
+  sample_count: number
+  created_at: string
+  last_modified: string
+  size: string | null
+  /** Mean sample quality (0-1); null when the dataset has no samples. */
+  avg_quality_score: number | null
+}
+
+export interface TrainingSample {
+  id: string
+  dataset_id: string
+  input_text: string
+  expected_output: string
+  extra_data: Record<string, unknown> | null
+  quality_score: number | null
+  created_at: string
+}
+
+export interface TrainingDataset extends Omit<TrainingDatasetSummary, 'avg_quality_score'> {
+  samples: TrainingSample[] | null
+}
+
+export interface TaskTypeStats {
+  task_type: string
+  dataset_count: number
+  sample_count: number
+}
+
+export interface TrainingStats {
+  dataset_count: number
+  sample_count: number
+  by_task_type: TaskTypeStats[]
+  recent_datasets: TrainingDatasetSummary[]
+}
+
+export type DatasetFileFormat = 'json' | 'csv'
+
+export interface CreateDatasetRequest {
+  name: string
+  description?: string | null
+  task_type: string
+}
+
+export interface ImportDatasetRequest extends CreateDatasetRequest {
+  file_format: DatasetFileFormat
+  /** Raw JSON or CSV text. */
+  data: string
+}
+
+export interface ExportDatasetResponse {
+  dataset_name: string
+  format: DatasetFileFormat
+  data: string
+  sample_count: number
+  export_timestamp: string
+}
+
+export interface GenerateSamplesRequest {
+  sample_count: number
+  base_prompt: string
+  task_type: string
+  provider?: string
+  model?: string
+  creativity_level?: number
+}
+
+export interface GenerateSamplesResponse {
+  dataset_id: string
+  generated_count: number
+  failed_count: number
+  samples: TrainingSample[]
+  processing_time: number
+}
+
 export class APIError extends Error {
   constructor(
     public readonly status: number,
@@ -197,6 +278,53 @@ class APIClient {
 
   async getOllamaModels(): Promise<AIModel[]> {
     return this.request<AIModel[]>('/providers/ollama/models')
+  }
+
+  // Training data endpoints
+  async getDatasets(): Promise<TrainingDatasetSummary[]> {
+    return this.request<TrainingDatasetSummary[]>('/training/')
+  }
+
+  async getTrainingStats(recentLimit = 5): Promise<TrainingStats> {
+    return this.request<TrainingStats>(`/training/stats?recent_limit=${recentLimit}`)
+  }
+
+  async createDataset(data: CreateDatasetRequest): Promise<TrainingDataset> {
+    return this.request<TrainingDataset>('/training/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteDataset(datasetId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/training/${datasetId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getSamples(datasetId: string, limit = 50): Promise<TrainingSample[]> {
+    return this.request<TrainingSample[]>(`/training/${datasetId}/samples?limit=${limit}`)
+  }
+
+  async importDataset(data: ImportDatasetRequest): Promise<TrainingDataset> {
+    return this.request<TrainingDataset>('/training/import', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async exportDataset(datasetId: string, format: DatasetFileFormat = 'json'): Promise<ExportDatasetResponse> {
+    return this.request<ExportDatasetResponse>(`/training/${datasetId}/export`, {
+      method: 'POST',
+      body: JSON.stringify({ dataset_id: datasetId, format, include_metadata: true }),
+    })
+  }
+
+  async generateSamples(datasetId: string, data: GenerateSamplesRequest): Promise<GenerateSamplesResponse> {
+    return this.request<GenerateSamplesResponse>(`/training/${datasetId}/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ dataset_id: datasetId, ...data }),
+    })
   }
 
   // Analytics endpoints

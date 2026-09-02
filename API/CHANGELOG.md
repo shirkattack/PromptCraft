@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SQLite `PRAGMA foreign_keys=ON`, which SQLite otherwise ignores.
 - 54 tests covering the fixes above (24 -> 78 total): dataset counting, CSV
   round-trips, session optimize flows, provider degradation, and API key auth.
+- `GET /training/stats`: dataset and sample totals, a per-task-type breakdown
+  and the most recently modified datasets, counted from the sample rows.
+- `avg_quality_score` on dataset summaries (`GET /training/`), computed in one
+  aggregate query; datasets are now listed newest first.
 
 ### Changed
 - `DSPy` optimization now actually calls DSPy (a `ChainOfThought` over a

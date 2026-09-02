@@ -99,9 +99,26 @@ class TrainingDatasetSummary(BaseModel):
     created_at: datetime
     last_modified: datetime
     size: str | None
+    # Mean quality_score over the dataset's samples; null when it has none.
+    avg_quality_score: float | None = None
 
     class Config:
         from_attributes = True
+
+
+class TaskTypeStats(BaseModel):
+    task_type: str
+    dataset_count: int
+    sample_count: int
+
+
+class TrainingStatsResponse(BaseModel):
+    """Aggregate view of all training data, for dashboards."""
+
+    dataset_count: int
+    sample_count: int
+    by_task_type: list[TaskTypeStats]
+    recent_datasets: list[TrainingDatasetSummary]
 
 
 # Synthetic Data Generation

@@ -201,3 +201,73 @@ class TestImportExportRoundTrip:
             json={"dataset_id": dataset_id, "format": "parquet"},
         )
         assert response.status_code == 422
+
+
+class TestDatasetListing:
+    def test_list_reports_average_quality(self, client: TestClient, dataset_id: str):
+        for score in (0.2, 0.8):
+            response = client.post(
+                f"{BASE}/{dataset_id}/samples",
+                json={
+                    "input_text": "in",
+                    "expected_output": "out",
+                    "quality_score": score,
+                },
+            )
+            assert response.status_code == 200, response.text
+
+        rows = client.get(f"{BASE}/").json()
+        row = next(r for r in rows if r["id"] == dataset_id)
+        assert row["avg_quality_score"] == pytest.approx(0.5)
+
+    def test_empty_dataset_has_no_average(self, client: TestClient, dataset_id: str):
+        rows = client.get(f"{BASE}/").json()
+        row = next(r for r in rows if r["id"] == dataset_id)
+        assert row["avg_quality_score"] is None
+        assert row["sample_count"] == 0
+
+    def test_list_is_newest_first(self, client: TestClient):
+        first = client.post(f"{BASE}/", json={"name": "a", "task_type": "t"}).json()
+        second = client.post(f"{BASE}/", json={"name": "b", "task_type": "t"}).json()
+        # Touching the first dataset moves it back to the top.
+        _add_samples(client, first["id"], 1)
+
+        ids = [r["id"] for r in client.get(f"{BASE}/").json()]
+        assert ids.index(first["id"]) < ids.index(second["id"])
+
+
+class TestTrainingStats:
+    def test_empty_stats(self, client: TestClient):
+        response = client.get(f"{BASE}/stats")
+        assert response.status_code == 200, response.text
+        assert response.json() == {
+            "dataset_count": 0,
+            "sample_count": 0,
+            "by_task_type": [],
+            "recent_datasets": [],
+        }
+
+    def test_stats_count_real_rows(self, client: TestClient):
+        code = client.post(f"{BASE}/", json={"name": "c", "task_type": "code"}).json()
+        qa = client.post(f"{BASE}/", json={"name": "q", "task_type": "qa"}).json()
+        client.post(f"{BASE}/", json={"name": "q2", "task_type": "qa"})
+        _add_samples(client, code["id"], 3)
+        _add_samples(client, qa["id"], 1)
+
+        stats = client.get(f"{BASE}/stats", params={"recent_limit": 2}).json()
+
+        assert stats["dataset_count"] == 3
+        assert stats["sample_count"] == 4
+        assert stats["by_task_type"][0] == {
+            "task_type": "code",
+            "dataset_count": 1,
+            "sample_count": 3,
+        }
+        assert {t["task_type"] for t in stats["by_task_type"]} == {"code", "qa"}
+        assert len(stats["recent_datasets"]) == 2
+        assert "avg_quality_score" in stats["recent_datasets"][0]
+
+    def test_stats_route_is_not_shadowed_by_dataset_lookup(self, client: TestClient):
+        # "/stats" must not be treated as a dataset id.
+        assert client.get(f"{BASE}/stats").status_code == 200
+        assert client.get(f"{BASE}/definitely-missing").status_code == 404

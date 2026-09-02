@@ -214,6 +214,16 @@ Web/
 - `POST /api/v1/sessions/{id}/optimize` - Optimize prompt
 - `GET /api/v1/sessions/analytics/performance` - Performance metrics
 
+### Training Data
+- `GET /api/v1/training/` - List datasets (newest first, with average sample quality)
+- `GET /api/v1/training/stats` - Totals and per-task-type breakdown for dashboards
+- `POST /api/v1/training/` - Create a dataset
+- `POST /api/v1/training/import` - Import a dataset from JSON or CSV text
+- `POST /api/v1/training/{id}/export` - Export as JSON or CSV
+- `POST /api/v1/training/{id}/generate` - Generate synthetic samples with a local model
+- `GET /api/v1/training/{id}/samples` - List samples
+- `DELETE /api/v1/training/{id}` - Delete a dataset and its samples
+
 ### Providers
 - `GET /api/v1/providers/` - List AI providers and models
 - `GET /api/v1/providers/ollama/health` - Check Ollama status

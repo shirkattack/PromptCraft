@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods } from "@/lib/api/hooks"
+import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats } from "@/lib/api/hooks"
 import type { AIModel, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -60,13 +60,9 @@ const taskTypes = [
   { id: "translation", name: "Translation", icon: "🌐" },
 ]
 
-const mockTaskTypeData = [
-  { name: "Classification", value: 35, color: "#f97316" },
-  { name: "Generation", value: 25, color: "#fb923c" },
-  { name: "Summarization", value: 20, color: "#fdba74" },
-  { name: "Code", value: 15, color: "#fed7aa" },
-  { name: "Q&A", value: 5, color: "#ffedd5" },
-]
+const CHART_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5"]
+
+const taskTypeLabel = (id: string) => taskTypes.find((t) => t.id === id)?.name ?? id.charAt(0).toUpperCase() + id.slice(1)
 
 type MethodInfo = OptimizationMethodInfo
 
@@ -181,6 +177,7 @@ export function OptimizationDashboard() {
   const { data: ollamaHealth } = useOllamaHealth()
   const { createSession, optimizePrompt, loading: sessionLoading } = useSessionActions()
   const { data: performanceMetrics } = usePerformanceMetrics()
+  const { data: trainingStats } = useTrainingStats(3)
   const { data: optimizationMethods } = useOptimizationMethods()
 
   // Transform providers data to match component expectations
@@ -1250,51 +1247,64 @@ export function OptimizationDashboard() {
                 <Database className="w-4 h-4" />
                 Training Data Overview
               </CardTitle>
+              <CardDescription className="text-xs">Datasets stored locally, managed from the sidebar.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="space-y-1">
-                  <div className="font-sans font-bold text-2xl">12</div>
-                  <div className="text-xs text-muted-foreground">Available Datasets</div>
+                  <div className="font-sans font-bold text-2xl">{trainingStats?.dataset_count ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">Datasets</div>
                 </div>
                 <div className="space-y-1">
-                  <div className="font-sans font-bold text-2xl">1,847</div>
+                  <div className="font-sans font-bold text-2xl">
+                    {trainingStats ? trainingStats.sample_count.toLocaleString() : "—"}
+                  </div>
                   <div className="text-xs text-muted-foreground">Total Samples</div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="text-xs font-medium font-sans">Most Used Task Types</div>
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={mockTaskTypeData} cx="50%" cy="50%" innerRadius={20} outerRadius={50} dataKey="value">
-                        {mockTaskTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+              {trainingStats && trainingStats.sample_count > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-medium font-sans">Samples by Task Type</div>
+                  <div className="h-32">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={trainingStats.by_task_type.map((entry) => ({ name: taskTypeLabel(entry.task_type), value: entry.sample_count }))}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={20}
+                          outerRadius={50}
+                          dataKey="value"
+                          nameKey="name"
+                        >
+                          {trainingStats.by_task_type.map((entry, index) => (
+                            <Cell key={entry.task_type} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-2">
                 <div className="text-xs font-medium font-sans">Recent Datasets</div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-serif">Email Classification</span>
-                    <span className="text-muted-foreground">150 samples</span>
+                {trainingStats && trainingStats.recent_datasets.length > 0 ? (
+                  <div className="space-y-1">
+                    {trainingStats.recent_datasets.map((dataset) => (
+                      <div key={dataset.id} className="flex justify-between gap-2 text-xs">
+                        <span className="font-serif truncate" title={dataset.name}>{dataset.name}</span>
+                        <span className="text-muted-foreground shrink-0">{dataset.sample_count} samples</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="font-serif">Code Review Patterns</span>
-                    <span className="text-muted-foreground">203 samples</span>
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    No datasets yet. Generate or import one from the Training Data tab in the sidebar.
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="font-serif">Content Summarization</span>
-                    <span className="text-muted-foreground">89 samples</span>
-                  </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
