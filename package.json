@@ -8,14 +8,15 @@
     "install:api": "cd API && pip install -r requirements.txt",
     "dev:web": "cd Web && npm run dev",
     "dev:api": "cd API && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "concurrently -n api,web,links -c blue,magenta,green \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:links\"",
     "build:web": "cd Web && npm run build",
     "start:web": "cd Web && npm start",
     "start:api": "cd API && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
     "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
     "lint:web": "cd Web && npm run lint",
     "test:api": "cd API && python -m pytest tests/ -v",
-    "clean": "rm -rf Web/node_modules Web/.next API/__pycache__ API/**/__pycache__"
+    "clean": "rm -rf Web/node_modules Web/.next API/__pycache__ API/**/__pycache__",
+    "dev:links": "node scripts/dev-links.mjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
