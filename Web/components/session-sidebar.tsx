@@ -248,7 +248,7 @@ export function SessionSidebar() {
         totalOptimizations: performanceMetrics.total_optimizations,
         successfulOptimizations: successfulCount,
         avgImprovement: Math.round(performanceMetrics.average_improvement),
-        totalCostSaved: Math.round(performanceMetrics.cost_savings)
+        totalCostSaved: Math.round(performanceMetrics.cost_savings ?? 0)
       },
       recentActivity: sessions.slice(0, 5).map((session, index) => ({
         id: index + 1,
