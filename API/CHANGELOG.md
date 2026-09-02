@@ -51,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exceptions raised while handling another exception now chain with `from`.
 
 ### Added
+- **Background optimization**: `POST /sessions/{id}/optimize/start` returns 202
+  and a job snapshot; `GET /sessions/{id}/optimize/status` reports the stage,
+  a step counter, the best score so far, the full step history and, when done,
+  the same payload the synchronous route returns. One job per session at a
+  time (409 otherwise). The synchronous `POST /optimize` is unchanged; both
+  share one code path. Jobs are in-process, so the API must run as a single
+  worker, which is how `make dev` and the Makefile targets start it.
 - Per-exception HTTP status codes (503 for a down Ollama, 404, 422, 502, ...)
   instead of flattening every `PromptCraftException` to 400.
 - `available` / `unavailable_reason` on provider responses: OpenAI and Anthropic

@@ -213,7 +213,9 @@ Web/
 - `GET /api/v1/sessions/` - List all optimization sessions
 - `POST /api/v1/sessions/` - Create a new session
 - `GET /api/v1/sessions/{id}` - Get specific session
-- `POST /api/v1/sessions/{id}/optimize` - Optimize prompt (body: `optimization_method`, advanced settings, optional `dataset_id` + `eval_metric` + `max_demos` to measure against a dataset)
+- `POST /api/v1/sessions/{id}/optimize` - Optimize prompt and wait (body: `optimization_method`, advanced settings, optional `dataset_id` + `eval_metric` + `max_demos` to measure against a dataset)
+- `POST /api/v1/sessions/{id}/optimize/start` - Same body, returns 202 immediately; the web app uses this
+- `GET /api/v1/sessions/{id}/optimize/status` - Stage, progress, best score so far, and the result when finished
 - `GET /api/v1/sessions/analytics/performance` - Performance metrics
 
 ### Training Data
