@@ -511,3 +511,36 @@ class TestGepaEndpoint:
             json={"optimization_method": "gepa", "gepa_budget": 5},
         )
         assert response.status_code == 422
+
+
+class TestEvalStrategyOption:
+    def test_kfold_is_forwarded_to_the_service(
+        self, client: TestClient, session_id: str
+    ):
+        mock = AsyncMock(
+            return_value={
+                "optimized_prompt": "x",
+                "method": "simple",
+                "improvement_score": 1.0,
+                "score_type": "heuristic",
+                "processing_time": 0.1,
+                "metadata": {},
+                "success": True,
+            }
+        )
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=mock,
+        ):
+            response = client.post(
+                f"{BASE}/{session_id}/optimize",
+                json={"optimization_method": "simple", "eval_strategy": "kfold"},
+            )
+        assert response.status_code == 200
+        assert mock.call_args.kwargs["eval_strategy"] == "kfold"
+
+    def test_unknown_strategy_is_422(self, client: TestClient, session_id: str):
+        response = client.post(
+            f"{BASE}/{session_id}/optimize", json={"eval_strategy": "leave-one-out"}
+        )
+        assert response.status_code == 422

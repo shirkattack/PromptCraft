@@ -7,7 +7,13 @@ import dspy
 from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import settings
-from app.services.eval_service import DatasetOptimizer, EvalError, EvalMetric, Sample
+from app.services.eval_service import (
+    DatasetOptimizer,
+    EvalError,
+    EvalMetric,
+    EvalStrategy,
+    Sample,
+)
 from app.services.gepa_service import GepaOptimizer
 from app.services.lm_manager import LMManager
 from app.services.progress import ProgressCallback, no_progress
@@ -47,6 +53,7 @@ class PromptOptimizationService:
         progress: ProgressCallback = no_progress,
         gepa_budget: int = 60,
         reflection_model: str | None = None,
+        eval_strategy: EvalStrategy = "holdout",
     ) -> dict[str, Any]:
         """
         Optimize a prompt using the specified method and provider.
@@ -122,6 +129,7 @@ class PromptOptimizationService:
                 progress,
                 gepa_budget,
                 reflection_lm,
+                eval_strategy,
             )
         except EvalError:
             raise
@@ -242,6 +250,7 @@ class PromptOptimizationService:
         progress: ProgressCallback = no_progress,
         gepa_budget: int = 60,
         reflection_lm: dspy.LM | None = None,
+        eval_strategy: EvalStrategy = "holdout",
     ) -> dict[str, Any]:
         """Run the selected optimization strategy. Executed in a worker thread.
 
@@ -283,6 +292,7 @@ class PromptOptimizationService:
                 eval_metric,
                 max_demos,
                 progress,
+                eval_strategy,
             )
 
     @staticmethod
@@ -322,6 +332,7 @@ class PromptOptimizationService:
         eval_metric: EvalMetric,
         max_demos: int,
         progress: ProgressCallback = no_progress,
+        eval_strategy: EvalStrategy = "holdout",
     ) -> dict[str, Any]:
         """Measure the rewrite on the dataset and return the best candidate.
 
@@ -330,7 +341,11 @@ class PromptOptimizationService:
         higher.
         """
         optimizer = DatasetOptimizer(
-            samples, metric=eval_metric, max_demos=max_demos, progress=progress
+            samples,
+            metric=eval_metric,
+            max_demos=max_demos,
+            progress=progress,
+            strategy=eval_strategy,
         )
         report = optimizer.run(original_prompt, rewrite["optimized_prompt"])
 

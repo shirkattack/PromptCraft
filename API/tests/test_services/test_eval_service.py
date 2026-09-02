@@ -183,3 +183,141 @@ class TestDatasetOptimizer:
     def test_empty_dataset_rejected(self):
         with pytest.raises(EvalError):
             DatasetOptimizer([])
+
+
+from app.services.eval_service import (  # noqa: E402
+    describe_split,
+    is_label_dataset,
+    label_counts,
+    make_folds,
+    stratified_order,
+)
+
+LABELLED = [
+    Sample("a1", "high"),
+    Sample("a2", "high"),
+    Sample("a3", "high"),
+    Sample("a4", "high"),
+    Sample("b1", "medium"),
+    Sample("b2", "medium"),
+    Sample("b3", "medium"),
+    Sample("c1", "low"),
+    Sample("c2", "low"),
+    Sample("c3", "low"),
+]
+
+
+class TestStratification:
+    def test_label_detection(self):
+        assert is_label_dataset(LABELLED)
+        assert not is_label_dataset([Sample("q", "A long free-text answer " * 5)] * 4)
+        assert not is_label_dataset(
+            [Sample("q", "same")] * 4
+        )  # one class is not a label task
+        assert not is_label_dataset(
+            [Sample(f"q{i}", f"answer {i}") for i in range(6)]
+        )  # all distinct
+
+    def test_stratified_order_interleaves_classes(self):
+        order, stratified = stratified_order(LABELLED, seed=1)
+        assert stratified
+        assert {s.input_text for s in order} == {s.input_text for s in LABELLED}
+        first_three = [normalize(s.expected_output) for s in order[:3]]
+        assert set(first_three) == {"high", "medium", "low"}
+
+    def test_holdout_dev_covers_classes(self):
+        train, dev = split_samples(LABELLED, 0.7, max_train=40, max_dev=20, seed=3)
+        assert len(dev) == 3
+        assert set(label_counts(dev)) == {"high", "medium", "low"}
+        assert len(train) + len(dev) == len(LABELLED)
+
+    def test_unstratified_split_is_plain_shuffle(self):
+        train, dev = split_samples(LABELLED, 0.7, 40, 20, seed=3, stratify=False)
+        assert len(train) + len(dev) == len(LABELLED)
+
+    def test_folds_are_disjoint_balanced_and_cover_everything(self):
+        folds = make_folds(LABELLED, folds=5, seed=2)
+        assert len(folds) == 5
+        seen = [s.input_text for fold in folds for s in fold]
+        assert sorted(seen) == sorted(s.input_text for s in LABELLED)
+        assert all(len(fold) == 2 for fold in folds)
+        # Round-robin over a class-interleaved order keeps folds mixed.
+        assert all(
+            len({normalize(s.expected_output) for s in fold}) == 2 for fold in folds
+        )
+
+    def test_folds_capped_by_sample_count(self):
+        assert len(make_folds(SAMPLES[:3], folds=5, seed=1)) == 3
+        with pytest.raises(EvalError):
+            make_folds(SAMPLES[:1], folds=5, seed=1)
+
+    def test_describe_split(self):
+        train, dev = split_samples(LABELLED, 0.7, 40, 20, seed=3)
+        info = describe_split(LABELLED, train, dev, "holdout")
+        assert info["strategy"] == "holdout" and info["stratified"] is True
+        assert info["labels"] == {"high": 4, "low": 3, "medium": 3}
+        assert info["dev_size"] == 3 and sum(info["dev_labels"].values()) == 3
+
+
+KFOLD_ANSWERS = {
+    "a1": {"output": "high"},
+    "a2": {"output": "high"},
+    "a3": {"output": "wrong"},
+    "a4": {"output": "high"},
+    "b1": {"output": "medium"},
+    "b2": {"output": "nope"},
+    "b3": {"output": "medium"},
+    "c1": {"output": "low"},
+    "c2": {"output": "low"},
+    "c3": {"output": "low"},
+}
+
+
+class TestKFold:
+    def test_every_sample_is_scored_once_and_winner_is_refit(self):
+        updates = []
+
+        def progress(stage, message="", *, current=None, total=None, best_score=None):
+            updates.append((message, current, total))
+
+        with dspy.context(lm=DummyLM(KFOLD_ANSWERS)):
+            optimizer = DatasetOptimizer(
+                LABELLED,
+                metric="exact",
+                max_demos=2,
+                strategy="kfold",
+                progress=progress,
+            )
+            report = optimizer.run("Classify.", "Classify the ticket.")
+
+        assert report["split"]["strategy"] == "kfold"
+        assert report["split"]["folds"] == 5
+        assert report["dev_size"] == len(LABELLED)
+        assert len(report["baseline_results"]) == len(LABELLED)
+        assert len(report["results"]) == len(LABELLED)
+        # 8 of 10 canned answers are right, whatever the prompt: 80% for every candidate.
+        assert report["baseline_score"] == 80.0
+        assert all(c["score"] == 80.0 for c in report["candidates"])
+        assert report["best"] == "rewritten"  # tie -> simplest candidate
+        assert report["optimized_prompt"].endswith("Input: {input}\nOutput:")
+        assert updates[-1][0] == "Cross-validation complete"
+        assert updates[0][2] == 5 * 4 + 1  # folds x candidates + final fit
+
+    def test_kfold_refits_few_shot_winner_on_all_samples(self):
+        # The rewrite is identical to the original, so only few-shot candidates compete.
+        with dspy.context(lm=DummyLM(KFOLD_ANSWERS)):
+            report = DatasetOptimizer(
+                LABELLED, metric="exact", max_demos=3, strategy="kfold"
+            ).run("Classify.", "Classify.")
+
+        assert report["best"] == "original_fewshot"
+        assert 1 <= len(report["demos"]) <= 3
+        assert "Examples:" in report["optimized_prompt"]
+        best = next(c for c in report["candidates"] if c["name"] == "original_fewshot")
+        assert best["demo_count"] == len(report["demos"])
+
+    def test_holdout_report_carries_split_info(self):
+        with dspy.context(lm=DummyLM(KFOLD_ANSWERS)):
+            report = DatasetOptimizer(LABELLED, metric="exact").run("Classify.", None)
+        assert report["split"]["strategy"] == "holdout"
+        assert report["split"]["stratified"] is True

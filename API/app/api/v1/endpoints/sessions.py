@@ -320,6 +320,7 @@ async def _run_optimization(
             progress=progress,
             gepa_budget=options.gepa_budget,
             reflection_model=options.reflection_model,
+            eval_strategy=options.eval_strategy,
         )
     except EvalError as e:
         session.status = SessionStatus.FAILED

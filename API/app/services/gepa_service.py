@@ -32,6 +32,7 @@ from app.services.eval_service import (
     EvalMetric,
     Sample,
     choose_metric,
+    describe_split,
     normalize,
     render_prompt,
     split_samples,
@@ -487,6 +488,7 @@ class GepaOptimizer:
             "baseline_results": baseline_rows,
             "results": final_rows if improved else baseline_rows,
             "instructions": chosen_instructions,
+            "split": describe_split(self.samples, self.train, self.dev, "holdout"),
         }
 
         return {

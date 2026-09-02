@@ -60,6 +60,7 @@ class OptimizationSessionUpdate(BaseModel):
 OutputFormat = Literal["auto", "markdown", "plain", "json"]
 TargetLength = Literal["auto", "concise", "balanced", "detailed"]
 EvalMetric = Literal["auto", "exact", "contains", "llm_judge"]
+EvalStrategy = Literal["holdout", "kfold"]
 
 
 class OptimizeRequest(BaseModel):
@@ -83,6 +84,10 @@ class OptimizeRequest(BaseModel):
     dataset_id: str | None = None
     eval_metric: EvalMetric = "auto"
     max_demos: int = Field(default=4, ge=1, le=8)
+    # holdout: score on a held-out split (fast). kfold: every sample is held
+    # out once, so small datasets get a finer score at k times the cost. GEPA
+    # always uses a stratified hold-out split.
+    eval_strategy: EvalStrategy = "holdout"
     # GEPA only: how many scored model calls the evolution may spend, and
     # which model writes the new instructions (defaults to the task model).
     gepa_budget: int = Field(default=60, ge=10, le=500)
