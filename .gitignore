@@ -1,40 +1,47 @@
-# Python
+# ---------------------------------------------------------------------------
+# Python (API/)
+#
+# Directory patterns are anchored to API/ on purpose. Unanchored rules such as
+# `lib/` or `build/` match at any depth, and silently excluded Web/lib/ (the
+# entire frontend API client) from the repository.
+# ---------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
-*.manifest
-*.spec
+API/.Python
+API/build/
+API/develop-eggs/
+API/dist/
+API/downloads/
+API/eggs/
+API/.eggs/
+API/lib/
+API/lib64/
+API/parts/
+API/sdist/
+API/var/
+API/wheels/
+API/share/python-wheels/
+API/pip-wheel-metadata/
+API/.installed.cfg
+API/MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Python tooling caches
 .pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
 .tox/
 .nox/
-.hypothesis/
+.coverage
+.coverage.*
 *.cover
-*.log
+htmlcov/
 
 # Virtual environments
 venv/
@@ -53,34 +60,33 @@ venv.bak/
 *.db
 *.sqlite
 *.sqlite3
-app.db
 
-# Node.js
+# ---------------------------------------------------------------------------
+# Node.js / Next.js (Web/ and the root convenience scripts)
+#
+# package-lock.json is committed: it is what makes `npm ci` possible and keeps
+# installs reproducible.
+# ---------------------------------------------------------------------------
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
-package-lock.json
-
-# Next.js
 .next/
 out/
 next-env.d.ts
+*.tsbuildinfo
 .vercel
-
-# Testing
 coverage/
 .nyc_output
 
-# IDEs and Editors
+# IDEs and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
 *.sublime-workspace
 *.sublime-project
 
@@ -96,9 +102,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # Misc
 .cache/
