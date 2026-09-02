@@ -50,17 +50,16 @@ class TestProviderCatalogue:
         assert providers["ollama"]["available"] is False
         assert providers["ollama"]["unavailable_reason"]
 
-    def test_undrivable_providers_are_flagged(self, client: TestClient):
-        """Only Ollama has an LM adapter, so the rest must not look selectable."""
+    def test_only_ollama_is_listed(self, client: TestClient):
+        """Hosted providers were listed as placeholders; nothing can drive them."""
         with patch(
             "app.api.v1.endpoints.providers.ollama_service.list_models",
             new=AsyncMock(return_value=[FAKE_MODEL]),
         ):
             providers = _by_id(client.get(f"{BASE}/").json())
 
-        assert providers["openai"]["available"] is False
-        assert providers["anthropic"]["available"] is False
-        assert providers["openai"]["unavailable_reason"]
+        assert set(providers) == {"ollama"}
+        assert providers["ollama"]["available"] is True
 
     def test_health_reports_unavailable_without_ollama(self, client: TestClient):
         with patch(

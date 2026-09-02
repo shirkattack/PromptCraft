@@ -363,23 +363,16 @@ cd Web && npm install --legacy-peer-deps
 
 #### Backend (.env in API/)
 ```env
-# Required for optimization
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Optional providers
-GOOGLE_API_KEY=AIza...
-COHERE_API_KEY=...
-
-# Ollama (if using local models)
+# Ollama (the only provider this build drives; no API keys needed)
 OLLAMA_BASE_URL=http://localhost:11434
+DEFAULT_MODEL_NAME=llama3.2:latest
 
 # Application settings
 DATABASE_URL=sqlite:///./app.db
 LOG_LEVEL=INFO
-API_HOST=127.0.0.1
-API_PORT=8000
 ```
+
+See `API/.env.example` for the full list, including optional API-key auth and the evaluation caps.
 
 #### Frontend
 No environment variables required for basic functionality.

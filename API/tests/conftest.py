@@ -70,8 +70,8 @@ def sample_optimization_session():
     return {
         "name": "Test Session",
         "original_prompt": "Write a hello world program",
-        "provider": "openai",
-        "model": "gpt-3.5-turbo",
+        "provider": "ollama",
+        "model": "llama3.2:latest",
         "task_type": "code",
     }
 
