@@ -6,7 +6,7 @@ This script tests the core prompt optimization functionality
 by making direct API calls to verify everything works.
 """
 
-import requests
+import httpx
 import json
 import time
 import sys
@@ -35,7 +35,7 @@ TEST_PROMPTS = [
 class PromptCraftTester:
     def __init__(self, base_url: str = API_BASE):
         self.base_url = base_url
-        self.session = requests.Session()
+        self.session = httpx.Client()
         self.test_results = []
     
     def log(self, message: str, level: str = "INFO"):
@@ -130,26 +130,31 @@ class PromptCraftTester:
             
             response = self.session.post(
                 f"{self.base_url}/api/v1/sessions/{session_id}/optimize",
-                json=optimization_data,
+                params=optimization_data,  # the backend reads this from the query string
                 timeout=60  # Longer timeout for optimization
             )
             
             duration = time.time() - start_time
             
             if response.status_code == 200:
-                result = response.json()
-                success = result.get('success', False)
-                improvement_score = result.get('improvement_score', 0)
-                
+                # The endpoint returns {"message", "session", "optimization_details"};
+                # a failed run is a non-200 response, never a 200 with success=false.
+                payload = response.json()
+                session = payload.get('session', {})
+                details = payload.get('optimization_details', {})
+                result = {
+                    "success": True,
+                    "improvement_score": details.get('improvement_score', 0),
+                    "processing_time": details.get('processing_time', 0),
+                    "original_prompt": session.get('original_prompt', ''),
+                    "optimized_prompt": session.get('optimized_prompt') or '',
+                }
+
                 self.log(f"Optimization completed in {duration:.2f}s")
-                self.log(f"Success: {success}, Improvement Score: {improvement_score}")
-                
-                if success:
-                    original = result.get('original_prompt', '')[:50] + "..."
-                    optimized = result.get('optimized_prompt', '')[:50] + "..."
-                    self.log(f"Original: {original}")
-                    self.log(f"Optimized: {optimized}")
-                
+                self.log(f"Improvement Score: {result['improvement_score']}")
+                self.log(f"Original: {result['original_prompt'][:50]}...")
+                self.log(f"Optimized: {result['optimized_prompt'][:50]}...")
+
                 return result
             else:
                 self.log(f"Optimization failed: {response.status_code} - {response.text}", "ERROR")
@@ -261,12 +266,12 @@ def main():
     
     # Check if API server is likely running
     try:
-        response = requests.get(f"{API_BASE}/health", timeout=2)
+        response = httpx.get(f"{API_BASE}/health", timeout=2)
         if response.status_code != 200:
             print("❌ API server doesn't seem to be running.")
             print("Please start it with: cd API && make dev")
             sys.exit(1)
-    except requests.exceptions.RequestException:
+    except httpx.HTTPError:
         print("❌ Cannot connect to API server.")
         print("Please start it with: cd API && make dev")
         sys.exit(1)

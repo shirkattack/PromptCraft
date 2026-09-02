@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions } from "@/lib/api/hooks"
+import type { AIModel } from "@/lib/api/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -292,7 +293,23 @@ const apiStatus = {
   Ollama: { connected: true, quota: "N/A", lastTest: "Connected", ping: "12ms" },
 }
 
-const getCurrentModel = (providerData, selectedProvider, selectedModel) => {
+interface ProviderView {
+  id: string
+  name: string
+  models: AIModel[]
+  available: boolean
+  unavailableReason: string | null
+  icon: string
+}
+
+interface ApiStatus {
+  connected: boolean
+  quota: string
+  lastTest: string
+  ping?: string
+}
+
+const getCurrentModel = (providerData: Record<string, ProviderView>, selectedProvider: string, selectedModel: string) => {
   return providerData[selectedProvider]?.models.find((model) => model.id === selectedModel)
 }
 
@@ -312,12 +329,14 @@ export function OptimizationDashboard() {
 
   // Transform providers data to match component expectations
   const providerData = useMemo(() => {
-    if (!providers) return {}
-    return providers.reduce((acc, provider) => {
+    if (!providers) return {} as Record<string, ProviderView>
+    return providers.reduce<Record<string, ProviderView>>((acc, provider) => {
       acc[provider.name] = {
         id: provider.id,
         name: provider.name,
         models: provider.models,
+        available: provider.available,
+        unavailableReason: provider.unavailable_reason,
         icon: provider.id === 'ollama' ? '🦙' : provider.id === 'openai' ? '🤖' : provider.id === 'anthropic' ? '🧠' : '⚡'
       }
       return acc
@@ -326,10 +345,10 @@ export function OptimizationDashboard() {
 
   // Create API status based on real provider data
   const apiStatus = useMemo(() => {
-    if (!providers) return {}
-    
-    return providers.reduce((acc, provider) => {
-      const status = {
+    if (!providers) return {} as Record<string, ApiStatus>
+
+    return providers.reduce<Record<string, ApiStatus>>((acc, provider) => {
+      const status: ApiStatus = {
         connected: provider.models.length > 0,
         quota: provider.id === 'ollama' ? 'N/A' : '75%',
         lastTest: provider.models.length > 0 ? '1 min ago' : 'Never'
@@ -854,7 +873,7 @@ export function OptimizationDashboard() {
                         </SelectItem>
                       )}
                       {!providersLoading && !providersError && Object.entries(providerData).map(([provider, data]) => (
-                        <SelectItem key={provider} value={provider} disabled={provider !== "Ollama" && !isOnline}>
+                        <SelectItem key={provider} value={provider} disabled={!data.available || (provider !== "Ollama" && !isOnline)}>
                           <div className="flex items-center gap-2">
                             <span className="text-lg">{data.icon}</span>
                             <span className="font-sans">{provider}</span>
@@ -863,7 +882,12 @@ export function OptimizationDashboard() {
                                 FREE
                               </Badge>
                             )}
-                            {provider !== "Ollama" && !isOnline && (
+                            {!data.available && (
+                              <Badge variant="outline" className="text-xs text-muted-foreground" title={data.unavailableReason ?? undefined}>
+                                UNAVAILABLE
+                              </Badge>
+                            )}
+                            {data.available && provider !== "Ollama" && !isOnline && (
                               <Badge variant="outline" className="text-xs text-muted-foreground">
                                 OFFLINE
                               </Badge>
