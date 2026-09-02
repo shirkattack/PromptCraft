@@ -211,7 +211,7 @@ Web/
 - `GET /api/v1/sessions/` - List all optimization sessions
 - `POST /api/v1/sessions/` - Create a new session
 - `GET /api/v1/sessions/{id}` - Get specific session
-- `POST /api/v1/sessions/{id}/optimize` - Optimize prompt
+- `POST /api/v1/sessions/{id}/optimize` - Optimize prompt (body: `optimization_method`, advanced settings, optional `dataset_id` + `eval_metric` + `max_demos` to measure against a dataset)
 - `GET /api/v1/sessions/analytics/performance` - Performance metrics
 
 ### Training Data
@@ -271,6 +271,18 @@ The application supports multiple optimization techniques:
 - **Meta-Prompt**: Uses meta-prompting for prompt improvement
 - **DSPy**: Systematic prompt optimization using DSPy framework
 - **Simple**: Basic prompt enhancement using direct LM feedback
+
+### Measuring a prompt against a dataset
+
+Pick a training dataset when optimizing and the score stops being a heuristic. The dataset is split into train and held-out samples; the original prompt, the rewrite, and few-shot versions of each (examples selected by DSPy's `BootstrapFewShot` on the train split) are all scored on the held-out samples with the chosen metric (`exact`, `contains`, or a model judge; `auto` picks by answer length). The best candidate is returned as a plain-text prompt with a `{input}` placeholder, alongside the full scoreboard and per-sample results. Each candidate costs roughly one model call per held-out sample, so a 10-sample dataset on a local 3B model takes about 20 seconds.
+
+### Database migrations
+
+The schema is managed with Alembic. The API applies pending migrations on startup, so an existing `app.db` is upgraded in place; to run them by hand:
+
+```bash
+cd API && alembic upgrade head
+```
 
 ## 🔧 DSPy Integration
 

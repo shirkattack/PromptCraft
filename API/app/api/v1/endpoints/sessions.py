@@ -8,6 +8,7 @@ from app.core.auth import verify_api_key
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.optimization import OptimizationSession, SessionStatus
+from app.models.training import TrainingDataset, TrainingSample
 from app.schemas.optimization import (
     OptimizationSessionCreate,
     OptimizationSessionResponse,
@@ -15,11 +16,37 @@ from app.schemas.optimization import (
     OptimizeRequest,
     PerformanceMetrics,
 )
+from app.services.eval_service import EvalError, Sample
 from app.services.optimization_service import optimization_service
 
 router = APIRouter(dependencies=[Depends(verify_api_key)])
 
 OPTIMIZATION_METHODS = {"meta_prompt", "dspy", "simple"}
+
+
+def _load_dataset_samples(db: Session, dataset_id: str) -> list[Sample]:
+    """Samples of a dataset for evaluation; 404 if missing, 422 if too small."""
+    if (
+        not db.query(TrainingDataset.id)
+        .filter(TrainingDataset.id == dataset_id)
+        .first()
+    ):
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    rows = (
+        db.query(TrainingSample.input_text, TrainingSample.expected_output)
+        .filter(TrainingSample.dataset_id == dataset_id)
+        .order_by(TrainingSample.created_at, TrainingSample.id)
+        .limit(settings.eval_max_train_samples + settings.eval_max_dev_samples)
+        .all()
+    )
+    samples = [Sample(input_text, expected) for input_text, expected in rows]
+    if len(samples) < 2:
+        raise HTTPException(
+            status_code=422,
+            detail="The dataset needs at least 2 samples to evaluate a prompt against",
+        )
+    return samples
 
 
 def _get_session_or_404(db: Session, session_id: str) -> OptimizationSession:
@@ -146,10 +173,15 @@ def get_performance_metrics(db: Session = Depends(get_db)):
     )
     completed_count, average_improvement = completed[0] or 0, completed[1] or 0.0
 
-    # Only optimizations handled by this process have a recorded duration; the
-    # database has no processing_time column yet.
-    history = optimization_service.get_optimization_history()
-    total_processing_time = sum(entry.get("processing_time", 0.0) for entry in history)
+    # Sessions from before processing_time was stored contribute nothing.
+    timed_count, total_processing_time = (
+        db.query(
+            func.count(OptimizationSession.processing_time),
+            func.sum(OptimizationSession.processing_time),
+        )
+        .filter(OptimizationSession.processing_time.isnot(None))
+        .one()
+    )
 
     return PerformanceMetrics(
         total_optimizations=total_optimizations,
@@ -159,7 +191,7 @@ def get_performance_metrics(db: Session = Depends(get_db)):
             if total_optimizations
             else 0.0
         ),
-        total_processing_time=total_processing_time if history else None,
+        total_processing_time=(float(total_processing_time) if timed_count else None),
         cost_savings=None,  # Not tracked: local Ollama runs have no billed cost.
     )
 
@@ -217,9 +249,14 @@ async def optimize_prompt(
         )
 
     session = _get_session_or_404(db, session_id)
+    dataset_samples = (
+        _load_dataset_samples(db, options.dataset_id) if options.dataset_id else None
+    )
 
     # Update session status to running
     session.status = SessionStatus.RUNNING
+    session.optimization_method = method
+    session.dataset_id = options.dataset_id
     db.commit()
 
     try:
@@ -234,7 +271,14 @@ async def optimize_prompt(
             output_format=options.output_format,
             target_length=options.target_length,
             preserve_wording=options.preserve_wording,
+            dataset_samples=dataset_samples,
+            eval_metric=options.eval_metric,
+            max_demos=options.max_demos,
         )
+    except EvalError as e:
+        session.status = SessionStatus.FAILED
+        db.commit()
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         session.status = SessionStatus.FAILED
         db.commit()
@@ -252,6 +296,11 @@ async def optimize_prompt(
 
     session.optimized_prompt = optimization_result["optimized_prompt"]
     session.performance_score = optimization_result["improvement_score"]
+    session.processing_time = optimization_result["processing_time"]
+    session.baseline_score = optimization_result.get("baseline_score")
+    session.eval_score = optimization_result.get("eval_score")
+    session.eval_metric = optimization_result.get("eval_metric")
+    session.eval_sample_count = optimization_result.get("eval_sample_count")
     session.status = SessionStatus.COMPLETED
 
     db.commit()
@@ -263,6 +312,7 @@ async def optimize_prompt(
         "optimization_details": {
             "method": optimization_result["method"],
             "improvement_score": optimization_result["improvement_score"],
+            "score_type": optimization_result.get("score_type", "heuristic"),
             "processing_time": optimization_result["processing_time"],
             "metadata": optimization_result.get("metadata", {}),
         },

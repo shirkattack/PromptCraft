@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     default_max_tokens: int = 1000
     default_synthetic_data_size: int = 10
     default_train_ratio: float = 0.8
+    # Dataset-driven optimization: caps on how many samples are used so a
+    # large dataset does not turn one request into hundreds of local model calls.
+    eval_max_train_samples: int = 40
+    eval_max_dev_samples: int = 20
+    eval_max_demos: int = 8
 
     # Ollama-specific settings
     ollama_timeout: int = 120  # Longer timeout for local models

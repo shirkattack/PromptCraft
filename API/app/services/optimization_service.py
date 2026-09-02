@@ -7,6 +7,7 @@ import dspy
 from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import settings
+from app.services.eval_service import DatasetOptimizer, EvalMetric, Sample
 from app.services.lm_manager import LMManager
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ class PromptOptimizationService:
         output_format: str = "auto",
         target_length: str = "auto",
         preserve_wording: bool = False,
+        dataset_samples: list[Sample] | None = None,
+        eval_metric: EvalMetric = "auto",
+        max_demos: int = 4,
     ) -> dict[str, Any]:
         """
         Optimize a prompt using the specified method and provider.
@@ -48,6 +52,12 @@ class PromptOptimizationService:
             model: Model name
             task_type: Type of task (general, code, creative, etc.)
             optimization_method: Method to use (meta_prompt, dspy, simple)
+            dataset_samples: When given, the rewrite is measured against these
+                (input, expected output) pairs and few-shot variants are
+                compiled with DSPy; the best candidate on held-out samples is
+                returned and ``improvement_score`` is that measured score.
+            eval_metric: How a model answer is compared with the expected one.
+            max_demos: Cap on few-shot examples per compiled candidate.
 
         Returns:
             Dictionary containing optimization results. ``success`` is False when
@@ -84,6 +94,9 @@ class PromptOptimizationService:
                 task_type,
                 optimization_method,
                 constraints,
+                dataset_samples,
+                eval_metric,
+                max_demos,
             )
         except Exception as e:
             logger.error(f"Optimization failed: {e}")
@@ -110,9 +123,30 @@ class PromptOptimizationService:
             )
 
         processing_time = (datetime.now(UTC) - start_time).total_seconds()
-        improvement_score = self._calculate_improvement_score(
-            original_prompt, result["optimized_prompt"]
-        )
+        evaluation = result.get("metadata", {}).get("eval")
+
+        if evaluation:
+            # Measured: percentage of held-out samples the metric accepted.
+            improvement_score = float(evaluation["eval_score"])
+            score_breakdown = [
+                {
+                    "label": (
+                        f"Measured on {evaluation['dev_size']} held-out samples "
+                        f"({evaluation['metric']} metric)"
+                    ),
+                    "points": improvement_score,
+                    "applied": True,
+                }
+            ]
+            score_type = "measured"
+        else:
+            improvement_score = self._calculate_improvement_score(
+                original_prompt, result["optimized_prompt"]
+            )
+            score_breakdown = self._score_breakdown(
+                original_prompt, result["optimized_prompt"]
+            )
+            score_type = "heuristic"
 
         optimization_result = {
             "original_prompt": original_prompt,
@@ -122,13 +156,17 @@ class PromptOptimizationService:
             "model": model,
             "task_type": task_type,
             "improvement_score": improvement_score,
+            "score_type": score_type,
+            "baseline_score": evaluation["baseline_score"] if evaluation else None,
+            "eval_score": evaluation["eval_score"] if evaluation else None,
+            "eval_metric": evaluation["metric"] if evaluation else None,
+            "eval_sample_count": evaluation["dev_size"] if evaluation else None,
             "processing_time": processing_time,
             "metadata": {
                 **result.get("metadata", {}),
                 "settings": run_settings,
-                "score_breakdown": self._score_breakdown(
-                    original_prompt, result["optimized_prompt"]
-                ),
+                "score_type": score_type,
+                "score_breakdown": score_breakdown,
             },
             "success": True,
             "timestamp": datetime.now(UTC).isoformat(),
@@ -171,6 +209,9 @@ class PromptOptimizationService:
         task_type: str,
         optimization_method: str,
         constraints: str = "",
+        dataset_samples: list[Sample] | None = None,
+        eval_metric: EvalMetric = "auto",
+        max_demos: int = 4,
     ) -> dict[str, Any]:
         """Run the selected optimization strategy. Executed in a worker thread.
 
@@ -179,16 +220,50 @@ class PromptOptimizationService:
         """
         with dspy.context(lm=lm):
             if optimization_method == "meta_prompt":
-                return self._optimize_with_meta_prompt(
+                result = self._optimize_with_meta_prompt(
                     original_prompt, task_type, lm, constraints
                 )
-            if optimization_method == "dspy":
-                return self._optimize_with_dspy(
+            elif optimization_method == "dspy":
+                result = self._optimize_with_dspy(
                     original_prompt, task_type, lm, constraints
                 )
-            return self._simple_optimization(
-                original_prompt, task_type, lm, constraints
+            else:
+                result = self._simple_optimization(
+                    original_prompt, task_type, lm, constraints
+                )
+
+            if not dataset_samples or result.get("metadata", {}).get("error"):
+                return result
+
+            return self._optimize_against_dataset(
+                original_prompt, result, dataset_samples, eval_metric, max_demos
             )
+
+    @staticmethod
+    def _optimize_against_dataset(
+        original_prompt: str,
+        rewrite: dict[str, Any],
+        samples: list[Sample],
+        eval_metric: EvalMetric,
+        max_demos: int,
+    ) -> dict[str, Any]:
+        """Measure the rewrite on the dataset and return the best candidate.
+
+        The rewrite is kept in ``metadata["rewrite"]`` so the client can still
+        show it even when a few-shot variant of the original prompt scored
+        higher.
+        """
+        optimizer = DatasetOptimizer(samples, metric=eval_metric, max_demos=max_demos)
+        report = optimizer.run(original_prompt, rewrite["optimized_prompt"])
+
+        return {
+            "optimized_prompt": report.pop("optimized_prompt"),
+            "metadata": {
+                **rewrite.get("metadata", {}),
+                "rewrite": rewrite["optimized_prompt"],
+                "eval": report,
+            },
+        }
 
     def _optimize_with_meta_prompt(
         self, original_prompt: str, task_type: str, lm, constraints: str = ""

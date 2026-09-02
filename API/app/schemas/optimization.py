@@ -59,6 +59,7 @@ class OptimizationSessionUpdate(BaseModel):
 
 OutputFormat = Literal["auto", "markdown", "plain", "json"]
 TargetLength = Literal["auto", "concise", "balanced", "detailed"]
+EvalMetric = Literal["auto", "exact", "contains", "llm_judge"]
 
 
 class OptimizeRequest(BaseModel):
@@ -74,6 +75,12 @@ class OptimizeRequest(BaseModel):
     output_format: OutputFormat = "auto"
     target_length: TargetLength = "auto"
     preserve_wording: bool = False
+    # Measure against a training dataset. When set, few-shot candidates are
+    # compiled with DSPy and the returned prompt is the one that scored best on
+    # held-out samples; performance_score becomes that measured score.
+    dataset_id: str | None = None
+    eval_metric: EvalMetric = "auto"
+    max_demos: int = Field(default=4, ge=1, le=8)
 
 
 class OptimizationSessionResponse(OptimizationSessionBase):
@@ -82,6 +89,14 @@ class OptimizationSessionResponse(OptimizationSessionBase):
     performance_score: float
     created_at: datetime
     status: SessionStatus
+    optimization_method: str | None = None
+    processing_time: float | None = None
+    # Present only for runs measured against a dataset.
+    dataset_id: str | None = None
+    baseline_score: float | None = None
+    eval_score: float | None = None
+    eval_metric: str | None = None
+    eval_sample_count: int | None = None
 
     class Config:
         from_attributes = True
