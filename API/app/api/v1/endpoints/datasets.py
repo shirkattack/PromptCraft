@@ -20,7 +20,9 @@ router = APIRouter(dependencies=[Depends(verify_api_key)], deprecated=True)
 
 
 @router.post("/", response_model=TrainingDatasetResponse)
-def create_dataset(dataset_data: TrainingDatasetCreate, db: Session = Depends(get_db)):
+def create_dataset(
+    dataset_data: TrainingDatasetCreate, db: Session = Depends(get_db)
+) -> TrainingDataset:
     """Create a new training dataset"""
     dataset_id = str(uuid.uuid4())
 
@@ -43,14 +45,14 @@ def get_datasets(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=settings.max_page_size),
     db: Session = Depends(get_db),
-):
+) -> list[TrainingDataset]:
     """Get all training datasets"""
     datasets = db.query(TrainingDataset).offset(skip).limit(limit).all()
     return datasets
 
 
 @router.get("/{dataset_id}", response_model=TrainingDatasetResponse)
-def get_dataset(dataset_id: str, db: Session = Depends(get_db)):
+def get_dataset(dataset_id: str, db: Session = Depends(get_db)) -> TrainingDataset:
     """Get a specific training dataset"""
     dataset = db.query(TrainingDataset).filter(TrainingDataset.id == dataset_id).first()
     if not dataset:
@@ -59,7 +61,7 @@ def get_dataset(dataset_id: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/{dataset_id}")
-def delete_dataset(dataset_id: str, db: Session = Depends(get_db)):
+def delete_dataset(dataset_id: str, db: Session = Depends(get_db)) -> dict[str, str]:
     """Delete a training dataset"""
     dataset = db.query(TrainingDataset).filter(TrainingDataset.id == dataset_id).first()
     if not dataset:
@@ -71,7 +73,7 @@ def delete_dataset(dataset_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/task-types/")
-def get_task_types():
+def get_task_types() -> dict[str, list[str]]:
     """Get available task types"""
     return {
         "task_types": [

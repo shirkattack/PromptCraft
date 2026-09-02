@@ -1,3 +1,5 @@
+from typing import Any
+
 import dspy
 
 from app.core.config import settings
@@ -21,8 +23,8 @@ class LMManager:
         api_base: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4000,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> dspy.LM:
         """
         Initialize and return Ollama language model.
 

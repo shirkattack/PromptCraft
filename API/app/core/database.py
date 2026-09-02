@@ -1,5 +1,8 @@
+from collections.abc import Generator
+from typing import Any
+
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
@@ -14,7 +17,9 @@ engine = create_engine(
 if _is_sqlite:
 
     @event.listens_for(engine, "connect")
-    def _enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+    def _enable_sqlite_foreign_keys(
+        dbapi_connection: Any, connection_record: Any
+    ) -> None:
         """SQLite ignores FOREIGN KEY constraints unless they are switched on
         per connection, which would let orphaned training samples survive a
         dataset delete."""
@@ -25,10 +30,12 @@ if _is_sqlite:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
@@ -36,5 +43,5 @@ def get_db():
         db.close()
 
 
-def create_tables():
+def create_tables() -> None:
     Base.metadata.create_all(bind=engine)

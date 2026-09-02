@@ -1,8 +1,9 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -74,7 +75,9 @@ app.include_router(api_router, prefix="/api/v1")
 
 # Global exception handler
 @app.exception_handler(PromptCraftException)
-async def promptcraft_exception_handler(request, exc: PromptCraftException):
+async def promptcraft_exception_handler(
+    request: Request, exc: PromptCraftException
+) -> JSONResponse:
     """Handle custom PromptCraft exceptions."""
     logger.error(
         f"PromptCraft error: {exc.message}",
@@ -95,7 +98,7 @@ async def promptcraft_exception_handler(request, exc: PromptCraftException):
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handle HTTP exceptions with logging."""
     logger.warning(
         f"HTTP {exc.status_code}: {exc.detail}",
@@ -109,7 +112,7 @@ async def http_exception_handler(request, exc: HTTPException):
 
 
 @app.get("/", tags=["System"])
-async def root():
+async def root() -> dict[str, str]:
     """API information endpoint."""
     return {
         "message": "PromptCraft API",
@@ -122,7 +125,7 @@ async def root():
 
 
 @app.get("/health", tags=["System"])
-async def health_check():
+async def health_check() -> dict[str, Any]:
     """Health check endpoint for monitoring."""
     try:
         with engine.connect() as connection:

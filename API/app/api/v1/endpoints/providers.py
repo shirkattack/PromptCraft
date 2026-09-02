@@ -11,7 +11,7 @@ logger = get_logger("providers_endpoints")
 
 
 @router.get("/", response_model=list[AIProviderResponse])
-async def get_providers():
+async def get_providers() -> list[AIProviderResponse]:
     """List the providers this build can drive: Ollama only.
 
     `available` is False while Ollama is unreachable so clients can explain
@@ -42,14 +42,14 @@ async def get_providers():
 
 
 @router.get("/ollama/health")
-async def check_ollama_health():
+async def check_ollama_health() -> dict[str, str | bool]:
     """Check if Ollama is running and accessible"""
     is_healthy = await ollama_service.health_check()
     return {"status": "healthy" if is_healthy else "unavailable", "healthy": is_healthy}
 
 
 @router.get("/ollama/models", response_model=list[AIModelResponse])
-async def get_ollama_models():
+async def get_ollama_models() -> list[AIModelResponse]:
     """Get available Ollama models"""
     models = await ollama_service.list_models()
     if not models:

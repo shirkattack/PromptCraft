@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -64,7 +65,7 @@ def _get_session_or_404(db: Session, session_id: str) -> OptimizationSession:
 def create_session(
     session_data: OptimizationSessionCreate,
     db: Session = Depends(get_db),
-):
+) -> OptimizationSession:
     """Create a new optimization session"""
     db_session = OptimizationSession(
         id=str(uuid.uuid4()),
@@ -83,7 +84,7 @@ def create_session(
 
 
 @router.get("/optimization-methods")
-async def get_optimization_methods():
+async def get_optimization_methods() -> dict[str, list[dict[str, Any]]]:
     """Describe the available optimization methods.
 
     The text is written to match what the code does, so the UI can explain the
@@ -147,7 +148,7 @@ def get_sessions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=settings.max_page_size),
     db: Session = Depends(get_db),
-):
+) -> list[OptimizationSession]:
     """Get all optimization sessions"""
     return (
         db.query(OptimizationSession)
@@ -159,7 +160,7 @@ def get_sessions(
 
 
 @router.get("/analytics/performance", response_model=PerformanceMetrics)
-def get_performance_metrics(db: Session = Depends(get_db)):
+def get_performance_metrics(db: Session = Depends(get_db)) -> PerformanceMetrics:
     """Get overall performance metrics"""
     total_optimizations = db.query(func.count(OptimizationSession.id)).scalar() or 0
 
@@ -197,7 +198,7 @@ def get_performance_metrics(db: Session = Depends(get_db)):
 
 
 @router.get("/{session_id}", response_model=OptimizationSessionResponse)
-def get_session(session_id: str, db: Session = Depends(get_db)):
+def get_session(session_id: str, db: Session = Depends(get_db)) -> OptimizationSession:
     """Get a specific optimization session"""
     return _get_session_or_404(db, session_id)
 
@@ -207,7 +208,7 @@ def update_session(
     session_id: str,
     session_update: OptimizationSessionUpdate,
     db: Session = Depends(get_db),
-):
+) -> OptimizationSession:
     """Update an optimization session"""
     session = _get_session_or_404(db, session_id)
 
@@ -220,7 +221,7 @@ def update_session(
 
 
 @router.delete("/{session_id}")
-def delete_session(session_id: str, db: Session = Depends(get_db)):
+def delete_session(session_id: str, db: Session = Depends(get_db)) -> dict[str, str]:
     """Delete an optimization session"""
     session = _get_session_or_404(db, session_id)
 
@@ -238,7 +239,7 @@ async def optimize_prompt(
         description="Overrides options.optimization_method; kept for older clients.",
     ),
     db: Session = Depends(get_db),
-):
+) -> dict[str, Any]:
     """Optimize a prompt using Promptomatix algorithms"""
     options = options or OptimizeRequest()
     method = optimization_method or options.optimization_method
@@ -306,9 +307,11 @@ async def optimize_prompt(
     db.commit()
     db.refresh(session)
 
+    # No response_model on this route, so the return annotation is the
+    # response schema; the ORM row must be converted explicitly.
     return {
         "message": "Prompt optimized successfully",
-        "session": session,
+        "session": OptimizationSessionResponse.model_validate(session),
         "optimization_details": {
             "method": optimization_result["method"],
             "improvement_score": optimization_result["improvement_score"],

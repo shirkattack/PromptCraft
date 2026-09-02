@@ -1,3 +1,5 @@
+from typing import Any
+
 import httpx
 
 from app.core.config import settings
@@ -55,7 +57,7 @@ class OllamaService:
             ) from e
 
     async def generate_completion(
-        self, model: str, prompt: str, **kwargs
+        self, model: str, prompt: str, **kwargs: Any
     ) -> str | None:
         """Generate completion using Ollama"""
         try:
@@ -78,7 +80,7 @@ class OllamaService:
                     details={"model": model, "status_code": response.status_code},
                 )
 
-            return response.json().get("response", "")
+            return str(response.json().get("response", ""))
         except httpx.ConnectError as e:
             self.logger.error(f"Cannot connect to Ollama for completion: {e}")
             raise OllamaConnectionError(
@@ -115,7 +117,7 @@ class OllamaService:
             return False
 
     @staticmethod
-    def _can_complete(model: dict) -> bool:
+    def _can_complete(model: dict[str, Any]) -> bool:
         """Embedding-only models (e.g. nomic-embed-text) cannot run a rewrite.
 
         Older Ollama versions omit `capabilities`; treat those as completion
@@ -124,7 +126,7 @@ class OllamaService:
         capabilities = model.get("capabilities")
         return not capabilities or "completion" in capabilities
 
-    def _to_model_response(self, model: dict) -> AIModelResponse:
+    def _to_model_response(self, model: dict[str, Any]) -> AIModelResponse:
         """Build the API view of a model from what /api/tags reports."""
         name = model["name"]
         details = model.get("details") or {}
