@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.database import create_tables, engine
 from app.core.exceptions import PromptCraftException
 from app.core.logging import get_logger, setup_logging
+from app.core.migrations import run_migrations
 from app.services.ollama_service import ollama_service
 
 # Setup logging
@@ -30,8 +31,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Import all models to ensure they're registered
     from app.models import optimization, training  # noqa: F401
 
+    # Migrations first so the schema is current before create_all fills in any
+    # table the migrations do not know about (there are none today; it is a
+    # safety net for a database wiped between releases).
+    run_migrations()
     create_tables()
-    logger.info("Database tables created/verified")
+    logger.info("Database schema migrated and verified")
 
     yield
 
