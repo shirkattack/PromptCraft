@@ -15,6 +15,14 @@ export interface OptimizationSession {
   performance_score: number
   created_at: string
   status: SessionStatus
+  optimization_method: string | null
+  processing_time: number | null
+  /** Set when the run was measured against a training dataset. */
+  dataset_id: string | null
+  baseline_score: number | null
+  eval_score: number | null
+  eval_metric: string | null
+  eval_sample_count: number | null
 }
 
 export interface AIProvider {
@@ -75,6 +83,8 @@ export interface OptimizationMethodInfo {
 
 export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
 export type TargetLength = 'auto' | 'concise' | 'balanced' | 'detailed'
+export type EvalMetric = 'auto' | 'exact' | 'contains' | 'llm_judge'
+export type ScoreType = 'measured' | 'heuristic'
 
 /** Advanced settings for an optimization run; mirrors OptimizeRequest on the API. */
 export interface OptimizeOptions {
@@ -83,6 +93,43 @@ export interface OptimizeOptions {
   output_format?: OutputFormat
   target_length?: TargetLength
   preserve_wording?: boolean
+  /** Measure against this dataset and return the best-scoring candidate. */
+  dataset_id?: string | null
+  eval_metric?: EvalMetric
+  max_demos?: number
+}
+
+export interface EvalCandidate {
+  name: string
+  score: number | null
+  demo_count: number
+  bootstrapped_demos: number
+  error: string | null
+}
+
+export interface EvalSampleResult {
+  input: string
+  expected: string
+  actual: string
+  passed: boolean
+}
+
+/** metadata.eval on a measured run. */
+export interface EvalReport {
+  metric: string
+  train_size: number
+  dev_size: number
+  total_samples: number
+  max_demos: number
+  baseline_score: number | null
+  eval_score: number | null
+  best: string
+  improved: boolean
+  candidates: EvalCandidate[]
+  demos: { input: string; output: string; bootstrapped?: boolean }[]
+  baseline_results: EvalSampleResult[]
+  results: EvalSampleResult[]
+  instructions: string
 }
 
 export interface OptimizeResponse {
@@ -91,8 +138,10 @@ export interface OptimizeResponse {
   optimization_details: {
     method: OptimizationMethod
     improvement_score: number
+    /** "measured" when a dataset was used, otherwise the structural heuristic. */
+    score_type: ScoreType
     processing_time: number
-    metadata: Record<string, unknown>
+    metadata: Record<string, unknown> & { eval?: EvalReport }
   }
 }
 
