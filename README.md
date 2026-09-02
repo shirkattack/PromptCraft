@@ -131,6 +131,8 @@ PromptCraft/
    - Backend: http://127.0.0.1:8000
    - Frontend: http://localhost:3000
 
+   Once both are up, `npm run dev` prints a block of clickable links (web app, API health, API docs). In iTerm2 and VS Code they open with Cmd+click; in macOS Terminal use Cmd+double-click.
+
 ## 🧪 Testing Your Setup
 
 After installation, verify everything works correctly:
