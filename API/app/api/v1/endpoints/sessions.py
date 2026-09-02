@@ -57,25 +57,58 @@ def create_session(
 
 @router.get("/optimization-methods")
 async def get_optimization_methods():
-    """Get available optimization methods"""
+    """Describe the available optimization methods.
+
+    The text is written to match what the code does, so the UI can explain the
+    choice honestly rather than with marketing copy.
+    """
     return {
         "methods": [
             {
                 "id": "meta_prompt",
-                "name": "Meta-Prompt Optimization",
-                "description": "Uses meta-prompting techniques to improve prompt effectiveness",
+                "name": "Meta-Prompt",
+                "description": "One structured rewrite guided by a prompt-engineering rubric.",
+                "how_it_works": (
+                    "A single dspy.Predict call. The model is handed your prompt inside a "
+                    "meta-prompt that asks for clarity, context, structure, examples and "
+                    "constraints, and returns the rewritten prompt."
+                ),
+                "best_for": "Most prompts. The fastest structured option and a good default.",
+                "returns_reasoning": False,
+                "relative_speed": "fast",
                 "recommended_for": ["general", "creative", "analysis"],
             },
             {
                 "id": "dspy",
-                "name": "DSPy Optimization",
-                "description": "Uses DSPy framework for systematic prompt optimization",
+                "name": "DSPy Chain-of-Thought",
+                "description": "The model reasons about the prompt first, then rewrites it.",
+                "how_it_works": (
+                    "dspy.ChainOfThought over a PromptRewrite signature: the model writes "
+                    "out its reasoning about what the prompt needs, then produces the "
+                    "rewrite. That reasoning is shown in Optimization Insights. If the "
+                    "model cannot follow the structured output format, a template "
+                    "rewrite is used and flagged as a fallback."
+                ),
+                "best_for": (
+                    "Prompts that need judgement -- ambiguous asks, multi-step tasks, "
+                    "or when you want to see why changes were made."
+                ),
+                "returns_reasoning": True,
+                "relative_speed": "slower",
                 "recommended_for": ["structured", "reasoning", "code"],
             },
             {
                 "id": "simple",
-                "name": "Simple Optimization",
-                "description": "Basic prompt improvement using direct language model feedback",
+                "name": "Simple",
+                "description": "A plain completion asked to improve the prompt.",
+                "how_it_works": (
+                    "The model receives a short instruction ('improve this prompt') and "
+                    "your text, with no DSPy structure or rubric. Whatever it returns is "
+                    "the result."
+                ),
+                "best_for": "A quick baseline, or comparing against the structured methods.",
+                "returns_reasoning": False,
+                "relative_speed": "fastest",
                 "recommended_for": ["quick", "basic", "testing"],
             },
         ]

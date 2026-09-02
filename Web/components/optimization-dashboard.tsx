@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods } from "@/lib/api/hooks"
-import type { AIModel, OptimizationMethod, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import type { AIModel, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -68,14 +68,62 @@ const mockTaskTypeData = [
   { name: "Q&A", value: 5, color: "#ffedd5" },
 ]
 
-type MethodInfo = { id: OptimizationMethod; name: string; description: string; recommended_for: string[] }
+type MethodInfo = OptimizationMethodInfo
 
 // Mirrors GET /sessions/optimization-methods so the selector renders before the request lands.
 const FALLBACK_METHODS: MethodInfo[] = [
-  { id: "meta_prompt", name: "Meta-Prompt Optimization", description: "Uses meta-prompting techniques to improve prompt effectiveness", recommended_for: [] },
-  { id: "dspy", name: "DSPy Optimization", description: "Uses DSPy framework for systematic prompt optimization", recommended_for: [] },
-  { id: "simple", name: "Simple Optimization", description: "Basic prompt improvement using direct language model feedback", recommended_for: [] },
+  {
+    id: "meta_prompt",
+    name: "Meta-Prompt",
+    description: "One structured rewrite guided by a prompt-engineering rubric.",
+    how_it_works: "A single dspy.Predict call with a meta-prompt asking for clarity, context, structure, examples and constraints.",
+    best_for: "Most prompts. The fastest structured option and a good default.",
+    returns_reasoning: false,
+    relative_speed: "fast",
+    recommended_for: [],
+  },
+  {
+    id: "dspy",
+    name: "DSPy Chain-of-Thought",
+    description: "The model reasons about the prompt first, then rewrites it.",
+    how_it_works: "dspy.ChainOfThought over a PromptRewrite signature; the reasoning is shown in Optimization Insights.",
+    best_for: "Ambiguous or multi-step asks, or when you want to see why changes were made.",
+    returns_reasoning: true,
+    relative_speed: "slower",
+    recommended_for: [],
+  },
+  {
+    id: "simple",
+    name: "Simple",
+    description: "A plain completion asked to improve the prompt.",
+    how_it_works: "A short 'improve this prompt' instruction with no DSPy structure or rubric.",
+    best_for: "A quick baseline, or comparing against the structured methods.",
+    returns_reasoning: false,
+    relative_speed: "fastest",
+    recommended_for: [],
+  },
 ]
+
+const methodInfo = (id: string, methods?: MethodInfo[] | null) =>
+  (methods ?? FALLBACK_METHODS).find((m) => m.id === id)
+
+function MethodExplainer({ method }: { method?: MethodInfo }) {
+  if (!method) return <p className="text-xs">How the rewrite is produced.</p>
+  return (
+    <div className="max-w-sm text-xs space-y-1.5">
+      <p className="font-medium font-sans">{method.name}</p>
+      {method.how_it_works && <p>{method.how_it_works}</p>}
+      {method.best_for && (
+        <p><span className="font-medium">Best for:</span> {method.best_for}</p>
+      )}
+      <p className="text-muted-foreground">
+        {method.relative_speed && <span className="capitalize">{method.relative_speed}</span>}
+        {method.relative_speed && " · "}
+        {method.returns_reasoning ? "shows the model's reasoning" : "no reasoning trace"}
+      </p>
+    </div>
+  )
+}
 
 const formatContext = (tokens: number) => (tokens >= 1000 ? `${Math.round(tokens / 1000)}K tokens` : `${tokens} tokens`)
 const formatCost = (model: AIModel) => (model.is_free ? "Free" : `$${model.cost_per_1k_tokens}/1K tokens`)
@@ -786,11 +834,8 @@ export function OptimizationDashboard() {
                     <TooltipTrigger>
                       <HelpCircle className="w-3 h-3 text-muted-foreground" />
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs">
-                        {optimizationMethods?.find((m) => m.id === selectedMethod)?.description ??
-                          "How the rewrite is produced."}
-                      </p>
+                    <TooltipContent side="right">
+                      <MethodExplainer method={methodInfo(selectedMethod, optimizationMethods)} />
                     </TooltipContent>
                   </Tooltip>
                 </label>
@@ -803,10 +848,22 @@ export function OptimizationDashboard() {
                   <SelectContent>
                     {(optimizationMethods ?? FALLBACK_METHODS).map((method) => (
                       <SelectItem key={method.id} value={method.id}>
-                        <div className="flex flex-col">
-                          <span className="font-sans">{method.name}</span>
-                          <span className="text-xs text-muted-foreground">{method.description}</span>
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex flex-col text-left">
+                              <span className="font-sans">
+                                {method.name}
+                                {method.relative_speed && (
+                                  <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">{method.relative_speed}</span>
+                                )}
+                              </span>
+                              <span className="text-xs text-muted-foreground">{method.best_for ?? method.description}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" align="start">
+                            <MethodExplainer method={method} />
+                          </TooltipContent>
+                        </Tooltip>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1050,11 +1107,9 @@ export function OptimizationDashboard() {
               {!lastResult ? (
                 <div className="space-y-2 text-sm text-muted-foreground font-serif">
                   <p>Run an optimization to see the method, timing and reasoning behind the rewrite.</p>
-                  <p className="text-xs">
-                    Selected: <span className="font-sans font-medium text-foreground">{methodLabel(selectedMethod, optimizationMethods)}</span>
-                    {" — "}
-                    {optimizationMethods?.find((m) => m.id === selectedMethod)?.description}
-                  </p>
+                  <div className="rounded-md border bg-muted/30 p-3 text-foreground">
+                    <MethodExplainer method={methodInfo(selectedMethod, optimizationMethods)} />
+                  </div>
                 </div>
               ) : (
                 <>

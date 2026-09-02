@@ -61,6 +61,18 @@ export interface CreateSessionRequest {
   task_type: string
 }
 
+/** One entry of GET /sessions/optimization-methods. */
+export interface OptimizationMethodInfo {
+  id: OptimizationMethod
+  name: string
+  description: string
+  how_it_works?: string
+  best_for?: string
+  returns_reasoning?: boolean
+  relative_speed?: string
+  recommended_for: string[]
+}
+
 export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
 export type TargetLength = 'auto' | 'concise' | 'balanced' | 'detailed'
 
@@ -192,9 +204,7 @@ class APIClient {
     return this.request<PerformanceMetrics>('/sessions/analytics/performance')
   }
 
-  async getOptimizationMethods(): Promise<{
-    methods: { id: OptimizationMethod; name: string; description: string; recommended_for: string[] }[]
-  }> {
+  async getOptimizationMethods(): Promise<{ methods: OptimizationMethodInfo[] }> {
     return this.request('/sessions/optimization-methods')
   }
 }
