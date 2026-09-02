@@ -89,15 +89,30 @@ def sample_training_data():
 
 @pytest.fixture
 def mock_ollama_response():
-    """Mock response from Ollama API."""
+    """Mock response from Ollama /api/tags, in the shape current Ollama emits."""
     return {
         "models": [
             {
                 "name": "llama3.2:latest",
-                "size": 4661224676,
+                "size": 2019393189,
                 "digest": "sha256:abc123",
                 "modified_at": "2024-01-01T00:00:00Z",
-            }
+                "details": {
+                    "family": "llama",
+                    "parameter_size": "3.2B",
+                    "quantization_level": "Q4_K_M",
+                    "context_length": 131072,
+                },
+                "capabilities": ["completion", "tools"],
+            },
+            {
+                "name": "nomic-embed-text:latest",
+                "size": 274302450,
+                "digest": "sha256:def456",
+                "modified_at": "2024-01-01T00:00:00Z",
+                "details": {"family": "nomic-bert", "parameter_size": "137M"},
+                "capabilities": ["embedding"],
+            },
         ]
     }
 

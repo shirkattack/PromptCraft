@@ -31,11 +31,20 @@ class TestOllamaService:
         with patch.object(service.client, "get", return_value=mock_response):
             models = await service.list_models()
 
-        assert len(models) == 1
-        assert models[0].id == "llama3.2:latest"
-        assert models[0].name == "Llama3.2"
-        assert models[0].is_free is True
-        assert models[0].cost_per_1k_tokens == 0.0
+        # The embedding-only model is filtered out: it cannot run a rewrite.
+        assert [m.id for m in models] == ["llama3.2:latest"]
+        model = models[0]
+        assert model.name == "Llama3.2"
+        assert model.is_free is True
+        assert model.cost_per_1k_tokens == 0.0
+        # Reported by Ollama, not guessed from the name.
+        assert model.context_window == 131072
+        assert model.parameter_size == "3.2B"
+        assert model.quantization == "Q4_K_M"
+        assert model.family == "llama"
+        assert model.size_bytes == 2019393189
+        assert model.capabilities == ["completion", "tools"]
+        assert "tool calling" in model.best_use_case
 
     @pytest.mark.asyncio
     async def test_list_models_connection_error(self, service):
@@ -117,26 +126,29 @@ class TestOllamaService:
 
         assert result is False
 
-    def test_get_context_window(self, service):
-        """Test context window estimation."""
-        assert service._get_context_window("llama2:7b") == 4096
-        assert service._get_context_window("llama3.2:latest") == 8192
-        assert service._get_context_window("mistral:7b") == 8192
-        assert service._get_context_window("unknown:model") == 4096  # default
+    def test_models_without_capabilities_are_kept(self, service):
+        """Older Ollama omits `capabilities`; those models must still be listed."""
+        assert service._can_complete({"name": "old:latest"}) is True
+        assert (
+            service._can_complete({"name": "x", "capabilities": ["embedding"]}) is False
+        )
 
-    def test_estimate_speed_rating(self, service):
-        """Test speed rating estimation."""
-        rating_7b = service._estimate_speed_rating("model:7b")
-        rating_13b = service._estimate_speed_rating("model:13b")
-        rating_70b = service._estimate_speed_rating("model:70b")
+    def test_context_window_falls_back_when_unreported(self, service):
+        model = service._to_model_response({"name": "mystery:latest", "details": {}})
+        assert model.context_window == 4096
+        assert model.parameter_size is None
 
-        assert 1 <= rating_7b <= 5
-        assert 1 <= rating_13b <= 5
-        assert 1 <= rating_70b <= 5
-        assert rating_7b >= rating_13b >= rating_70b  # Smaller models should be faster
+    def test_speed_rating_from_parameter_size(self, service):
+        assert service._speed_rating("3.2B") == 5
+        assert service._speed_rating("7B") == 4
+        assert service._speed_rating("13B") == 3
+        assert service._speed_rating("35B-A3B") == 2
+        assert service._speed_rating("70B") == 1
+        assert service._speed_rating(None) == 3
+        assert service._speed_rating("weird") == 3
 
-    def test_get_best_use_case(self, service):
-        """Test best use case determination."""
-        assert "code" in service._get_best_use_case("codellama:7b").lower()
-        assert "chat" in service._get_best_use_case("llama2-chat:7b").lower()
-        assert "general" in service._get_best_use_case("unknown:model").lower()
+    def test_best_use_case(self, service):
+        assert "code" in service._best_use_case("codellama:7b", "llama", []).lower()
+        assert "chat" in service._best_use_case("llama2-chat:7b", "llama", []).lower()
+        assert "general" in service._best_use_case("unknown:model", None, []).lower()
+        assert "images" in service._best_use_case("llava", "llama", ["vision"])

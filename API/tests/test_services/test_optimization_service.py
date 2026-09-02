@@ -127,6 +127,45 @@ class TestPromptOptimizationService:
             == 0.0
         )
 
+    def test_score_breakdown_lists_every_criterion(self, service):
+        """The breakdown is what the UI shows, so it must sum to the score."""
+        original = "Hello"
+        optimized = "## Task\nHello, with an example and a clear format.\n- one\n- two"
+
+        breakdown = service._score_breakdown(original, optimized)
+        applied = [item for item in breakdown if item["applied"]]
+
+        assert {item["label"] for item in breakdown} >= {
+            "Base",
+            "Markdown formatting (## or **)",
+        }
+        assert sum(
+            item["points"] for item in applied
+        ) == service._calculate_improvement_score(original, optimized)
+        assert all({"label", "points", "applied"} <= item.keys() for item in breakdown)
+
+    def test_score_breakdown_for_unchanged_prompt(self, service):
+        assert service._score_breakdown("same", "same") == [
+            {"label": "Prompt unchanged", "points": 0, "applied": True}
+        ]
+
+    @pytest.mark.asyncio
+    async def test_result_metadata_carries_breakdown(
+        self, service, mock_successful_llm
+    ):
+        with patch(
+            "app.services.lm_manager.LMManager.get_lm", return_value=mock_successful_llm
+        ):
+            result = await service.optimize_prompt(
+                original_prompt="Write code",
+                provider="ollama",
+                model="llama3.2:latest",
+                optimization_method="simple",
+            )
+
+        assert result["success"] is True
+        assert isinstance(result["metadata"]["score_breakdown"], list)
+
     def test_calculate_improvement_score(self, service):
         """Test improvement score calculation."""
         original = "Hello"
@@ -136,6 +175,42 @@ class TestPromptOptimizationService:
         assert isinstance(score, float)
         assert 0.0 <= score <= 100.0
         assert score > 50.0  # Should be higher due to length and structure
+
+    def test_constraints_reach_the_meta_prompt(self, service):
+        constraints = service._build_constraints("json", "concise", True)
+
+        assert "JSON" in constraints
+        assert "concise" in constraints.lower()
+        assert "Preserve the original wording" in constraints
+
+        meta_prompt = service._generate_meta_prompt(
+            "Write a story", "creative", constraints
+        )
+        assert "## Constraints:" in meta_prompt
+        assert "JSON" in meta_prompt
+
+    def test_no_constraints_means_no_section(self, service):
+        assert service._build_constraints("auto", "auto", False) == ""
+        assert "## Constraints:" not in service._generate_meta_prompt("x", "general")
+
+    @pytest.mark.asyncio
+    async def test_settings_are_echoed_in_metadata(self, service, mock_successful_llm):
+        with patch(
+            "app.services.lm_manager.LMManager.get_lm", return_value=mock_successful_llm
+        ) as get_lm:
+            result = await service.optimize_prompt(
+                original_prompt="Write code",
+                provider="ollama",
+                model="llama3.2:latest",
+                optimization_method="simple",
+                temperature=0.1,
+                max_tokens=256,
+            )
+
+        assert get_lm.call_args.kwargs["temperature"] == 0.1
+        assert get_lm.call_args.kwargs["max_tokens"] == 256
+        assert result["metadata"]["settings"]["temperature"] == 0.1
+        assert result["metadata"]["settings"]["max_tokens"] == 256
 
     def test_generate_meta_prompt(self, service):
         """Test meta-prompt generation."""

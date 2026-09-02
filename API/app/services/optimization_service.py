@@ -33,7 +33,11 @@ class PromptOptimizationService:
         model: str,
         task_type: str = "general",
         optimization_method: str = "meta_prompt",
-        **kwargs,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        output_format: str = "auto",
+        target_length: str = "auto",
+        preserve_wording: bool = False,
     ) -> dict[str, Any]:
         """
         Optimize a prompt using the specified method and provider.
@@ -50,13 +54,25 @@ class PromptOptimizationService:
             no method produced a prompt that differs from the original.
         """
         start_time = datetime.now(UTC)
+        run_settings = {
+            "temperature": (
+                settings.default_temperature if temperature is None else temperature
+            ),
+            "max_tokens": 2000 if max_tokens is None else max_tokens,
+            "output_format": output_format,
+            "target_length": target_length,
+            "preserve_wording": preserve_wording,
+        }
+        constraints = self._build_constraints(
+            output_format, target_length, preserve_wording
+        )
 
         try:
             lm = LMManager.get_lm(
                 provider=provider,
                 model_name=model,
-                temperature=settings.default_temperature,
-                max_tokens=2000,
+                temperature=run_settings["temperature"],
+                max_tokens=run_settings["max_tokens"],
             )
 
             # Model calls are synchronous and can run for minutes against a
@@ -67,6 +83,7 @@ class PromptOptimizationService:
                 original_prompt,
                 task_type,
                 optimization_method,
+                constraints,
             )
         except Exception as e:
             logger.error(f"Optimization failed: {e}")
@@ -106,7 +123,13 @@ class PromptOptimizationService:
             "task_type": task_type,
             "improvement_score": improvement_score,
             "processing_time": processing_time,
-            "metadata": result.get("metadata", {}),
+            "metadata": {
+                **result.get("metadata", {}),
+                "settings": run_settings,
+                "score_breakdown": self._score_breakdown(
+                    original_prompt, result["optimized_prompt"]
+                ),
+            },
             "success": True,
             "timestamp": datetime.now(UTC).isoformat(),
         }
@@ -147,6 +170,7 @@ class PromptOptimizationService:
         original_prompt: str,
         task_type: str,
         optimization_method: str,
+        constraints: str = "",
     ) -> dict[str, Any]:
         """Run the selected optimization strategy. Executed in a worker thread.
 
@@ -155,13 +179,19 @@ class PromptOptimizationService:
         """
         with dspy.context(lm=lm):
             if optimization_method == "meta_prompt":
-                return self._optimize_with_meta_prompt(original_prompt, task_type, lm)
+                return self._optimize_with_meta_prompt(
+                    original_prompt, task_type, lm, constraints
+                )
             if optimization_method == "dspy":
-                return self._optimize_with_dspy(original_prompt, task_type, lm)
-            return self._simple_optimization(original_prompt, task_type, lm)
+                return self._optimize_with_dspy(
+                    original_prompt, task_type, lm, constraints
+                )
+            return self._simple_optimization(
+                original_prompt, task_type, lm, constraints
+            )
 
     def _optimize_with_meta_prompt(
-        self, original_prompt: str, task_type: str, lm
+        self, original_prompt: str, task_type: str, lm, constraints: str = ""
     ) -> dict[str, Any]:
         """Optimize using meta-prompt technique from Promptomatix."""
 
@@ -186,10 +216,12 @@ class PromptOptimizationService:
         except Exception as e:
             logger.error(f"Meta-prompt optimization failed: {e}")
             # Fallback to simple optimization
-            return self._simple_optimization(original_prompt, task_type, lm)
+            return self._simple_optimization(
+                original_prompt, task_type, lm, constraints
+            )
 
     def _optimize_with_dspy(
-        self, original_prompt: str, task_type: str, lm
+        self, original_prompt: str, task_type: str, lm, constraints: str = ""
     ) -> dict[str, Any]:
         """Optimize using DSPy's ChainOfThought over an explicit rewrite signature."""
 
@@ -198,13 +230,20 @@ class PromptOptimizationService:
 
             original_prompt = dspy.InputField(desc="The prompt to improve")
             task_type = dspy.InputField(desc="The kind of task the prompt is for")
+            constraints = dspy.InputField(
+                desc="Requirements the rewritten prompt must satisfy ('none' if empty)"
+            )
             optimized_prompt = dspy.OutputField(
                 desc="An improved prompt: specific, structured, unambiguous"
             )
 
         try:
             predictor = dspy.ChainOfThought(PromptRewrite)
-            result = predictor(original_prompt=original_prompt, task_type=task_type)
+            result = predictor(
+                original_prompt=original_prompt,
+                task_type=task_type,
+                constraints=constraints or "none",
+            )
             optimized = result.optimized_prompt.strip()
 
             if optimized:
@@ -238,7 +277,7 @@ class PromptOptimizationService:
             }
 
     def _simple_optimization(
-        self, original_prompt: str, task_type: str, lm
+        self, original_prompt: str, task_type: str, lm, constraints: str = ""
     ) -> dict[str, Any]:
         """Simple optimization using direct LM completion."""
 
@@ -255,7 +294,7 @@ Please provide an improved version that:
 3. Has appropriate context
 4. Will produce more consistent results
 5. Follows prompt engineering best practices
-
+{constraints}
 Improved prompt:"""
 
         try:
@@ -296,8 +335,47 @@ Improved prompt:"""
                 },
             }
 
-    def _generate_meta_prompt(self, original_prompt: str, task_type: str) -> str:
+    @staticmethod
+    def _build_constraints(
+        output_format: str, target_length: str, preserve_wording: bool
+    ) -> str:
+        """Turn the advanced settings into instructions the strategies can embed."""
+        lines = []
+        if output_format == "markdown":
+            lines.append("The prompt must ask for the answer in Markdown.")
+        elif output_format == "plain":
+            lines.append(
+                "The prompt must ask for plain text with no Markdown formatting."
+            )
+        elif output_format == "json":
+            lines.append(
+                "The prompt must ask for a JSON response and describe its schema."
+            )
+        if target_length == "concise":
+            lines.append(
+                "Keep the rewritten prompt concise: no longer than the original plus a few clarifying lines."
+            )
+        elif target_length == "balanced":
+            lines.append(
+                "Keep the rewritten prompt to a moderate length: roughly 1.5-2x the original."
+            )
+        elif target_length == "detailed":
+            lines.append(
+                "Make the rewritten prompt thorough: add context, constraints and an example if useful."
+            )
+        if preserve_wording:
+            lines.append(
+                "Preserve the original wording of the request; improve structure and add instructions around it rather than rephrasing it."
+            )
+        return "\n".join(f"- {line}" for line in lines)
+
+    def _generate_meta_prompt(
+        self, original_prompt: str, task_type: str, constraints: str = ""
+    ) -> str:
         """Generate meta-prompt for optimization (adapted from Promptomatix)."""
+        constraints_section = (
+            f"\n\n## Constraints:\n{constraints}" if constraints else ""
+        )
 
         return f"""You are an expert prompt engineer specializing in {task_type} tasks. Your goal is to analyze and dramatically improve the following prompt to make it more effective, specific, and reliable.
 
@@ -320,43 +398,61 @@ Rewrite the prompt to be significantly more effective. Focus on:
 - Proper formatting and structure
 - Relevant context and constraints
 - Better specification of desired output
-- Elimination of ambiguity
+- Elimination of ambiguity{constraints_section}
 
 ## Optimized Prompt:"""
 
-    def _calculate_improvement_score(self, original: str, optimized: str) -> float:
-        """Heuristic 0-100 quality signal for the rewrite.
+    def _score_breakdown(self, original: str, optimized: str) -> list[dict[str, Any]]:
+        """Itemised rubric behind the heuristic score.
 
-        This is a structural heuristic (length, formatting, sectioning), not a
-        measured performance gain -- it does not evaluate the prompt against any
-        task. Treat it as a sanity check, not a benchmark.
+        Every criterion is listed with whether it applied, so a client can show
+        the user exactly what the number rewards. This is a structural check
+        (length, formatting, sectioning), not a measured performance gain -- it
+        does not evaluate the prompt against any task.
         """
-
         if optimized.strip() == original.strip():
-            # Nothing changed, so there is nothing to score.
-            return 0.0
+            return [{"label": "Prompt unchanged", "points": 0, "applied": True}]
 
-        score = 50.0  # Base score
-
-        # Length improvement (more detailed prompts are often better)
         length_ratio = len(optimized) / len(original) if len(original) > 0 else 1.0
-        if 1.2 <= length_ratio <= 3.0:  # Good length increase
-            score += 20.0
-        elif length_ratio > 3.0:  # Too verbose
-            score += 10.0
+        lowered = optimized.lower()
 
-        # Structure improvements (simple heuristics)
-        if "##" in optimized or "**" in optimized:  # Has formatting
-            score += 10.0
+        return [
+            {"label": "Base", "points": 50, "applied": True},
+            {
+                "label": "Length 1.2-3x the original",
+                "points": 20,
+                "applied": 1.2 <= length_ratio <= 3.0,
+            },
+            {
+                "label": "Longer than 3x (verbose)",
+                "points": 10,
+                "applied": length_ratio > 3.0,
+            },
+            {
+                "label": "Markdown formatting (## or **)",
+                "points": 10,
+                "applied": "##" in optimized or "**" in optimized,
+            },
+            {
+                "label": "Mentions examples or a format",
+                "points": 10,
+                "applied": "example" in lowered or "format" in lowered,
+            },
+            {
+                "label": "More lines than the original",
+                "points": 10,
+                "applied": len(optimized.split("\n")) > len(original.split("\n")),
+            },
+        ]
 
-        if "example" in optimized.lower() or "format" in optimized.lower():
-            score += 10.0
-
-        if len(optimized.split("\n")) > len(original.split("\n")):  # Better structure
-            score += 10.0
-
-        # Cap the score
-        return min(score, 100.0)
+    def _calculate_improvement_score(self, original: str, optimized: str) -> float:
+        """Heuristic 0-100 quality signal for the rewrite; see _score_breakdown."""
+        total = sum(
+            item["points"]
+            for item in self._score_breakdown(original, optimized)
+            if item["applied"]
+        )
+        return float(min(total, 100))
 
     def get_optimization_history(self) -> list[dict[str, Any]]:
         """Get the history of optimizations performed."""

@@ -2,23 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods } from "@/lib/api/hooks"
-import type { AIModel, OptimizationMethod, OptimizeResponse } from "@/lib/api/client"
+import type { AIModel, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartTooltip } from "@/components/ui/chart"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
+import { OptimizedPromptView } from "@/components/optimized-prompt-view"
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -30,8 +27,6 @@ import {
   Pause,
   RotateCcw,
   Download,
-  ThumbsUp,
-  ThumbsDown,
   Settings,
   Zap,
   Info,
@@ -65,14 +60,6 @@ const taskTypes = [
   { id: "translation", name: "Translation", icon: "🌐" },
 ]
 
-const mockOptimizationData = [
-  { step: 1, score: 65, time: "0s" },
-  { step: 2, score: 72, time: "2s" },
-  { step: 3, score: 78, time: "4s" },
-  { step: 4, score: 85, time: "6s" },
-  { step: 5, score: 92, time: "8s" },
-]
-
 const mockTaskTypeData = [
   { name: "Classification", value: 35, color: "#f97316" },
   { name: "Generation", value: 25, color: "#fb923c" },
@@ -81,18 +68,74 @@ const mockTaskTypeData = [
   { name: "Q&A", value: 5, color: "#ffedd5" },
 ]
 
-type MethodInfo = { id: OptimizationMethod; name: string; description: string; recommended_for: string[] }
+type MethodInfo = OptimizationMethodInfo
 
 // Mirrors GET /sessions/optimization-methods so the selector renders before the request lands.
 const FALLBACK_METHODS: MethodInfo[] = [
-  { id: "meta_prompt", name: "Meta-Prompt Optimization", description: "Uses meta-prompting techniques to improve prompt effectiveness", recommended_for: [] },
-  { id: "dspy", name: "DSPy Optimization", description: "Uses DSPy framework for systematic prompt optimization", recommended_for: [] },
-  { id: "simple", name: "Simple Optimization", description: "Basic prompt improvement using direct language model feedback", recommended_for: [] },
+  {
+    id: "meta_prompt",
+    name: "Meta-Prompt",
+    description: "One structured rewrite guided by a prompt-engineering rubric.",
+    how_it_works: "A single dspy.Predict call with a meta-prompt asking for clarity, context, structure, examples and constraints.",
+    best_for: "Most prompts. The fastest structured option and a good default.",
+    returns_reasoning: false,
+    relative_speed: "fast",
+    recommended_for: [],
+  },
+  {
+    id: "dspy",
+    name: "DSPy Chain-of-Thought",
+    description: "The model reasons about the prompt first, then rewrites it.",
+    how_it_works: "dspy.ChainOfThought over a PromptRewrite signature; the reasoning is shown in Optimization Insights.",
+    best_for: "Ambiguous or multi-step asks, or when you want to see why changes were made.",
+    returns_reasoning: true,
+    relative_speed: "slower",
+    recommended_for: [],
+  },
+  {
+    id: "simple",
+    name: "Simple",
+    description: "A plain completion asked to improve the prompt.",
+    how_it_works: "A short 'improve this prompt' instruction with no DSPy structure or rubric.",
+    best_for: "A quick baseline, or comparing against the structured methods.",
+    returns_reasoning: false,
+    relative_speed: "fastest",
+    recommended_for: [],
+  },
 ]
+
+const methodInfo = (id: string, methods?: MethodInfo[] | null) =>
+  (methods ?? FALLBACK_METHODS).find((m) => m.id === id)
+
+function MethodExplainer({ method }: { method?: MethodInfo }) {
+  if (!method) return <p className="text-xs">How the rewrite is produced.</p>
+  return (
+    <div className="max-w-sm text-xs space-y-1.5">
+      <p className="font-medium font-sans">{method.name}</p>
+      {method.how_it_works && <p>{method.how_it_works}</p>}
+      {method.best_for && (
+        <p><span className="font-medium">Best for:</span> {method.best_for}</p>
+      )}
+      <p className="text-muted-foreground">
+        {method.relative_speed && <span className="capitalize">{method.relative_speed}</span>}
+        {method.relative_speed && " · "}
+        {method.returns_reasoning ? "shows the model's reasoning" : "no reasoning trace"}
+      </p>
+    </div>
+  )
+}
 
 const formatContext = (tokens: number) => (tokens >= 1000 ? `${Math.round(tokens / 1000)}K tokens` : `${tokens} tokens`)
 const formatCost = (model: AIModel) => (model.is_free ? "Free" : `$${model.cost_per_1k_tokens}/1K tokens`)
 const formatSpeed = (rating: number) => `${rating}/5 speed`
+const formatSize = (bytes: number | null) => {
+  if (bytes == null) return null
+  const gb = bytes / 1_073_741_824
+  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${Math.round(bytes / 1_048_576)} MB`
+}
+// "3.2B · Q4_K_M · 1.9 GB" — whatever the runtime reported, nothing guessed.
+const modelSpecLine = (model: AIModel) =>
+  [model.parameter_size, model.quantization, formatSize(model.size_bytes)].filter(Boolean).join(" · ")
 
 const methodLabel = (id: string, methods?: MethodInfo[] | null) =>
   (methods ?? FALLBACK_METHODS).find((m) => m.id === id)?.name ?? id
@@ -125,6 +168,13 @@ export function OptimizationDashboard() {
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
+  const [advanced, setAdvanced] = useState<Required<OptimizeOptions>>({
+    temperature: 0.7,
+    max_tokens: 2048,
+    output_format: "auto",
+    target_length: "auto",
+    preserve_wording: false,
+  })
 
   // API hooks
   const { data: providers, loading: providersLoading, error: providersError } = useProviders()
@@ -382,7 +432,7 @@ export function OptimizationDashboard() {
       }, 500)
 
       // Optimize the prompt
-      const result = await optimizePrompt(session.id, selectedMethod)
+      const result = await optimizePrompt(session.id, selectedMethod, advanced)
       
       clearInterval(progressInterval)
       setOptimizationProgress(100)
@@ -464,6 +514,14 @@ export function OptimizationDashboard() {
     } else {
       handleCopyOptimized()
     }
+  }
+
+  const handleReset = () => {
+    setOriginalPrompt("")
+    setOptimizedPrompt("")
+    setLastResult(null)
+    setOptimizationProgress(0)
+    setIsOptimizing(false)
   }
 
   const handleExportResults = () => {
@@ -567,15 +625,6 @@ export function OptimizationDashboard() {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{originalPrompt.length} characters</span>
-                  <Tooltip>
-                    <TooltipTrigger className="flex items-center gap-1 hover:text-foreground cursor-help">
-                      <span>AI suggestions available</span>
-                      <HelpCircle className="w-3 h-3" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">AI will analyze your prompt and suggest improvements as you type</p>
-                    </TooltipContent>
-                  </Tooltip>
                 </div>
               </div>
 
@@ -674,7 +723,9 @@ export function OptimizationDashboard() {
                           <div className="flex flex-col items-start">
                             <span className="font-sans font-medium">{model.name}</span>
                             <span className="text-xs text-muted-foreground">
-                              {formatContext(model.context_window)} • {formatCost(model)} • {formatSpeed(model.speed_rating)}
+                              {[modelSpecLine(model), formatContext(model.context_window), model.is_free ? null : formatCost(model)]
+                                .filter(Boolean)
+                                .join(" • ")}
                             </span>
                           </div>
                         </SelectItem>
@@ -699,22 +750,22 @@ export function OptimizationDashboard() {
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Maximum number of tokens the model can process at once</p>
+                          <p className="text-xs">Context length reported by the model runtime (prompt + response)</p>
                         </TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
                         <TooltipTrigger className="flex items-center gap-2 cursor-help">
-                          <DollarSign className="w-4 h-4 text-muted-foreground" />
+                          <Database className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <div className="font-sans font-medium">Cost per 1K tokens</div>
+                            <div className="font-sans font-medium">Model</div>
                             <div className="text-muted-foreground">
-                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? formatCost(m) : null })()}
+                              {(() => { const m = getCurrentModel(providerData, selectedProvider, selectedModel); return m ? (modelSpecLine(m) || formatCost(m)) : null })()}
                             </div>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Pricing for input and output tokens combined</p>
+                          <p className="text-xs">Parameter count, quantization and on-disk size as reported by Ollama</p>
                         </TooltipContent>
                       </Tooltip>
 
@@ -729,7 +780,7 @@ export function OptimizationDashboard() {
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Typical response time for this model</p>
+                          <p className="text-xs">Relative speed from parameter count: smaller models answer faster</p>
                         </TooltipContent>
                       </Tooltip>
 
@@ -783,11 +834,8 @@ export function OptimizationDashboard() {
                     <TooltipTrigger>
                       <HelpCircle className="w-3 h-3 text-muted-foreground" />
                     </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs text-xs">
-                        {optimizationMethods?.find((m) => m.id === selectedMethod)?.description ??
-                          "How the rewrite is produced."}
-                      </p>
+                    <TooltipContent side="right">
+                      <MethodExplainer method={methodInfo(selectedMethod, optimizationMethods)} />
                     </TooltipContent>
                   </Tooltip>
                 </label>
@@ -800,10 +848,22 @@ export function OptimizationDashboard() {
                   <SelectContent>
                     {(optimizationMethods ?? FALLBACK_METHODS).map((method) => (
                       <SelectItem key={method.id} value={method.id}>
-                        <div className="flex flex-col">
-                          <span className="font-sans">{method.name}</span>
-                          <span className="text-xs text-muted-foreground">{method.description}</span>
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex flex-col text-left">
+                              <span className="font-sans">
+                                {method.name}
+                                {method.relative_speed && (
+                                  <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">{method.relative_speed}</span>
+                                )}
+                              </span>
+                              <span className="text-xs text-muted-foreground">{method.best_for ?? method.description}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" align="start">
+                            <MethodExplainer method={method} />
+                          </TooltipContent>
+                        </Tooltip>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -818,29 +878,80 @@ export function OptimizationDashboard() {
                 <CollapsibleContent className="space-y-4 pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium font-sans">Temperature</label>
+                      <label className="text-sm font-medium font-sans flex items-center gap-2">
+                        Temperature
+                        <Tooltip>
+                          <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                          <TooltipContent><p className="max-w-xs text-xs">Sampling temperature for the rewrite. Lower is more deterministic; 0.7 is the default.</p></TooltipContent>
+                        </Tooltip>
+                      </label>
                       <div className="flex items-center gap-2">
-                        <input type="range" min="0" max="1" step="0.1" defaultValue="0.7" className="flex-1" />
-                        <span className="text-sm text-muted-foreground w-8">0.7</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          value={advanced.temperature}
+                          onChange={(e) => setAdvanced((a) => ({ ...a, temperature: Number(e.target.value) }))}
+                          className="flex-1 accent-orange-500"
+                        />
+                        <span className="text-sm text-muted-foreground w-8 font-mono">{advanced.temperature.toFixed(1)}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium font-sans">Max Tokens</label>
-                      <Input type="number" defaultValue="2048" className="text-sm" />
+                      <label className="text-sm font-medium font-sans flex items-center gap-2">
+                        Max Tokens
+                        <Tooltip>
+                          <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                          <TooltipContent><p className="max-w-xs text-xs">Upper bound on the rewritten prompt's length, in model tokens (64–8192).</p></TooltipContent>
+                        </Tooltip>
+                      </label>
+                      <Input
+                        type="number"
+                        min={64}
+                        max={8192}
+                        step={64}
+                        value={advanced.max_tokens}
+                        onChange={(e) => setAdvanced((a) => ({ ...a, max_tokens: Math.min(8192, Math.max(64, Number(e.target.value) || 64)) }))}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium font-sans">Output Format</label>
+                      <Select value={advanced.output_format} onValueChange={(v) => setAdvanced((a) => ({ ...a, output_format: v as OutputFormat }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">Let the model decide</SelectItem>
+                          <SelectItem value="markdown">Ask for Markdown</SelectItem>
+                          <SelectItem value="plain">Ask for plain text</SelectItem>
+                          <SelectItem value="json">Ask for JSON (with schema)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium font-sans">Target Length</label>
+                      <Select value={advanced.target_length} onValueChange={(v) => setAdvanced((a) => ({ ...a, target_length: v as TargetLength }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="auto">No preference</SelectItem>
+                          <SelectItem value="concise">Concise — close to the original</SelectItem>
+                          <SelectItem value="balanced">Balanced — about 1.5–2×</SelectItem>
+                          <SelectItem value="detailed">Detailed — context, constraints, example</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium font-sans">Training Data</label>
-                    <Select defaultValue="existing">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="existing">Use existing dataset</SelectItem>
-                        <SelectItem value="generate">Generate new (2-50 samples)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <label className="flex items-start gap-2 text-sm font-sans cursor-pointer">
+                    <Checkbox
+                      checked={advanced.preserve_wording}
+                      onCheckedChange={(checked) => setAdvanced((a) => ({ ...a, preserve_wording: checked === true }))}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      Preserve my wording
+                      <span className="block text-xs text-muted-foreground">Improve structure and add instructions around the request instead of rephrasing it.</span>
+                    </span>
+                  </label>
                 </CollapsibleContent>
               </Collapsible>
 
@@ -872,7 +983,7 @@ export function OptimizationDashboard() {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" onClick={handleReset}>
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
@@ -914,142 +1025,68 @@ export function OptimizationDashboard() {
               <CardHeader>
                 <CardTitle className="font-sans font-bold flex items-center gap-2">
                   <Zap className="w-5 h-5 text-secondary" />
-                  Optimization Results
+                  Optimized Prompt
                 </CardTitle>
                 <CardDescription className="font-serif">
-                  AI-optimized prompt with performance improvements
+                  Rendered as the model will read it. Switch to Raw to copy exact text, or Compare to see what changed.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="comparison" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="comparison" className="font-sans">
-                      Comparison
-                    </TabsTrigger>
-                    <TabsTrigger value="metrics" className="font-sans">
-                      Metrics
-                    </TabsTrigger>
-                    <TabsTrigger value="feedback" className="font-sans">
-                      Feedback
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="comparison" className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <h4 className="font-sans font-semibold text-sm">Original</h4>
-                        <div className="p-3 bg-muted rounded-md">
-                          <p className="text-sm font-serif text-muted-foreground">
-                            {originalPrompt || "No original prompt"}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="font-sans">
-                          Score: 65
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-sans font-semibold text-sm">Optimized</h4>
-                        <div className="p-3 bg-secondary/10 border border-secondary/20 rounded-md">
-                          <p className="text-sm font-serif">{optimizedPrompt}</p>
-                        </div>
-                        <Badge className="font-sans">Score: 92 (+27)</Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
+                <OptimizedPromptView
+                  original={originalPrompt}
+                  optimized={optimizedPrompt}
+                  details={lastResult}
+                  methodLabel={methodLabel(lastResult?.method ?? selectedMethod, optimizationMethods)}
+                  actions={
+                    <>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" className="font-sans" onClick={handleExportResults}>
-                            <Download className="w-4 h-4" />
-                            Export
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Download results as JSON file</p>
-                        </TooltipContent>
-                      </Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button size="sm" className="font-sans" onClick={handleExportResults}>
+                                            <Download className="w-4 h-4" />
+                                            Export
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">Download results as JSON file</p>
+                                        </TooltipContent>
+                                      </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="font-sans bg-transparent"
-                            onClick={handleCopyOptimized}
-                          >
-                            <Copy className="w-4 h-4" />
-                            Copy Optimized
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Copy optimized prompt to clipboard (Ctrl+Shift+C)</p>
-                        </TooltipContent>
-                      </Tooltip>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="font-sans bg-transparent"
+                                            onClick={handleCopyOptimized}
+                                          >
+                                            <Copy className="w-4 h-4" />
+                                            Copy Optimized
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">Copy optimized prompt to clipboard (Ctrl+Shift+C)</p>
+                                        </TooltipContent>
+                                      </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="font-sans bg-transparent"
-                            onClick={handleShareResults}
-                          >
-                            <Share2 className="w-4 h-4" />
-                            Share
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">Share optimization results</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="metrics" className="space-y-4">
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={mockOptimizationData}>
-                          <XAxis dataKey="step" />
-                          <YAxis />
-                          <ChartTooltip />
-                          <Line
-                            type="monotone"
-                            dataKey="score"
-                            stroke="#f97316"
-                            strokeWidth={2}
-                            dot={{ fill: "#f97316" }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="feedback" className="space-y-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="font-sans bg-transparent">
-                        <ThumbsUp className="w-4 h-4" />
-                        Good Result
-                      </Button>
-                      <Button variant="outline" size="sm" className="font-sans bg-transparent">
-                        <ThumbsDown className="w-4 h-4" />
-                        Needs Work
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium font-sans">Additional Feedback</label>
-                      <Textarea
-                        placeholder="Provide feedback to improve future optimizations..."
-                        className="font-serif"
-                      />
-                    </div>
-
-                    <Button size="sm" className="font-sans">
-                      Submit Feedback
-                    </Button>
-                  </TabsContent>
-                </Tabs>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="font-sans bg-transparent"
+                                            onClick={handleShareResults}
+                                          >
+                                            <Share2 className="w-4 h-4" />
+                                            Share
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs">Share optimization results</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                    </>
+                  }
+                />
               </CardContent>
             </Card>
           )}
@@ -1070,11 +1107,9 @@ export function OptimizationDashboard() {
               {!lastResult ? (
                 <div className="space-y-2 text-sm text-muted-foreground font-serif">
                   <p>Run an optimization to see the method, timing and reasoning behind the rewrite.</p>
-                  <p className="text-xs">
-                    Selected: <span className="font-sans font-medium text-foreground">{methodLabel(selectedMethod, optimizationMethods)}</span>
-                    {" — "}
-                    {optimizationMethods?.find((m) => m.id === selectedMethod)?.description}
-                  </p>
+                  <div className="rounded-md border bg-muted/30 p-3 text-foreground">
+                    <MethodExplainer method={methodInfo(selectedMethod, optimizationMethods)} />
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1089,6 +1124,25 @@ export function OptimizationDashboard() {
                       {lastResult.processing_time.toFixed(1)}s
                     </span>
                   </div>
+
+                  {(() => {
+                    const st = lastResult.metadata.settings as Partial<Required<OptimizeOptions>> | undefined
+                    if (!st) return null
+                    const chips = [
+                      `temp ${st.temperature}`,
+                      `${st.max_tokens} tokens max`,
+                      st.output_format && st.output_format !== "auto" ? `${st.output_format} output` : null,
+                      st.target_length && st.target_length !== "auto" ? `${st.target_length} length` : null,
+                      st.preserve_wording ? "wording preserved" : null,
+                    ].filter(Boolean) as string[]
+                    return (
+                      <div className="flex flex-wrap gap-1">
+                        {chips.map((c) => (
+                          <Badge key={c} variant="outline" className="font-mono text-[10px]">{c}</Badge>
+                        ))}
+                      </div>
+                    )
+                  })()}
 
                   {(lastResult.metadata.predictor === "template_fallback" || lastResult.metadata.fallback === true) && (
                     <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
@@ -1110,9 +1164,19 @@ export function OptimizationDashboard() {
                           <HelpCircle className="w-3 h-3" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            A structural check (length, formatting, sections) — not a measured gain. Evaluating against a dataset is on the roadmap.
-                          </p>
+                          <div className="max-w-xs text-xs space-y-1">
+                            <p>A structural rubric, not a measured gain — evaluating against a dataset is on the roadmap.</p>
+                            {Array.isArray(lastResult.metadata.score_breakdown) && (
+                              <ul className="space-y-0.5">
+                                {(lastResult.metadata.score_breakdown as { label: string; points: number; applied: boolean }[]).map((item) => (
+                                  <li key={item.label} className={`flex justify-between gap-3 ${item.applied ? "" : "text-muted-foreground line-through"}`}>
+                                    <span>{item.label}</span>
+                                    <span className="font-mono">+{item.points}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         </TooltipContent>
                       </Tooltip>
                     </span>

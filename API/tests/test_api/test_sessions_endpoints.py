@@ -93,6 +93,56 @@ class TestOptimize:
         assert session["status"] == "failed"
         assert session["optimized_prompt"] is None
 
+    def test_body_options_are_forwarded(self, client: TestClient, session_id: str):
+        """Advanced settings travel from the request body to the service."""
+        mock = AsyncMock(return_value=self._result(method="dspy"))
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=mock,
+        ):
+            response = client.post(
+                f"{BASE}/{session_id}/optimize",
+                json={
+                    "optimization_method": "dspy",
+                    "temperature": 0.2,
+                    "max_tokens": 512,
+                    "output_format": "json",
+                    "target_length": "concise",
+                    "preserve_wording": True,
+                },
+            )
+
+        assert response.status_code == 200, response.text
+        kwargs = mock.call_args.kwargs
+        assert kwargs["optimization_method"] == "dspy"
+        assert kwargs["temperature"] == 0.2
+        assert kwargs["max_tokens"] == 512
+        assert kwargs["output_format"] == "json"
+        assert kwargs["target_length"] == "concise"
+        assert kwargs["preserve_wording"] is True
+
+    def test_query_method_still_works_and_wins(
+        self, client: TestClient, session_id: str
+    ):
+        mock = AsyncMock(return_value=self._result(method="simple"))
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=mock,
+        ):
+            response = client.post(
+                f"{BASE}/{session_id}/optimize?optimization_method=simple",
+                json={"optimization_method": "dspy"},
+            )
+
+        assert response.status_code == 200, response.text
+        assert mock.call_args.kwargs["optimization_method"] == "simple"
+
+    def test_out_of_range_temperature_rejected(
+        self, client: TestClient, session_id: str
+    ):
+        response = client.post(f"{BASE}/{session_id}/optimize", json={"temperature": 5})
+        assert response.status_code == 422
+
     def test_unknown_method_rejected(self, client: TestClient, session_id: str):
         response = client.post(
             f"{BASE}/{session_id}/optimize?optimization_method=magic"

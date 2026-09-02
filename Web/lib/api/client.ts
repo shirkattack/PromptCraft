@@ -35,6 +35,12 @@ export interface AIModel {
   speed_rating: number
   best_use_case: string
   is_free: boolean
+  /** Reported by the runtime (Ollama /api/tags); null when unknown. */
+  parameter_size: string | null
+  quantization: string | null
+  family: string | null
+  size_bytes: number | null
+  capabilities: string[]
 }
 
 export interface PerformanceMetrics {
@@ -53,6 +59,30 @@ export interface CreateSessionRequest {
   provider: string
   model: string
   task_type: string
+}
+
+/** One entry of GET /sessions/optimization-methods. */
+export interface OptimizationMethodInfo {
+  id: OptimizationMethod
+  name: string
+  description: string
+  how_it_works?: string
+  best_for?: string
+  returns_reasoning?: boolean
+  relative_speed?: string
+  recommended_for: string[]
+}
+
+export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
+export type TargetLength = 'auto' | 'concise' | 'balanced' | 'detailed'
+
+/** Advanced settings for an optimization run; mirrors OptimizeRequest on the API. */
+export interface OptimizeOptions {
+  temperature?: number
+  max_tokens?: number
+  output_format?: OutputFormat
+  target_length?: TargetLength
+  preserve_wording?: boolean
 }
 
 export interface OptimizeResponse {
@@ -148,13 +178,11 @@ class APIClient {
   async optimizePrompt(
     sessionId: string,
     optimizationMethod: OptimizationMethod = 'meta_prompt',
+    options: OptimizeOptions = {},
   ): Promise<OptimizeResponse> {
-    // The backend reads optimization_method from the query string, not the
-    // body. Sending it in the body was silently ignored, so every run used
-    // the default method regardless of what the UI selected.
-    const params = new URLSearchParams({ optimization_method: optimizationMethod })
-    return this.request<OptimizeResponse>(`/sessions/${sessionId}/optimize?${params}`, {
+    return this.request<OptimizeResponse>(`/sessions/${sessionId}/optimize`, {
       method: 'POST',
+      body: JSON.stringify({ optimization_method: optimizationMethod, ...options }),
     })
   }
 
@@ -176,9 +204,7 @@ class APIClient {
     return this.request<PerformanceMetrics>('/sessions/analytics/performance')
   }
 
-  async getOptimizationMethods(): Promise<{
-    methods: { id: OptimizationMethod; name: string; description: string; recommended_for: string[] }[]
-  }> {
+  async getOptimizationMethods(): Promise<{ methods: OptimizationMethodInfo[] }> {
     return this.request('/sessions/optimization-methods')
   }
 }
