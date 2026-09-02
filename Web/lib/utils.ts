@@ -37,3 +37,12 @@ export function getRelativeTime(date: Date): string {
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
   return `${Math.floor(diffInSeconds / 86400)}d ago`
 }
+
+/**
+ * Parse a timestamp from the API. SQLite drops the timezone, so naive values
+ * ("2026-09-02T18:24:48") are UTC and must not be parsed as local time.
+ */
+export function parseApiDate(value: string): Date {
+  const hasOffset = /(Z|[+-]\d{2}:?\d{2})$/.test(value)
+  return new Date(hasOffset ? value : `${value}Z`)
+}
