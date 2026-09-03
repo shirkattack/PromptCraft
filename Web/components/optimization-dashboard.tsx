@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets, notifySessionsChanged } from "@/lib/api/hooks"
 import apiClient from "@/lib/api/client"
+import { starterPromptFor } from "@/lib/starter-prompt"
 import type { AIModel, EvalMetric, EvalStrategy, FeedbackRating, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { PromptEvolutionCard } from "@/components/prompt-evolution-card"
@@ -512,6 +513,22 @@ export function OptimizationDashboard() {
       description: `Switched to ${provider}`,
       duration: 2000,
     })
+  }
+
+  const handleStarterPrompt = async () => {
+    if (!activeDataset) return
+    try {
+      const samples = await apiClient.getSamples(activeDataset.id, 50)
+      const starter = starterPromptFor(samples)
+      setOriginalPrompt(starter)
+      toast({
+        title: "Starter prompt inserted",
+        description: "Written from the dataset's own outputs. Edit it, then optimize; each input is appended where {input} goes.",
+        duration: 5000,
+      })
+    } catch (error) {
+      toast({ title: "Could not read the dataset", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive", duration: 4000 })
+    }
   }
 
   const handleFeedback = async (rating: FeedbackRating | null, comment?: string) => {
@@ -1025,6 +1042,18 @@ export function OptimizationDashboard() {
                     </p>
                   )
                 })()}
+                {activeDataset && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground font-serif">
+                    <span>
+                      Your prompt is the instruction; each dataset input is appended where <code className="font-mono">{"{input}"}</code> goes and the answer is
+                      compared with the expected output.
+                    </span>
+                    <Button variant="outline" size="sm" className="h-7 font-sans text-xs" onClick={handleStarterPrompt}>
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Insert a starter prompt
+                    </Button>
+                  </div>
+                )}
                 {!trainingDatasets?.length && (
                   <p className="text-xs text-muted-foreground font-serif">No datasets yet. Create one in the sidebar&apos;s Training Data tab.</p>
                 )}
