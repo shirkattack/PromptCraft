@@ -209,9 +209,9 @@ export function SessionSidebar() {
   const { open } = useSidebar()
 
   // Fetch data from API
-  const { data: sessions, loading: sessionsLoading, error: sessionsError } = useSessions()
+  const { data: sessions, loading: sessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions()
   const { data: performanceMetrics } = usePerformanceMetrics()
-  const { data: datasets, loading: datasetsLoading, error: datasetsError } = useTrainingDatasets()
+  const { data: datasets, loading: datasetsLoading, error: datasetsError, refetch: refetchDatasets } = useTrainingDatasets()
   const { data: providers } = useProviders()
 
   // Dataset dialogs are lifted to the component root; nesting them inside the
@@ -553,8 +553,11 @@ export function SessionSidebar() {
                         <div className="text-sm text-muted-foreground">Loading sessions...</div>
                       </div>
                     ) : sessionsError ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="text-sm text-red-500">Error loading sessions: {sessionsError}</div>
+                      <div className="flex flex-col items-center justify-center gap-2 py-8 px-3 text-center">
+                        <div className="text-sm text-red-500">Could not load sessions: {sessionsError}</div>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => refetchSessions()}>
+                          Retry
+                        </Button>
                       </div>
                     ) : filteredSessions.length === 0 ? (
                       <div className="flex items-center justify-center py-8">
@@ -668,8 +671,11 @@ export function SessionSidebar() {
                         <div className="text-sm text-muted-foreground">Loading datasets...</div>
                       </div>
                     ) : datasetsError ? (
-                      <div className="flex items-center justify-center py-8 px-3 text-center">
-                        <div className="text-sm text-red-500">Error loading datasets: {datasetsError}</div>
+                      <div className="flex flex-col items-center justify-center gap-2 py-8 px-3 text-center">
+                        <div className="text-sm text-red-500">Could not load datasets: {datasetsError}</div>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => refetchDatasets()}>
+                          Retry
+                        </Button>
                       </div>
                     ) : filteredDatasets.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 px-3 text-center gap-1">
