@@ -94,3 +94,17 @@ def test_is_idempotent(tmp_path):
     run_migrations(url)
     run_migrations(url)
     assert _version(url) == "0003"
+
+
+def test_database_from_a_newer_branch_does_not_break_startup(tmp_path, caplog):
+    url = f"sqlite:///{tmp_path / 'ahead.db'}"
+    run_migrations(url)
+    engine = sa.create_engine(url)
+    with engine.begin() as conn:
+        conn.execute(sa.text("UPDATE alembic_version SET version_num='9999'"))
+    engine.dispose()
+
+    run_migrations(url)  # must not raise
+
+    assert "unknown to this code" in caplog.text
+    assert _version(url) == "9999"
