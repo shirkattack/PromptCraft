@@ -7,57 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- **Synthetic generation failed with gemma3n** ("Model response was not valid
-  JSON"): the model indents its JSON with the sentencepiece marker U+2581 and
-  wraps it in a code fence. That marker is now replaced everywhere model text
-  enters the app (generated samples, rewrites, evaluated answers), and the
-  reply parser accepts fenced blocks, an object wrapping the list, renamed
-  keys (prompt/response, question/answer, text/label, ...), JSON lines and,
-  as a last resort, "Input: ... / Output: ..." pairs in prose. If nothing
-  parses, the model is asked once to restate its reply as JSON before the
-  request fails, and the first 300 characters of the reply are logged.
-- Ollama models are listed with the configured default first, then smallest to
-  largest. Clients take the first entry as the default; Ollama's own order (by
-  download time) put a 35B model ahead of llama3.2 and made the default run
-  ten times slower.
-- Sessions left in `running` by an interrupted process are marked `failed` at
-  startup instead of staying "running" forever.
-- **Dataset sample counts were inflated**: bulk sample creation and synthetic
-  generation added `len(new_samples)` on top of a `COUNT(*)` that already
-  included the flushed rows, so `sample_count` and `size` roughly doubled.
-  Counts are now read back from the database after each mutation.
-- **Blocking model calls on the event loop**: prompt optimization and synthetic
-  data generation invoked the synchronous DSPy/Ollama client directly inside
-  `async def` handlers. With `OLLAMA_TIMEOUT=120` a single request could stall
-  every other request on the worker. Both now run in a threadpool.
-- **Failed optimizations were reported as successes**: when every strategy fell
-  back, the API returned HTTP 200 with the original prompt and a 50.0
-  "improvement" score. A run that produces nothing now returns 502 and marks the
-  session failed; an unchanged prompt scores 0.
-- **`GET /{anything}` returned 405 instead of 404**: the catch-all
-  `@app.options("/{full_path:path}")` route matched every path, shadowing 404s.
-  Removed -- `CORSMiddleware` already answers preflight.
-- **CSV import and export corrupted data**: hand-rolled `split(",")` parsing and
-  manual quote escaping broke on any field containing a comma, quote or newline.
-  Both now use the `csv` module.
-- **`TrustedHostMiddleware` was hardcoded to localhost**, rejecting every request
-  in any other deployment (and in the test suite). Now driven by `ALLOWED_HOSTS`.
-- **Ollama client used a hardcoded 30s timeout**, ignoring `OLLAMA_TIMEOUT`, and
-  its connection pool was never closed. It now honours the setting, sends
-  `keep_alive`, and closes on shutdown.
-- **`LMManager.get_available_models()` never awaited** the coroutine it called,
-  so it always fell through to the default model. Now `async`.
-- **`GET /providers` 502'd entirely when Ollama was down.** The catalogue is
-  still returned, with Ollama marked unavailable.
-- **`GET /training/{id}` could orphan samples**: assigning to `dataset.samples`
-  on a `delete-orphan` relationship marked existing rows for deletion. Sample
-  loading is now decided in the query.
-- **Model heuristics had unreachable branches**: `codellama` matched the generic
-  `llama` case before its own, reporting 8192 instead of a 16384 context window.
-- Synthetic data and dataset import failures no longer return silently empty
-  results -- they raise with an error code explaining what went wrong.
-- Exceptions raised while handling another exception now chain with `from`.
+## [1.1.0] - 2026-09-03
+
+The measured-optimization release. Scores can now be measurements on your own
+data instead of a heuristic, GEPA evolves prompts from written feedback, and
+the app runs entirely on `uv` + Ollama with one-command setup.
+
+### Highlights
+- **GEPA** (`optimization_method: "gepa"`): reflective prompt evolution with a
+  visible lineage of every candidate and the feedback that produced it.
+- **Measured runs**: pick a dataset and the original, the rewrite and few-shot
+  variants are scored on held-out samples (hold-out or k-fold, class-balanced),
+  with examples chosen for coverage using `nomic-embed-text` embeddings.
+- **Background jobs** with live progress, stored results that can be reopened,
+  thumbs up/down feedback, Alembic migrations, and a strict-typed, fully
+  linted backend.
+
+### Web
+- Rewritten dashboard and sidebar with no mock data: real model metadata,
+  session stats, analytics, and a Training Data tab that imports (JSON, JSON
+  Lines, CSV), previews, exports, generates and deletes datasets.
+- Optimized Prompt view with rendered / raw / compare modes, word count, a
+  score badge that says whether it is heuristic or measured, and detected
+  changes; Optimization Insights explaining how the rewrite was produced.
+- Eval Results card (scoreboard, chosen examples with what they cover,
+  per-sample table) and Prompt Evolution card (GEPA timeline with feedback and
+  word diffs against the parent).
+- Dataset picker with metric, split strategy, example cap, GEPA budget and
+  reflection-model controls; starter prompt written from a dataset; real task
+  type auto-detect; sessions reopen from the sidebar; Import Prompt and New
+  Optimization buttons; feedback thumbs; live progress instead of a fake bar.
+- TypeScript is clean and the build fails on type errors.
 
 ### Added
 - `GET /sessions/{id}/result`: a past session with the full stored result of
@@ -116,16 +96,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   worker, which is how `make dev` and the Makefile targets start it.
 - Per-exception HTTP status codes (503 for a down Ollama, 404, 422, 502, ...)
   instead of flattening every `PromptCraftException` to 400.
-- `available` / `unavailable_reason` on provider responses: OpenAI and Anthropic
-  are listed for the catalogue but cannot be driven by this build, and were
-  previously indistinguishable from working providers.
+- `available` / `unavailable_reason` on provider responses, so a client can
+  explain an unreachable Ollama instead of failing at optimization time.
 - Pagination guards (`MAX_PAGE_SIZE`, `ge`/`le` bounds) on every list endpoint.
 - Request validation on the write schemas: non-empty text, quality scores in
   `[0, 1]`, bulk size limits, and `Literal` import/export formats.
 - Database connectivity check in `/health` (it previously only claimed to).
 - SQLite `PRAGMA foreign_keys=ON`, which SQLite otherwise ignores.
-- 54 tests covering the fixes above (24 -> 78 total): dataset counting, CSV
-  round-trips, session optimize flows, provider degradation, and API key auth.
+
 - `GET /training/stats`: dataset and sample totals, a per-task-type breakdown
   and the most recently modified datasets, counted from the sample rows.
 - `avg_quality_score` on dataset summaries (`GET /training/`), computed in one
@@ -162,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   template remains as a fallback and says so in the response metadata.
 - Synthetic data generation defaults to the configured local provider. It
   defaulted to `openai` / `gpt-3.5-turbo`, which `LMManager` always rejected.
-- Anthropic entries in the provider catalogue refreshed to current models.
+
 - Optimization history is bounded (`OPTIMIZATION_HISTORY_SIZE`); it was an
   unbounded list on a process-lifetime singleton.
 - `PerformanceMetrics.total_processing_time` is derived from real runs and
@@ -171,11 +149,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   floor resolved to a Starlette incompatible with `httpx>=0.28`, which broke
   every `TestClient` test at collection.
 - Ruff config moved under `[tool.ruff.lint]`; `ruff check` is clean (was 449
-  errors). `mypy` still reports 75 pre-existing strict-mode errors (down from
-  86); annotating the SQLAlchemy models with `Mapped[...]` is the remaining
-  work to make `make lint` green.
+  errors).
 - `black` and `isort` applied across `app/` and `tests/`, so `make format` and
   the pre-commit hooks are now a no-op instead of a 24-file diff.
+
+### Fixed
+- **Synthetic generation failed with gemma3n** ("Model response was not valid
+  JSON"): the model indents its JSON with the sentencepiece marker U+2581 and
+  wraps it in a code fence. That marker is now replaced everywhere model text
+  enters the app (generated samples, rewrites, evaluated answers), and the
+  reply parser accepts fenced blocks, an object wrapping the list, renamed
+  keys (prompt/response, question/answer, text/label, ...), JSON lines and,
+  as a last resort, "Input: ... / Output: ..." pairs in prose. If nothing
+  parses, the model is asked once to restate its reply as JSON before the
+  request fails, and the first 300 characters of the reply are logged.
+- Ollama models are listed with the configured default first, then smallest to
+  largest. Clients take the first entry as the default; Ollama's own order (by
+  download time) put a 35B model ahead of llama3.2 and made the default run
+  ten times slower.
+- Sessions left in `running` by an interrupted process are marked `failed` at
+  startup instead of staying "running" forever.
+- **Dataset sample counts were inflated**: bulk sample creation and synthetic
+  generation added `len(new_samples)` on top of a `COUNT(*)` that already
+  included the flushed rows, so `sample_count` and `size` roughly doubled.
+  Counts are now read back from the database after each mutation.
+- **Blocking model calls on the event loop**: prompt optimization and synthetic
+  data generation invoked the synchronous DSPy/Ollama client directly inside
+  `async def` handlers. With `OLLAMA_TIMEOUT=120` a single request could stall
+  every other request on the worker. Both now run in a threadpool.
+- **Failed optimizations were reported as successes**: when every strategy fell
+  back, the API returned HTTP 200 with the original prompt and a 50.0
+  "improvement" score. A run that produces nothing now returns 502 and marks the
+  session failed; an unchanged prompt scores 0.
+- **`GET /{anything}` returned 405 instead of 404**: the catch-all
+  `@app.options("/{full_path:path}")` route matched every path, shadowing 404s.
+  Removed -- `CORSMiddleware` already answers preflight.
+- **CSV import and export corrupted data**: hand-rolled `split(",")` parsing and
+  manual quote escaping broke on any field containing a comma, quote or newline.
+  Both now use the `csv` module.
+- **`TrustedHostMiddleware` was hardcoded to localhost**, rejecting every request
+  in any other deployment (and in the test suite). Now driven by `ALLOWED_HOSTS`.
+- **Ollama client used a hardcoded 30s timeout**, ignoring `OLLAMA_TIMEOUT`, and
+  its connection pool was never closed. It now honours the setting, sends
+  `keep_alive`, and closes on shutdown.
+- **`LMManager.get_available_models()` never awaited** the coroutine it called,
+  so it always fell through to the default model. Now `async`.
+- **`GET /providers` 502'd entirely when Ollama was down.** The catalogue is
+  still returned, with Ollama marked unavailable.
+- **`GET /training/{id}` could orphan samples**: assigning to `dataset.samples`
+  on a `delete-orphan` relationship marked existing rows for deletion. Sample
+  loading is now decided in the query.
+- **Model heuristics had unreachable branches**: `codellama` matched the generic
+  `llama` case before its own, reporting 8192 instead of a 16384 context window.
+- Synthetic data and dataset import failures no longer return silently empty
+  results -- they raise with an error code explaining what went wrong.
+- Exceptions raised while handling another exception now chain with `from`.
 
 ## [1.0.0] - 2024-10-24
 
@@ -254,22 +282,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Summary
 
+- **v1.1.0**: Measured optimization, GEPA, background jobs, migrations, uv setup, new UI
 - **v1.0.0**: Professional production-ready refactoring with comprehensive improvements
 - **v0.1.0**: Initial development version with basic functionality
 
-## Upcoming Features
+## Planned
 
-### Planned for v1.1.0
-- [ ] Advanced caching system for improved performance
-- [ ] WebSocket support for real-time optimization updates
-- [ ] Enhanced analytics with detailed metrics
-- [ ] Database migration system with Alembic
-- [ ] Docker containerization
-- [ ] CI/CD pipeline configuration
-
-### Planned for v1.2.0
-- [ ] Advanced prompt optimization algorithms
-- [ ] Multi-language support
-- [ ] Enhanced security features
-- [ ] Performance optimizations
-- [ ] Extended AI provider support
+- [ ] "Try it" panel: run the original and optimized prompts on an input of your choosing, side by side
+- [ ] End-to-end browser smoke test in the repository (`npm run e2e`)
+- [ ] Feed thumbs-down notes into GEPA's reflection as extra feedback
+- [ ] Script to regenerate the README demo GIF

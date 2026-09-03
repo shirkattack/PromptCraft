@@ -6,6 +6,8 @@ This module tests the core application endpoints and functionality.
 
 from fastapi.testclient import TestClient
 
+from app import __version__
+
 
 class TestMainEndpoints:
     """Test main application endpoints."""
@@ -17,7 +19,7 @@ class TestMainEndpoints:
 
         data = response.json()
         assert data["message"] == "PromptCraft API"
-        assert data["version"] == "1.0.0"
+        assert data["version"] == __version__
         assert "description" in data
 
     def test_health_check(self, client: TestClient):
@@ -28,7 +30,7 @@ class TestMainEndpoints:
         data = response.json()
         assert data["status"] == "healthy"
         assert "timestamp" in data
-        assert data["version"] == "1.0.0"
+        assert data["version"] == __version__
 
     def test_cors_preflight(self, client: TestClient):
         """Preflight is answered by CORSMiddleware, not a catch-all route."""
