@@ -1,0 +1,13 @@
+input,output
+"Production database is down, all customers affected",high
+"Cannot log in since this morning, blocking my work",high
+"Security alert: suspicious logins from unknown IPs",high
+"Question about how billing cycles work",medium
+"Export to CSV is missing one column",medium
+"Feature request: dark mode for the dashboard",low
+"Thanks for the quick help yesterday!",low
+"Typo on the pricing page footer",low
+"Payment failed and the order is stuck, customer waiting",high
+"Would like to change the email on my account",medium
+"Two-factor codes never arrive, cannot access account",high
+"How do I download last month's invoice?",medium
