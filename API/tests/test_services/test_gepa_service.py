@@ -235,3 +235,22 @@ class TestGepaOptimizer:
         assert GepaOptimizer(SAMPLES, budget=1).budget == 10
         with pytest.raises(EvalError):
             GepaOptimizer(SAMPLES[:1])
+
+    def test_user_feedback_reaches_the_reflection_feedback(self):
+        with (
+            dspy.context(lm=DummyLM(ANSWERS)),
+            patch("app.services.gepa_service.GEPA", FakeGEPA),
+        ):
+            optimizer = GepaOptimizer(
+                SAMPLES,
+                metric="contains",
+                budget=40,
+                user_feedback=["Answer with the label only"],
+            )
+            outcome = optimizer.run("Classify the ticket.")
+
+        gepa = outcome["gepa"]
+        assert gepa["user_feedback"] == ["Answer with the label only"]
+        # The fake optimizer scored two misses; each carried the user's note.
+        misses = [fb for c in gepa["timeline"] for fb in c["feedback"]]
+        assert misses and all("Answer with the label only" in fb for fb in misses)

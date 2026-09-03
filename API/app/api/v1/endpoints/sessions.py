@@ -74,6 +74,30 @@ def fail_orphaned_sessions(db: Session) -> int:
     return count
 
 
+def _prior_user_feedback(
+    db: Session, original_prompt: str, exclude_id: str, limit: int = 5
+) -> list[str]:
+    """Thumbs-down notes left on earlier runs of the same prompt, newest first."""
+    rows = (
+        db.query(OptimizationSession.feedback_comment)
+        .filter(
+            OptimizationSession.original_prompt == original_prompt,
+            OptimizationSession.id != exclude_id,
+            OptimizationSession.feedback_rating == "down",
+            OptimizationSession.feedback_comment.isnot(None),
+            OptimizationSession.feedback_comment != "",
+        )
+        .order_by(OptimizationSession.feedback_at.desc())
+        .limit(limit)
+        .all()
+    )
+    notes: list[str] = []
+    for (comment,) in rows:
+        if comment and comment.strip() not in notes:
+            notes.append(comment.strip())
+    return notes
+
+
 def _get_session_or_404(db: Session, session_id: str) -> OptimizationSession:
     session = (
         db.query(OptimizationSession)
@@ -401,6 +425,7 @@ async def _run_optimization(
     dataset_samples = (
         _load_dataset_samples(db, options.dataset_id) if options.dataset_id else None
     )
+    user_feedback = _prior_user_feedback(db, session.original_prompt, session.id)
 
     session.status = SessionStatus.RUNNING
     session.optimization_method = method
@@ -426,6 +451,7 @@ async def _run_optimization(
             gepa_budget=options.gepa_budget,
             reflection_model=options.reflection_model,
             eval_strategy=options.eval_strategy,
+            user_feedback=user_feedback,
         )
     except EvalError as e:
         session.status = SessionStatus.FAILED
