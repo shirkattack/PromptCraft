@@ -73,7 +73,36 @@ Without a dataset the score is a structural heuristic (length, sections, example
 
 #### Example 2: measuring against a dataset
 
-A dataset is a list of inputs and the outputs you expect. Import it as JSON or CSV in the sidebar, or start from [`docs/examples/support-tickets.csv`](docs/examples/support-tickets.csv):
+A dataset is a list of **inputs** and the **outputs** you expect for them. The prompt you optimize is the *instruction* that should turn one input into its output; the app appends each input to your prompt where `{input}` goes, runs it, and compares the answer with the expected output.
+
+To try it with the bundled dataset, [`docs/examples/support-tickets.csv`](docs/examples/support-tickets.csv):
+
+1. **Training Data** tab in the sidebar → **Import Dataset** → choose the CSV file (or paste it) → Import.
+2. Paste this as the prompt: `Classify the priority of this support ticket as high, medium or low.`
+3. Under **Measure against a dataset**, pick *Support ticket priority*.
+4. Pick a method (Meta-Prompt to start, GEPA for Example 3) and click **Start Optimization**.
+
+Not sure what instruction fits a dataset? After picking it, click **Insert a starter prompt**: the app writes one from the dataset's own outputs (a list of labels for classification-style data, an example pair otherwise).
+
+
+**Bring your own data.** Any of these layouts import, from a file or pasted text:
+
+```jsonc
+// JSON: an array of objects
+[{"input": "Server is down", "output": "high"}, {"input": "Thanks!", "output": "low"}]
+// JSON Lines: one object per line (handy for large or appended files; otherwise equivalent)
+{"input": "Server is down", "output": "high"}
+{"input": "Thanks!", "output": "low"}
+```
+
+```csv
+input,output
+"Server is down",high
+```
+
+Key aliases are accepted (`prompt`/`response`, `question`/`answer`, `text`/`label`, `input_text`/`expected_output`); other fields are kept as extra data. Ten to twenty varied samples are enough to start, and a label dataset should include every label. The Import dialog has templates and the same notes under its help icon.
+
+The bundled CSV looks like this:
 
 ```csv
 input,output

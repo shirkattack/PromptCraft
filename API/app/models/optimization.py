@@ -55,3 +55,8 @@ class OptimizationSession(Base):
     feedback_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+    # Added by migration 0004: the optimization_details payload (method,
+    # scores, eval scoreboard, GEPA timeline) as JSON, so a past session can
+    # be reopened with everything the run produced.
+    result_json: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -533,6 +533,21 @@ def export_dataset(
 
         data_str = json.dumps(export_data, indent=2)
 
+    elif request.format == "jsonl":
+        lines = []
+        for sample in samples:
+            row: dict[str, Any] = {
+                "input": sample.input_text,
+                "output": sample.expected_output,
+            }
+            if request.include_metadata and sample.extra_data:
+                try:
+                    row["extra_data"] = json.loads(sample.extra_data)
+                except json.JSONDecodeError:
+                    row["extra_data"] = {"raw": sample.extra_data}
+            lines.append(json.dumps(row, ensure_ascii=False))
+        data_str = "\n".join(lines) + "\n"
+
     elif request.format == "csv":
         # csv.writer handles quoting and embedded newlines, which hand-rolled
         # escaping got wrong for any prompt containing a comma or a quote.
