@@ -8,6 +8,7 @@ import { detectTaskType, TASK_TYPE_HELP } from "@/lib/task-types"
 import type { AIModel, EvalMetric, EvalStrategy, FeedbackRating, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { PromptEvolutionCard } from "@/components/prompt-evolution-card"
+import { TryItCard } from "@/components/try-it-card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -1512,6 +1513,10 @@ export function OptimizationDashboard() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {optimizedPrompt && lastSessionId && (
+            <TryItCard sessionId={lastSessionId} hasOptimized={Boolean(optimizedPrompt)} samples={lastResult?.metadata.eval?.results} />
           )}
 
           {lastResult?.metadata.gepa && <PromptEvolutionCard report={lastResult.metadata.gepa} />}

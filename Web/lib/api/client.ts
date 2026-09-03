@@ -244,6 +244,22 @@ export interface OptimizationJob {
   elapsed_seconds: number
 }
 
+/** One prompt's answer from POST /sessions/{id}/try. */
+export interface TryResult {
+  label: 'original' | 'optimized' | string
+  prompt_sent: string
+  output: string
+  error: string | null
+  elapsed_seconds: number
+}
+
+export interface TryResponse {
+  session_id: string
+  model: string
+  input: string
+  results: TryResult[]
+}
+
 export interface OllamaHealth {
   status: string
   healthy: boolean
@@ -438,6 +454,14 @@ class APIClient {
   /** A past session with the stored result of its last optimization (null if none). */
   async getSessionResult(sessionId: string): Promise<{ session: OptimizationSession; optimization_details: OptimizeResponse['optimization_details'] | null }> {
     return this.request(`/sessions/${sessionId}/result`)
+  }
+
+  /** Run the session's original and optimized prompts on one input (stateless). */
+  async trySession(sessionId: string, input: string, options: { temperature?: number; max_tokens?: number } = {}): Promise<TryResponse> {
+    return this.request<TryResponse>(`/sessions/${sessionId}/try`, {
+      method: 'POST',
+      body: JSON.stringify({ input, ...options }),
+    })
   }
 
   /** Thumbs up/down on the optimized prompt; a null rating clears it. */
