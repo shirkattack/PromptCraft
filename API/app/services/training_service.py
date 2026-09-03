@@ -408,7 +408,7 @@ Generate {sample_count} translation examples:"""
     ) -> list[TrainingSampleCreate]:
         """Parse imported data into training samples."""
         try:
-            if request.file_format == "json":
+            if request.file_format in ("json", "jsonl"):
                 samples = self._parse_json_import(request.data)
             elif request.file_format == "csv":
                 samples = self._parse_csv_import(request.data)
@@ -438,22 +438,50 @@ Generate {sample_count} translation examples:"""
         return samples
 
     def _parse_json_import(self, raw: str) -> list[TrainingSampleCreate]:
-        data = json.loads(raw)
+        """Accept a JSON array, an object wrapping one, or JSON Lines.
+
+        Items may use ``input``/``output`` or the common aliases
+        (``prompt``/``response``, ``question``/``answer``, ``text``/``label``,
+        ``input_text``/``expected_output``); other fields become extra_data.
+        """
+        text = raw.strip()
+        try:
+            data: Any = json.loads(text)
+        except json.JSONDecodeError:
+            # JSON Lines: one object per line.
+            data = []
+            for line_number, line in enumerate(text.splitlines(), start=1):
+                line = line.strip().rstrip(",")
+                if not line:
+                    continue
+                try:
+                    data.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    raise TrainingDataError(
+                        f"Line {line_number} is not valid JSON",
+                        error_code="IMPORT_PARSE_FAILED",
+                        details={"line": line_number, "error": str(exc)},
+                    ) from exc
+
+        if isinstance(data, dict):
+            nested = next((v for v in data.values() if isinstance(v, list)), None)
+            data = nested if nested is not None else [data]
         if not isinstance(data, list):
             raise TrainingDataError(
-                "JSON import must be an array of objects",
+                "JSON import must be an array of objects (or JSON Lines)",
                 error_code="IMPORT_PARSE_FAILED",
             )
 
-        return [
-            self._build_sample(
-                str(item.get("input", "")),
-                str(item.get("output", "")),
-                self._as_extra_data(item.get("extra_data")),
+        samples = []
+        for item in data:
+            pair = self._pair_from_item(item)
+            if pair is None:
+                continue
+            input_text, output_text, extra = pair
+            samples.append(
+                self._build_sample(input_text, output_text, self._as_extra_data(extra))
             )
-            for item in data
-            if isinstance(item, dict)
-        ]
+        return samples
 
     def _parse_csv_import(self, raw: str) -> list[TrainingSampleCreate]:
         """Parse CSV using the stdlib reader.

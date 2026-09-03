@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets, notifySessionsChanged } from "@/lib/api/hooks"
+import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets, notifySessionsChanged, LOAD_PROMPT, NEW_OPTIMIZATION, OPEN_SESSION } from "@/lib/api/hooks"
 import apiClient from "@/lib/api/client"
 import { starterPromptFor } from "@/lib/starter-prompt"
+import { detectTaskType, TASK_TYPE_HELP } from "@/lib/task-types"
 import type { AIModel, EvalMetric, EvalStrategy, FeedbackRating, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { PromptEvolutionCard } from "@/components/prompt-evolution-card"
@@ -440,7 +441,7 @@ export function OptimizationDashboard() {
         original_prompt: originalPrompt,
         provider: providerInfo?.id || selectedProvider.toLowerCase(),
         model: selectedModel,
-        task_type: selectedTaskType === 'auto' ? 'general' : selectedTaskType
+        task_type: selectedTaskType === 'auto' ? detectTaskType(originalPrompt) : selectedTaskType
       })
 
       // Run as a background job; the API reports each stage while it works.
@@ -596,6 +597,75 @@ export function OptimizationDashboard() {
     setOptimizationProgress(0)
     setIsOptimizing(false)
   }
+
+  // Requests from the sidebar: load a prompt file, start fresh, or reopen a session.
+  useEffect(() => {
+    const onLoad = (event: Event) => {
+      const { text } = (event as CustomEvent<{ text: string }>).detail
+      setOriginalPrompt(text)
+      setOptimizedPrompt("")
+      setLastResult(null)
+      setLastSessionId(null)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+    const onNew = () => {
+      handleReset()
+      setLastSessionId(null)
+      setFeedback(null)
+      setCommentOpen(false)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      textareaRef.current?.focus()
+    }
+    const onOpen = async (event: Event) => {
+      const { sessionId } = (event as CustomEvent<{ sessionId: string }>).detail
+      try {
+        const { session, optimization_details } = await apiClient.getSessionResult(sessionId)
+        setOriginalPrompt(session.original_prompt)
+        setOptimizedPrompt(session.optimized_prompt ?? "")
+        setLastSessionId(session.id)
+        setFeedback(session.feedback_rating)
+        setFeedbackComment(session.feedback_comment ?? "")
+        setCommentOpen(false)
+        if (session.optimization_method && ["meta_prompt", "dspy", "simple", "gepa"].includes(session.optimization_method)) {
+          setSelectedMethod(session.optimization_method as OptimizationMethod)
+        }
+        if (session.dataset_id) setSelectedDataset(session.dataset_id)
+        setLastResult(
+          optimization_details ??
+            (session.optimized_prompt
+              ? {
+                  method: (session.optimization_method as OptimizationMethod) ?? "meta_prompt",
+                  improvement_score: session.performance_score,
+                  score_type: session.eval_score != null ? "measured" : "heuristic",
+                  processing_time: session.processing_time ?? 0,
+                  metadata: {},
+                }
+              : null),
+        )
+        window.scrollTo({ top: 0, behavior: "smooth" })
+        toast({
+          title: `Opened "${session.name}"`,
+          description: optimization_details
+            ? "Prompt, result and evaluation restored."
+            : session.optimized_prompt
+              ? "Prompt and result restored; this session predates stored evaluations."
+              : "This session has no result yet.",
+          duration: 3000,
+        })
+      } catch (error) {
+        toast({ title: "Could not open session", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive", duration: 4000 })
+      }
+    }
+    window.addEventListener(LOAD_PROMPT, onLoad)
+    window.addEventListener(NEW_OPTIMIZATION, onNew)
+    window.addEventListener(OPEN_SESSION, onOpen)
+    return () => {
+      window.removeEventListener(LOAD_PROMPT, onLoad)
+      window.removeEventListener(NEW_OPTIMIZATION, onNew)
+      window.removeEventListener(OPEN_SESSION, onOpen)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleExportResults = () => {
     const data = {
@@ -879,13 +949,33 @@ export function OptimizationDashboard() {
               )}
 
               <div className="space-y-3">
-                <label className="text-sm font-medium font-sans">Task Type</label>
+                <label className="text-sm font-medium font-sans flex items-center gap-2">
+                  Task Type
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <div className="max-w-xs text-xs space-y-1">
+                        <p className="font-medium">What it changes</p>
+                        <p>{TASK_TYPE_HELP.effect}</p>
+                        <p className="font-medium">Auto-detect</p>
+                        <p>{TASK_TYPE_HELP.auto}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </label>
                 <Select value={selectedTaskType} onValueChange={setSelectedTaskType}>
                   <SelectTrigger className="w-full md:w-64">
                     <SelectValue>
                       <div className="flex items-center gap-2">
                         <span>{taskTypes.find((t) => t.id === selectedTaskType)?.icon}</span>
-                        <span className="font-sans">{taskTypes.find((t) => t.id === selectedTaskType)?.name}</span>
+                        <span className="font-sans">
+                          {taskTypes.find((t) => t.id === selectedTaskType)?.name}
+                          {selectedTaskType === "auto" && originalPrompt.trim() && (
+                            <span className="ml-1 text-xs text-muted-foreground">→ {taskTypeLabel(detectTaskType(originalPrompt))}</span>
+                          )}
+                        </span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
@@ -947,11 +1037,13 @@ export function OptimizationDashboard() {
 
               <div className="space-y-3">
                 <label className="text-sm font-medium font-sans flex items-center gap-2">
-                  Measure against a dataset
-                  <span className="text-xs font-normal text-muted-foreground">optional</span>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-2 cursor-help">
+                        Measure against a dataset
+                        <span className="text-xs font-normal text-muted-foreground">optional</span>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                      </span>
                     </TooltipTrigger>
                     <TooltipContent side="right">
                       <div className="max-w-xs text-xs space-y-1">

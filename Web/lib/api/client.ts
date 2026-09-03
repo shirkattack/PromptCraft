@@ -291,7 +291,7 @@ export interface TrainingStats {
   recent_datasets: TrainingDatasetSummary[]
 }
 
-export type DatasetFileFormat = 'json' | 'csv'
+export type DatasetFileFormat = 'json' | 'jsonl' | 'csv'
 
 export interface CreateDatasetRequest {
   name: string
@@ -433,6 +433,11 @@ class APIClient {
 
   async getOptimizationStatus(sessionId: string): Promise<OptimizationJob> {
     return this.request<OptimizationJob>(`/sessions/${sessionId}/optimize/status`)
+  }
+
+  /** A past session with the stored result of its last optimization (null if none). */
+  async getSessionResult(sessionId: string): Promise<{ session: OptimizationSession; optimization_details: OptimizeResponse['optimization_details'] | null }> {
+    return this.request(`/sessions/${sessionId}/result`)
   }
 
   /** Thumbs up/down on the optimized prompt; a null rating clears it. */

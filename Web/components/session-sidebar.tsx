@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo, useEffect, type ChangeEvent } from "react"
-import { useSessions, usePerformanceMetrics, useTrainingDatasets, useProviders, notifyTrainingChanged } from "@/lib/api/hooks"
+import { useState, useMemo, useEffect, useRef, type ChangeEvent } from "react"
+import { useSessions, usePerformanceMetrics, useTrainingDatasets, useProviders, notifyTrainingChanged, requestLoadPrompt, requestNewOptimization, requestOpenSession, OPEN_SESSION } from "@/lib/api/hooks"
 import apiClient, { type OptimizationSession, type TrainingDatasetSummary, type TrainingSample, type DatasetFileFormat } from "@/lib/api/client"
 import { getRelativeTime, parseApiDate } from "@/lib/utils"
 import {
@@ -64,7 +64,10 @@ import {
   MoreHorizontal,
   Loader2,
   Sparkles,
+  HelpCircle,
+  ExternalLink,
 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Mirrors the task types offered by the dashboard; the API stores any string.
@@ -222,6 +225,25 @@ export function SessionSidebar() {
   const [generateOpen, setGenerateOpen] = useState(false)
   const [generateForm, setGenerateForm] = useState<GenerateForm>(EMPTY_GENERATE)
   const [busy, setBusy] = useState(false)
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  const promptFileInput = useRef<HTMLInputElement>(null)
+
+  // Keep the highlighted session in sync when the dashboard opens one.
+  useEffect(() => {
+    const onOpen = (event: Event) => setActiveSessionId((event as CustomEvent<{ sessionId: string }>).detail.sessionId)
+    window.addEventListener(OPEN_SESSION, onOpen)
+    return () => window.removeEventListener(OPEN_SESSION, onOpen)
+  }, [])
+
+  const handleImportPromptFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    file.text().then((text) => {
+      requestLoadPrompt(text.trim(), file.name)
+      toast({ title: "Prompt loaded", description: `${file.name} is in the prompt box. Edit it, then optimize.`, duration: 3000 })
+    })
+  }
 
   // Prevent hydration mismatch by only rendering after mount
   useEffect(() => {
@@ -347,7 +369,7 @@ export function SessionSidebar() {
       setImportForm((form) => ({
         ...form,
         data: text,
-        file_format: extension === "csv" ? "csv" : form.file_format,
+        file_format: extension === "csv" ? "csv" : extension === "jsonl" ? "jsonl" : extension === "json" ? "json" : form.file_format,
         name: form.name || file.name.replace(/\.[^.]+$/, ""),
       })),
     )
@@ -488,16 +510,23 @@ export function SessionSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     <SidebarMenuItem>
-                      <SidebarMenuButton className="font-sans bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700">
+                      <SidebarMenuButton
+                        className="font-sans bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
+                        onClick={() => {
+                          setActiveSessionId(null)
+                          requestNewOptimization()
+                        }}
+                      >
                         <Plus className="w-4 h-4" />
                         New Optimization
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton className="font-sans">
+                      <SidebarMenuButton className="font-sans" onClick={() => promptFileInput.current?.click()}>
                         <FileText className="w-4 h-4" />
                         Import Prompt
                       </SidebarMenuButton>
+                      <input ref={promptFileInput} type="file" accept=".txt,.md,.prompt,text/plain,text/markdown" className="hidden" onChange={handleImportPromptFile} />
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -533,7 +562,15 @@ export function SessionSidebar() {
                       </div>
                     ) : filteredSessions.map((session) => (
                       <SidebarMenuItem key={session.id}>
-                        <SidebarMenuButton className="flex-col items-start h-auto p-3 hover:bg-accent/50 group">
+                        <SidebarMenuButton
+                          className={`flex-col items-start h-auto p-3 hover:bg-accent/50 group ${activeSessionId === session.id ? "bg-accent" : ""}`}
+                          isActive={activeSessionId === session.id}
+                          title="Open this session's prompt and result"
+                          onClick={() => {
+                            setActiveSessionId(session.id)
+                            requestOpenSession(session.id)
+                          }}
+                        >
                           <div className="flex items-center justify-between w-full">
                             <span className="font-sans font-medium text-sm truncate">{session.name}</span>
                             <Badge className={`text-xs font-sans text-white ${getScoreColor(session.score)}`}>
@@ -552,7 +589,7 @@ export function SessionSidebar() {
                             </div>
                           </div>
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground mt-1">
-                            Status: {session.status}
+                            {session.status === "completed" ? "Click to reopen" : `Status: ${session.status}`}
                           </div>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -1067,11 +1104,80 @@ export function SessionSidebar() {
       <Dialog open={importOpen} onOpenChange={(isOpen) => !busy && setImportOpen(isOpen)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-sans">Import Dataset</DialogTitle>
+            <DialogTitle className="font-sans flex items-center gap-2">
+              Import Dataset
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start">
+                  <div className="max-w-sm text-xs space-y-2">
+                    <p className="font-medium">What a dataset is</p>
+                    <p>
+                      A list of <b>inputs</b> and the <b>output</b> you expect for each. Your prompt is the instruction that should turn an
+                      input into its output; the optimizer scores candidates on samples it did not see.
+                    </p>
+                    <p className="font-medium">Accepted layouts</p>
+                    <pre className="rounded bg-muted p-2 whitespace-pre-wrap font-mono">{`JSON   [{"input": "…", "output": "…"}, …]
+JSONL  {"input": "…", "output": "…"}  (one per line)
+CSV    input,output
+       "Server is down",high`}</pre>
+                    <p>
+                      Key aliases work too: <code>prompt/response</code>, <code>question/answer</code>, <code>text/label</code>. Any other
+                      fields are kept as extra data. JSON Lines is handy for large or appended files; otherwise the formats are equivalent.
+                    </p>
+                    <p>10 to 20 varied samples are enough to start; label datasets should include every label.</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </DialogTitle>
             <DialogDescription>
-              JSON: a list of objects with <code>input</code> and <code>output</code> keys. CSV: an <code>input,output</code> header row.
+              Inputs and the outputs you expect. Hover the question mark for the formats, or start from a template.
             </DialogDescription>
           </DialogHeader>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() =>
+                downloadText(
+                  "dataset-template.json",
+                  JSON.stringify(
+                    [
+                      { input: "Production database is down, all customers affected", output: "high" },
+                      { input: "Question about how billing cycles work", output: "medium" },
+                      { input: "Thanks for the quick help yesterday!", output: "low" },
+                    ],
+                    null,
+                    2,
+                  ),
+                  "application/json",
+                )
+              }
+            >
+              <Download className="w-3 h-3 mr-1" /> JSON template
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() =>
+                downloadText(
+                  "dataset-template.csv",
+                  'input,output\n"Production database is down, all customers affected",high\n"Question about how billing cycles work",medium\n"Thanks for the quick help yesterday!",low\n',
+                  "text/csv",
+                )
+              }
+            >
+              <Download className="w-3 h-3 mr-1" /> CSV template
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+              <a href="https://github.com/shirkattack/PromptCraft/blob/main/docs/examples/support-tickets.csv" target="_blank" rel="noreferrer">
+                <ExternalLink className="w-3 h-3 mr-1" /> Example dataset
+              </a>
+            </Button>
+          </div>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -1111,13 +1217,14 @@ export function SessionSidebar() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="jsonl">JSON Lines</SelectItem>
                     <SelectItem value="csv">CSV</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium font-sans">From file</label>
-                <Input type="file" accept=".json,.csv,.txt" onChange={handleImportFile} className="h-8 text-xs" />
+                <Input type="file" accept=".json,.jsonl,.csv,.txt" onChange={handleImportFile} className="h-8 text-xs" />
               </div>
             </div>
             <div className="space-y-1">
@@ -1125,7 +1232,13 @@ export function SessionSidebar() {
               <Textarea
                 value={importForm.data}
                 onChange={(e) => setImportForm((form) => ({ ...form, data: e.target.value }))}
-                placeholder={importForm.file_format === "json" ? '[{"input": "...", "output": "..."}]' : "input,output\n..., ..."}
+                placeholder={
+                  importForm.file_format === "csv"
+                    ? "input,output\n..., ..."
+                    : importForm.file_format === "jsonl"
+                      ? '{"input": "...", "output": "..."}\n{"input": "...", "output": "..."}'
+                      : '[{"input": "...", "output": "..."}]'
+                }
                 className="font-mono text-xs min-h-[160px]"
               />
             </div>

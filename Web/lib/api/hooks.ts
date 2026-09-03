@@ -16,6 +16,24 @@ export function notifyTrainingChanged() {
   window.dispatchEvent(new Event(TRAINING_CHANGED))
 }
 
+// Sidebar -> dashboard requests. The two components share no React state,
+// so the sidebar asks and the dashboard listens.
+export const LOAD_PROMPT = 'promptcraft:load-prompt'
+export const NEW_OPTIMIZATION = 'promptcraft:new-optimization'
+export const OPEN_SESSION = 'promptcraft:open-session'
+
+export function requestLoadPrompt(text: string, source?: string) {
+  window.dispatchEvent(new CustomEvent(LOAD_PROMPT, { detail: { text, source } }))
+}
+
+export function requestNewOptimization() {
+  window.dispatchEvent(new Event(NEW_OPTIMIZATION))
+}
+
+export function requestOpenSession(sessionId: string) {
+  window.dispatchEvent(new CustomEvent(OPEN_SESSION, { detail: { sessionId } }))
+}
+
 // Generic hook for async data fetching
 function useAsyncData<T>(
   fetchFunction: () => Promise<T>,

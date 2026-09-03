@@ -225,3 +225,39 @@ def test_normalize_strips_sentencepiece_marker():
 
     assert normalize("▁high") == "high"
     assert normalize("high▁priority") == "high priority"
+
+
+class TestFlexibleJsonImport:
+    def _import(self, data, fmt="json"):
+        return TrainingDataService().parse_import_data(
+            DatasetImportRequest(name="n", task_type="t", file_format=fmt, data=data)
+        )
+
+    def test_jsonl_and_aliases(self):
+        samples = self._import(
+            '{"prompt": "a", "response": "b"}\n{"question": "c", "answer": "d"}\n',
+            fmt="jsonl",
+        )
+        assert [(s.input_text, s.expected_output) for s in samples] == [
+            ("a", "b"),
+            ("c", "d"),
+        ]
+
+    def test_jsonl_is_detected_even_when_format_says_json(self):
+        samples = self._import(
+            '{"input": "a", "output": "b"}\n{"input": "c", "output": "d"}'
+        )
+        assert len(samples) == 2
+
+    def test_wrapped_list_and_extra_fields(self):
+        samples = self._import(
+            '{"data": [{"input_text": "a", "expected_output": "b", "source": "manual"}]}'
+        )
+        assert samples[0].input_text == "a" and samples[0].extra_data == {
+            "source": "manual"
+        }
+
+    def test_bad_jsonl_line_is_reported(self):
+        with pytest.raises(TrainingDataError) as exc_info:
+            self._import('{"input": "a", "output": "b"}\nnot json\n', fmt="jsonl")
+        assert exc_info.value.details["line"] == 2
