@@ -367,10 +367,12 @@ npm run migrate:api
 ```sh
 npm run test:api                          # pytest; hermetic, no Ollama needed
 cd Web && npx tsc --noEmit                # type check (the build fails on errors)
-uv run --project API python test_optimization.py   # end-to-end run against a live API
+npm run e2e:install                       # once: downloads Chromium for the browser test
+npm run e2e                               # browser smoke test against a running `npm run dev`
+npm run demo:record                       # re-records docs/demo.gif (needs ffmpeg)
 ```
 
-The backend suite runs without Ollama: model calls use DSPy's `DummyLM` and embeddings a deterministic stand-in. Manual test cases are in [TESTING_GUIDE.md](TESTING_GUIDE.md).
+The backend suite runs without Ollama: model calls use DSPy's `DummyLM` and embeddings a deterministic stand-in; CI runs it on every pull request. The browser smoke test needs Ollama with a model: it imports a dataset, previews and exports it, runs a measured optimization, tries both prompts on an input, checks analytics, deletes the dataset and reloads, and fails on any page error. Manual test cases are in [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
 #### Contributing
 

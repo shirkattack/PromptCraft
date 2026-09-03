@@ -19,7 +19,10 @@
     "dev:links": "node scripts/dev-links.mjs",
     "postinstall": "node scripts/setup-api.mjs",
     "lint:api": "node scripts/run-api.mjs ruff check app tests && node scripts/run-api.mjs mypy app",
-    "migrate:api": "node scripts/run-api.mjs alembic upgrade head"
+    "migrate:api": "node scripts/run-api.mjs alembic upgrade head",
+    "e2e": "cd Web && node e2e/smoke.mjs",
+    "e2e:install": "cd Web && npx playwright install chromium",
+    "demo:record": "bash scripts/record-demo.sh"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
