@@ -60,6 +60,31 @@ class OptimizationSessionUpdate(BaseModel):
 FeedbackRating = Literal["up", "down"]
 
 
+class TryRequest(BaseModel):
+    """Run the session's prompts on one input (POST /sessions/{id}/try)."""
+
+    input: str = Field(min_length=1, max_length=4000)
+    # Which of the session's prompts to run; both by default.
+    variants: list[Literal["original", "optimized"]] = ["original", "optimized"]
+    temperature: float = Field(default=0.2, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=600, ge=16, le=4096)
+
+
+class TryResult(BaseModel):
+    label: str
+    prompt_sent: str
+    output: str
+    error: str | None = None
+    elapsed_seconds: float
+
+
+class TryResponse(BaseModel):
+    session_id: str
+    model: str
+    input: str
+    results: list[TryResult]
+
+
 class SessionFeedback(BaseModel):
     """Thumbs up/down on the optimized prompt; rating null clears it."""
 

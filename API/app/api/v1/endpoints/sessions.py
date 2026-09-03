@@ -18,11 +18,15 @@ from app.schemas.optimization import (
     OptimizeRequest,
     PerformanceMetrics,
     SessionFeedback,
+    TryRequest,
+    TryResponse,
+    TryResult,
 )
 from app.services.eval_service import EvalError, Sample
 from app.services.job_manager import JobAlreadyRunning, OptimizationJob, job_manager
 from app.services.optimization_service import optimization_service
 from app.services.progress import ProgressCallback, no_progress
+from app.services.try_service import try_prompts
 
 router = APIRouter(dependencies=[Depends(verify_api_key)])
 
@@ -299,6 +303,41 @@ def update_session(
     db.commit()
     db.refresh(session)
     return session
+
+
+@router.post("/{session_id}/try", response_model=TryResponse)
+async def try_session_prompts(
+    session_id: str, request: TryRequest, db: Session = Depends(get_db)
+) -> TryResponse:
+    """Run the session's original and/or optimized prompt on one input.
+
+    Stateless: nothing is stored. Uses the session's provider and model.
+    """
+    session = _get_session_or_404(db, session_id)
+    prompts: dict[str, str] = {}
+    for variant in request.variants:
+        if variant == "original":
+            prompts["original"] = session.original_prompt
+        elif session.optimized_prompt:
+            prompts["optimized"] = session.optimized_prompt
+    if not prompts:
+        raise HTTPException(
+            status_code=409, detail="This session has no optimized prompt to try yet"
+        )
+    results = await try_prompts(
+        provider=session.provider,
+        model=session.model,
+        input_text=request.input,
+        prompts=prompts,
+        temperature=request.temperature,
+        max_tokens=request.max_tokens,
+    )
+    return TryResponse(
+        session_id=session.id,
+        model=session.model,
+        input=request.input,
+        results=[TryResult(**r) for r in results],
+    )
 
 
 @router.post("/{session_id}/feedback", response_model=OptimizationSessionResponse)

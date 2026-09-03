@@ -71,6 +71,8 @@ provide clear instructions on how to use it.
 
 Without a dataset the score is a structural heuristic (length, sections, examples, constraints), and the UI says so. The next two examples replace it with a measurement.
 
+Whatever the score, the **Try it** card under the result runs the original and the optimized prompt on an input you type, with the same model, and shows both answers side by side with timing. After a measured run it can pick a held-out sample for you and says whether each answer matched the expected output.
+
 #### Example 2: measuring against a dataset
 
 A dataset is a list of **inputs** and the **outputs** you expect for them. The prompt you optimize is the *instruction* that should turn one input into its output; the app appends each input to your prompt where `{input}` goes, runs it, and compares the answer with the expected output.

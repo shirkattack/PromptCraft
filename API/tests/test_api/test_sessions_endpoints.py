@@ -633,3 +633,105 @@ class TestSessionResult:
         assert body["optimization_details"] is None
         assert body["session"]["id"] == session_id
         assert client.get(f"{BASE}/nope/result").status_code == 404
+
+
+class TestTryIt:
+    def _lm(self):
+        class EchoLM:
+            calls: list[str] = []
+
+            def __call__(self, prompt, **kwargs):
+                EchoLM.calls.append(prompt)
+                return [
+                    (
+                        "high"
+                        if "Examples:" in prompt
+                        else "This ticket looks quite urgent, so high."
+                    )
+                ]
+
+        EchoLM.calls = []
+        return EchoLM()
+
+    def test_runs_both_prompts_and_fills_placeholder(
+        self, client: TestClient, session_id: str
+    ):
+        client.put(
+            f"{BASE}/{session_id}",
+            json={
+                "optimized_prompt": "Classify.\n\nExamples:\n\nInput: a\nOutput: low\n\nInput: {input}\nOutput:",
+                "status": "completed",
+            },
+        )
+        lm = self._lm()
+        with patch("app.services.lm_manager.LMManager.get_lm", return_value=lm):
+            response = client.post(
+                f"{BASE}/{session_id}/try", json={"input": "Server is down"}
+            )
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        labels = [r["label"] for r in body["results"]]
+        assert labels == ["original", "optimized"]
+        original, optimized = body["results"]
+        # No placeholder in the original: the input is appended.
+        assert original["prompt_sent"].endswith("Input: Server is down\nOutput:")
+        # Placeholder in the optimized prompt: substituted in place.
+        assert (
+            "Input: Server is down\nOutput:" in optimized["prompt_sent"]
+            and "{input}" not in optimized["prompt_sent"]
+        )
+        assert optimized["output"] == "high"
+        assert original["elapsed_seconds"] >= 0 and original["error"] is None
+        assert len(lm.calls) == 2
+
+    def test_only_original_before_optimization(
+        self, client: TestClient, session_id: str
+    ):
+        with patch("app.services.lm_manager.LMManager.get_lm", return_value=self._lm()):
+            body = client.post(f"{BASE}/{session_id}/try", json={"input": "x"}).json()
+        assert [r["label"] for r in body["results"]] == ["original"]
+        assert (
+            client.post(
+                f"{BASE}/{session_id}/try",
+                json={"input": "x", "variants": ["optimized"]},
+            ).status_code
+            == 409
+        )
+
+    def test_one_failing_call_does_not_hide_the_other(
+        self, client: TestClient, session_id: str
+    ):
+        client.put(
+            f"{BASE}/{session_id}",
+            json={"optimized_prompt": "Better {input}", "status": "completed"},
+        )
+
+        class FlakyLM:
+            n = 0
+
+            def __call__(self, prompt, **kwargs):
+                FlakyLM.n += 1
+                if FlakyLM.n == 2:
+                    raise RuntimeError("model hiccup")
+                return "answer"
+
+        with patch("app.services.lm_manager.LMManager.get_lm", return_value=FlakyLM()):
+            body = client.post(f"{BASE}/{session_id}/try", json={"input": "x"}).json()
+        assert body["results"][0]["output"] == "answer"
+        assert (
+            "hiccup" in body["results"][1]["error"]
+            and body["results"][1]["output"] == ""
+        )
+
+    def test_input_is_validated(self, client: TestClient, session_id: str):
+        assert (
+            client.post(f"{BASE}/{session_id}/try", json={"input": ""}).status_code
+            == 422
+        )
+        assert (
+            client.post(
+                f"{BASE}/{session_id}/try", json={"input": "x" * 5000}
+            ).status_code
+            == 422
+        )

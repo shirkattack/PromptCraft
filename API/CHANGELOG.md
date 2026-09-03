@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `POST /sessions/{id}/try`: run the session's original and/or optimized
+  prompt on one input with the session's model and get both answers, the
+  exact text sent, timing and any per-prompt error. A prompt with an
+  `{input}` placeholder gets the input substituted; one without gets it
+  appended as `Input: ... / Output:`, so the result is exactly what the
+  copied prompt does elsewhere. Stateless.
+
 ## [1.1.0] - 2026-09-03
 
 The measured-optimization release. Scores can now be measurements on your own
