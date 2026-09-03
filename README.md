@@ -1,4 +1,9 @@
-<h1 align="center">PromptCraft</h1>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo-light.svg" alt="PromptCraft" width="420">
+  </picture>
+</p>
 
 <h4 align="center">Local, private prompt optimization powered by DSPy and Ollama.</h4>
 
