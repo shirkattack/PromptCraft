@@ -1,60 +1,51 @@
 #!/bin/bash
 
-# PromptCraft Ollama Setup Script
-# This script helps you set up Ollama with recommended models for PromptCraft
+# Installs Ollama if needed and pulls the models PromptCraft uses by default:
+# llama3.2 for optimization and nomic-embed-text for coverage-based example
+# selection and synthetic de-duplication (optional but recommended).
 
-echo "🚀 PromptCraft Ollama Setup"
-echo "=========================="
+set -u
 
-# Check if Ollama is installed
-if ! command -v ollama &> /dev/null; then
-    echo "❌ Ollama is not installed. Installing now..."
-    curl -fsSL https://ollama.ai/install.sh | sh
-    echo "✅ Ollama installed successfully!"
+echo "PromptCraft Ollama setup"
+echo "========================"
+
+if ! command -v ollama &>/dev/null; then
+    echo "Ollama is not installed. Installing..."
+    curl -fsSL https://ollama.com/install.sh | sh
 else
-    echo "✅ Ollama is already installed"
+    echo "Ollama is installed."
 fi
 
-# Check if Ollama service is running
-if ! curl -s http://localhost:11434/api/tags &> /dev/null; then
-    echo "⚠️  Ollama service is not running. Please start it with: ollama serve"
-    echo "   Then run this script again."
+if ! curl -s http://localhost:11434/api/tags &>/dev/null; then
+    echo "Ollama is not running. Start it with: ollama serve"
+    echo "Then run this script again."
     exit 1
-else
-    echo "✅ Ollama service is running"
 fi
+echo "Ollama is running."
 
-echo ""
-echo "📦 Pulling recommended models for PromptCraft..."
-
-# Array of recommended models
 models=(
-    "llama3.2:latest"
-    "mistral:7b"
-    "codellama:7b"
-    "llama3.2:1b"
+    "llama3.2:latest"        # default task model (3B, fast)
+    "nomic-embed-text:latest" # embeddings for example selection and de-duplication
 )
 
 for model in "${models[@]}"; do
-    echo "⬇️  Pulling $model..."
+    echo
+    echo "Pulling $model..."
     if ollama pull "$model"; then
-        echo "✅ Successfully pulled $model"
+        echo "Pulled $model"
     else
-        echo "❌ Failed to pull $model"
+        echo "Failed to pull $model"
     fi
-    echo ""
 done
 
-echo "🎉 Setup complete!"
-echo ""
-echo "Available models:"
+echo
+echo "Installed models:"
 ollama list
 
-echo ""
-echo "🔧 Next steps:"
-echo "1. Copy the environment file: cp .env.example .env"
-echo "2. Start the PromptCraft API: make dev"
-echo "3. Visit http://localhost:8000/docs to see the API documentation"
-echo ""
-echo "💡 Tip: You can pull additional models with: ollama pull <model-name>"
-echo "   Popular options: gemma:7b, phi3:mini, qwen2:7b"
+echo
+echo "Next: from the repository root run"
+echo "  npm install    # sets up the API and web app, creates API/.env"
+echo "  npm run dev    # starts both; links are printed when they are up"
+echo
+echo "Any other model from https://ollama.com/library works too: ollama pull <name>"
+echo "Set DEFAULT_MODEL_NAME in API/.env to make it the default."
