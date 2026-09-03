@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
-import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets } from "@/lib/api/hooks"
-import type { AIModel, EvalMetric, EvalStrategy, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
+import { useProviders, useOllamaHealth, useSessionActions, usePerformanceMetrics, useOptimizationMethods, useTrainingStats, useTrainingDatasets, notifySessionsChanged } from "@/lib/api/hooks"
+import apiClient from "@/lib/api/client"
+import type { AIModel, EvalMetric, EvalStrategy, FeedbackRating, JobProgress, OptimizationMethod, OptimizationMethodInfo, OptimizeOptions, OptimizeResponse, OutputFormat, TargetLength } from "@/lib/api/client"
 import { EvalResultsCard, candidateLabel } from "@/components/eval-results-card"
 import { PromptEvolutionCard } from "@/components/prompt-evolution-card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -42,6 +43,8 @@ import {
   ChevronDown,
   HardDrive,
   Loader2,
+  ThumbsUp,
+  ThumbsDown,
   Copy,
   Share2,
   Upload,
@@ -182,6 +185,10 @@ export function OptimizationDashboard() {
   const [optimizedPrompt, setOptimizedPrompt] = useState("")
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<FeedbackRating | null>(null)
+  const [feedbackComment, setFeedbackComment] = useState("")
+  const [commentOpen, setCommentOpen] = useState(false)
   const [advanced, setAdvanced] = useState<Required<Omit<OptimizeOptions, "dataset_id" | "eval_metric" | "max_demos" | "gepa_budget" | "reflection_model" | "eval_strategy">>>({
     temperature: 0.7,
     max_tokens: 2048,
@@ -462,6 +469,10 @@ export function OptimizationDashboard() {
       if (result.session?.optimized_prompt) {
         setOptimizedPrompt(result.session.optimized_prompt)
         setLastResult(result.optimization_details)
+        setLastSessionId(result.session.id)
+        setFeedback(null)
+        setFeedbackComment("")
+        setCommentOpen(false)
         const evaluation = result.optimization_details.metadata.eval
         toast({
           title: "Optimization complete!",
@@ -501,6 +512,23 @@ export function OptimizationDashboard() {
       description: `Switched to ${provider}`,
       duration: 2000,
     })
+  }
+
+  const handleFeedback = async (rating: FeedbackRating | null, comment?: string) => {
+    if (!lastSessionId) return
+    try {
+      await apiClient.submitFeedback(lastSessionId, rating, comment)
+      setFeedback(rating)
+      if (rating !== "down") setCommentOpen(false)
+      notifySessionsChanged()
+      toast({
+        title: rating ? "Thanks for the feedback" : "Feedback cleared",
+        description: rating ? "Stored on the session and counted in Session Stats." : undefined,
+        duration: 2500,
+      })
+    } catch (error) {
+      toast({ title: "Could not save feedback", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive", duration: 4000 })
+    }
   }
 
   const handleCopyOptimized = async () => {
@@ -1278,6 +1306,48 @@ export function OptimizationDashboard() {
                                         </TooltipContent>
                                       </Tooltip>
 
+                                      <div className="ml-auto flex items-center gap-1">
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant={feedback === "up" ? "secondary" : "ghost"}
+                                              size="sm"
+                                              className="font-sans"
+                                              disabled={!lastSessionId}
+                                              onClick={() => handleFeedback(feedback === "up" ? null : "up")}
+                                            >
+                                              <ThumbsUp className={`w-4 h-4 ${feedback === "up" ? "text-green-500" : ""}`} />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-xs">This prompt works for me</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant={feedback === "down" ? "secondary" : "ghost"}
+                                              size="sm"
+                                              className="font-sans"
+                                              disabled={!lastSessionId}
+                                              onClick={() => {
+                                                if (feedback === "down") {
+                                                  handleFeedback(null)
+                                                } else {
+                                                  setCommentOpen(true)
+                                                  handleFeedback("down")
+                                                }
+                                              }}
+                                            >
+                                              <ThumbsDown className={`w-4 h-4 ${feedback === "down" ? "text-red-500" : ""}`} />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-xs">Not useful; tell me why (optional)</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </div>
+
                                       <Tooltip>
                                         <TooltipTrigger asChild>
                                           <Button
@@ -1297,6 +1367,28 @@ export function OptimizationDashboard() {
                     </>
                   }
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {optimizedPrompt && commentOpen && feedback === "down" && (
+            <Card>
+              <CardContent className="pt-4 space-y-2">
+                <label className="text-xs font-medium font-sans">What was wrong with it? (optional, stored with the session)</label>
+                <Textarea
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  placeholder="Too long, changed the meaning, wrong format..."
+                  className="text-sm min-h-[70px]"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => handleFeedback("down", feedbackComment.trim() || undefined)}>
+                    Save note
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setCommentOpen(false)}>
+                    Skip
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1461,6 +1553,13 @@ export function OptimizationDashboard() {
                   </span>
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-serif text-muted-foreground">Feedback</span>
+                <span className="font-sans font-semibold flex items-center gap-2">
+                  <span className="flex items-center gap-1 text-green-500"><ThumbsUp className="w-3.5 h-3.5" />{performanceMetrics?.thumbs_up ?? 0}</span>
+                  <span className="flex items-center gap-1 text-red-500"><ThumbsDown className="w-3.5 h-3.5" />{performanceMetrics?.thumbs_down ?? 0}</span>
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-serif text-muted-foreground">Processing Time (all runs)</span>

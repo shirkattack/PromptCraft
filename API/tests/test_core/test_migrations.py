@@ -14,6 +14,9 @@ NEW_COLUMNS = {
     "eval_score",
     "eval_metric",
     "eval_sample_count",
+    "feedback_rating",
+    "feedback_comment",
+    "feedback_at",
 }
 
 PRE_ALEMBIC_SCHEMA = """
@@ -66,7 +69,7 @@ def test_upgrades_a_database_created_before_alembic(tmp_path):
     run_migrations(url)
 
     assert NEW_COLUMNS <= _columns(url, "optimization_sessions")
-    assert _version(url) == "0002"
+    assert _version(url) == "0003"
     with sqlite3.connect(path) as conn:
         row = conn.execute(
             "SELECT performance_score, eval_score FROM optimization_sessions WHERE id='s1'"
@@ -90,4 +93,4 @@ def test_is_idempotent(tmp_path):
     url = f"sqlite:///{tmp_path / 'twice.db'}"
     run_migrations(url)
     run_migrations(url)
-    assert _version(url) == "0002"
+    assert _version(url) == "0003"

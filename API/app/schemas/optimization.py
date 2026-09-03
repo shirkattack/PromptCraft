@@ -57,6 +57,16 @@ class OptimizationSessionUpdate(BaseModel):
     status: SessionStatus | None = None
 
 
+FeedbackRating = Literal["up", "down"]
+
+
+class SessionFeedback(BaseModel):
+    """Thumbs up/down on the optimized prompt; rating null clears it."""
+
+    rating: FeedbackRating | None = None
+    comment: str | None = Field(default=None, max_length=2000)
+
+
 OutputFormat = Literal["auto", "markdown", "plain", "json"]
 TargetLength = Literal["auto", "concise", "balanced", "detailed"]
 EvalMetric = Literal["auto", "exact", "contains", "llm_judge"]
@@ -108,6 +118,9 @@ class OptimizationSessionResponse(OptimizationSessionBase):
     eval_score: float | None = None
     eval_metric: str | None = None
     eval_sample_count: int | None = None
+    feedback_rating: str | None = None
+    feedback_comment: str | None = None
+    feedback_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -144,6 +157,9 @@ class PerformanceMetrics(BaseModel):
     # source of truth at all, so it stays null rather than being invented.
     total_processing_time: float | None = None
     cost_savings: float | None = None
+    # User feedback counts across sessions.
+    thumbs_up: int = 0
+    thumbs_down: int = 0
 
 
 class ProviderPerformance(BaseModel):

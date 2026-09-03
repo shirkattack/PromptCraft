@@ -51,6 +51,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exceptions raised while handling another exception now chain with `from`.
 
 ### Added
+- `POST /sessions/{id}/feedback`: thumbs up/down with an optional note on the
+  optimized prompt (migration `0003` adds `feedback_rating`, `feedback_comment`,
+  `feedback_at`); a null rating clears it, and 409 if the session has no
+  optimized prompt yet. `thumbs_up` / `thumbs_down` counts on the analytics
+  endpoint.
+- Context length is read from `/api/show` for models that omit it from
+  `/api/tags` (gemma3n reports 32K there, not the 4K fallback). Cached per
+  model for the process lifetime.
 - **Coverage-based example selection.** BootstrapFewShot now validates a pool
   of up to `EVAL_DEMO_POOL` (12) examples; the `max_demos` that best span the
   training inputs are kept, chosen by farthest-point sampling over

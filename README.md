@@ -216,7 +216,8 @@ Web/
 - `POST /api/v1/sessions/{id}/optimize` - Optimize prompt and wait (body: `optimization_method`, advanced settings, optional `dataset_id` + `eval_metric` + `max_demos` to measure against a dataset)
 - `POST /api/v1/sessions/{id}/optimize/start` - Same body, returns 202 immediately; the web app uses this
 - `GET /api/v1/sessions/{id}/optimize/status` - Stage, progress, best score so far, and the result when finished
-- `GET /api/v1/sessions/analytics/performance` - Performance metrics
+- `POST /api/v1/sessions/{id}/feedback` - Thumbs up/down and a note on the optimized prompt
+- `GET /api/v1/sessions/analytics/performance` - Performance metrics, including feedback counts
 
 ### Training Data
 - `GET /api/v1/training/` - List datasets (newest first, with average sample quality)

@@ -181,3 +181,61 @@ class TestModelOrder:
             ordered = [m.id for m in OllamaService._sort_models(models)]
 
         assert ordered == ["llama3.2:latest", "tiny:1b", "mid:7b", "huge:Q2", "mystery"]
+
+
+class TestContextFromShow:
+    @pytest.mark.asyncio
+    async def test_missing_context_length_is_read_from_show(self):
+        from unittest.mock import AsyncMock
+
+        service = OllamaService()
+        tags = MagicMock(status_code=200)
+        tags.json.return_value = {
+            "models": [
+                {
+                    "name": "gemma3n:e4b",
+                    "details": {"family": "gemma3n", "parameter_size": "6.9B"},
+                    "capabilities": ["completion"],
+                },
+                {
+                    "name": "llama3.2:latest",
+                    "details": {"context_length": 131072, "parameter_size": "3.2B"},
+                    "capabilities": ["completion"],
+                },
+            ]
+        }
+        show = MagicMock(status_code=200)
+        show.json.return_value = {
+            "model_info": {
+                "general.architecture": "gemma3n",
+                "gemma3n.context_length": 32768,
+            }
+        }
+        service.client.get = AsyncMock(return_value=tags)
+        service.client.post = AsyncMock(return_value=show)
+
+        models = {m.id: m for m in await service.list_models()}
+
+        assert models["gemma3n:e4b"].context_window == 32768
+        assert models["llama3.2:latest"].context_window == 131072
+        service.client.post.assert_awaited_once()  # only the model that needed it
+        # Cached for the next listing.
+        await service.list_models()
+        service.client.post.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_show_failure_falls_back(self):
+        from unittest.mock import AsyncMock
+
+        service = OllamaService()
+        tags = MagicMock(status_code=200)
+        tags.json.return_value = {
+            "models": [
+                {"name": "mystery:1b", "details": {}, "capabilities": ["completion"]}
+            ]
+        }
+        service.client.get = AsyncMock(return_value=tags)
+        service.client.post = AsyncMock(side_effect=RuntimeError("boom"))
+
+        models = await service.list_models()
+        assert models[0].context_window == 4096

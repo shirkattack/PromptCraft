@@ -16,6 +16,7 @@ from app.schemas.optimization import (
     OptimizationSessionUpdate,
     OptimizeRequest,
     PerformanceMetrics,
+    SessionFeedback,
 )
 from app.services.eval_service import EvalError, Sample
 from app.services.job_manager import JobAlreadyRunning, OptimizationJob, job_manager
@@ -224,8 +225,23 @@ def get_performance_metrics(db: Session = Depends(get_db)) -> PerformanceMetrics
         .one()
     )
 
+    thumbs_up = (
+        db.query(func.count(OptimizationSession.id))
+        .filter(OptimizationSession.feedback_rating == "up")
+        .scalar()
+        or 0
+    )
+    thumbs_down = (
+        db.query(func.count(OptimizationSession.id))
+        .filter(OptimizationSession.feedback_rating == "down")
+        .scalar()
+        or 0
+    )
+
     return PerformanceMetrics(
         total_optimizations=total_optimizations,
+        thumbs_up=thumbs_up,
+        thumbs_down=thumbs_down,
         average_improvement=float(average_improvement),
         success_rate=(
             (completed_count / total_optimizations * 100)
@@ -255,6 +271,31 @@ def update_session(
     for field, value in session_update.model_dump(exclude_unset=True).items():
         setattr(session, field, value)
 
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+@router.post("/{session_id}/feedback", response_model=OptimizationSessionResponse)
+def submit_feedback(
+    session_id: str,
+    feedback: SessionFeedback,
+    db: Session = Depends(get_db),
+) -> OptimizationSession:
+    """Record a thumbs up/down (and optional note) on the optimized prompt.
+
+    A null rating clears previous feedback.
+    """
+    from datetime import UTC, datetime
+
+    session = _get_session_or_404(db, session_id)
+    if session.optimized_prompt is None:
+        raise HTTPException(
+            status_code=409, detail="This session has no optimized prompt to rate yet"
+        )
+    session.feedback_rating = feedback.rating
+    session.feedback_comment = feedback.comment if feedback.rating else None
+    session.feedback_at = datetime.now(UTC) if feedback.rating else None
     db.commit()
     db.refresh(session)
     return session
