@@ -8,6 +8,7 @@
 <h4 align="center">Local, private prompt optimization powered by DSPy and Ollama.</h4>
 
 <p align="center">
+  <a href="https://github.com/shirkattack/PromptCraft/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/shirkattack/PromptCraft/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
   <a href="https://github.com/shirkattack/PromptCraft/commits/main"><img src="https://img.shields.io/github/last-commit/shirkattack/PromptCraft.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub last commit"></a>
   <a href="https://github.com/shirkattack/PromptCraft/issues"><img src="https://img.shields.io/github/issues-raw/shirkattack/PromptCraft.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub issues"></a>
   <a href="https://github.com/shirkattack/PromptCraft/pulls"><img src="https://img.shields.io/github/issues-pr-raw/shirkattack/PromptCraft.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub pull requests"></a>
@@ -373,7 +374,7 @@ The backend suite runs without Ollama: model calls use DSPy's `DummyLM` and embe
 
 #### Contributing
 
-Fork, branch from `main`, open a pull request. Keep changes focused and include a test where it makes sense. `make lint` in `API/` and `tsc` in `Web/` are expected to be clean.
+Fork, branch from `main`, open a pull request. Keep changes focused and include a test where it makes sense. CI runs ruff, black, isort, strict mypy and the test suite for the API, and the type check and production build for the web app, on every pull request; all of it is expected to be green.
 
 </details>
 
