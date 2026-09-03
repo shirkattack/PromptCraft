@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   next to the concrete failure. The notes used are echoed in
   `metadata.settings.user_feedback` (and `metadata.gepa.user_feedback`) and
   shown in Optimization Insights.
+- **Iterate on a result** (web): a button on the Optimized Prompt card makes the
+  result the starting prompt for another run, keeping the method and dataset;
+  the new session is named "Iteration of <source>".
 - `POST /sessions/{id}/try`: run the session's original and/or optimized
   prompt on one input with the session's model and get both answers, the
   exact text sent, timing and any per-prompt error. A prompt with an

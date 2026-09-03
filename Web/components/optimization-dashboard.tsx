@@ -32,6 +32,8 @@ import {
   Play,
   Pause,
   RotateCcw,
+  Repeat,
+  X,
   Download,
   Settings,
   Zap,
@@ -189,6 +191,9 @@ export function OptimizationDashboard() {
   const [selectedMethod, setSelectedMethod] = useState<OptimizationMethod>("meta_prompt")
   const [lastResult, setLastResult] = useState<OptimizeResponse["optimization_details"] | null>(null)
   const [lastSessionId, setLastSessionId] = useState<string | null>(null)
+  const [lastSessionName, setLastSessionName] = useState<string | null>(null)
+  // Set when the prompt box was filled from a previous result ("Iterate on this").
+  const [iterationOf, setIterationOf] = useState<{ id: string; name: string } | null>(null)
   const [feedback, setFeedback] = useState<FeedbackRating | null>(null)
   const [feedbackComment, setFeedbackComment] = useState("")
   const [commentOpen, setCommentOpen] = useState(false)
@@ -438,7 +443,7 @@ export function OptimizationDashboard() {
       // Create a new session
       const providerInfo = providerData[selectedProvider]
       const session = await createSession({
-        name: `Optimization ${new Date().toLocaleTimeString()}`,
+        name: iterationOf ? `Iteration of ${iterationOf.name}` : `Optimization ${new Date().toLocaleTimeString()}`,
         original_prompt: originalPrompt,
         provider: providerInfo?.id || selectedProvider.toLowerCase(),
         model: selectedModel,
@@ -473,6 +478,8 @@ export function OptimizationDashboard() {
         setOptimizedPrompt(result.session.optimized_prompt)
         setLastResult(result.optimization_details)
         setLastSessionId(result.session.id)
+        setLastSessionName(result.session.name)
+        setIterationOf(null)
         setFeedback(null)
         setFeedbackComment("")
         setCommentOpen(false)
@@ -597,6 +604,28 @@ export function OptimizationDashboard() {
     setLastResult(null)
     setOptimizationProgress(0)
     setIsOptimizing(false)
+    setIterationOf(null)
+  }
+
+  // Use the current result as the starting point of the next run. Method and
+  // dataset selections are kept so GEPA can follow a meta-prompt rewrite, for
+  // example; the new session is named after the one it came from.
+  const handleIterate = () => {
+    if (!optimizedPrompt) return
+    setIterationOf(lastSessionId ? { id: lastSessionId, name: lastSessionName ?? "previous result" } : null)
+    setOriginalPrompt(optimizedPrompt)
+    setOptimizedPrompt("")
+    setLastResult(null)
+    setLastSessionId(null)
+    setFeedback(null)
+    setCommentOpen(false)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+    textareaRef.current?.focus()
+    toast({
+      title: "Ready to iterate",
+      description: "The optimized prompt is now the starting point. Adjust the method or dataset, then optimize again.",
+      duration: 4000,
+    })
   }
 
   // Requests from the sidebar: load a prompt file, start fresh, or reopen a session.
@@ -624,6 +653,7 @@ export function OptimizationDashboard() {
         setOriginalPrompt(session.original_prompt)
         setOptimizedPrompt(session.optimized_prompt ?? "")
         setLastSessionId(session.id)
+        setLastSessionName(session.name)
         setFeedback(session.feedback_rating)
         setFeedbackComment(session.feedback_comment ?? "")
         setCommentOpen(false)
@@ -771,6 +801,15 @@ export function OptimizationDashboard() {
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{originalPrompt.length} characters</span>
+                  {iterationOf && (
+                    <span className="ml-3 inline-flex items-center gap-1 rounded-full border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-[11px] text-foreground">
+                      <Repeat className="w-3 h-3 text-orange-500" />
+                      Iterating on &ldquo;{iterationOf.name}&rdquo;
+                      <button type="button" className="ml-1 opacity-70 hover:opacity-100" onClick={() => setIterationOf(null)} aria-label="Stop iterating">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1484,6 +1523,18 @@ export function OptimizationDashboard() {
                                         </TooltipTrigger>
                                         <TooltipContent>
                                           <p className="text-xs">Share optimization results</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button variant="outline" size="sm" className="font-sans bg-transparent" onClick={handleIterate}>
+                                            <Repeat className="w-4 h-4" />
+                                            Iterate on this
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="text-xs max-w-xs">Make this result the starting prompt for another run, keeping the method and dataset. For example, GEPA after a Meta-Prompt rewrite.</p>
                                         </TooltipContent>
                                       </Tooltip>
                     </>
