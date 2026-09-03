@@ -133,6 +133,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EVAL_MAX_TRAIN_SAMPLES`, `EVAL_MAX_DEV_SAMPLES` and `EVAL_MAX_DEMOS` settings.
 
 ### Changed
+- The API is managed with `uv` (`API/uv.lock` committed). A root `npm install`
+  now runs `uv sync` (or a venv + pip fallback), installs the web app and
+  creates `API/.env`; `npm run dev:api`, `test:api`, `lint:api` and
+  `migrate:api` run inside that environment via `scripts/run-api.mjs`.
 - Models use SQLAlchemy 2.0 `Mapped[...]` columns and the whole `app` package
   passes strict `mypy`; `make lint` is green.
 - OpenAI and Anthropic are no longer listed by `GET /providers/`. They were

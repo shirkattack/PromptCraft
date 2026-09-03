@@ -1,445 +1,385 @@
-# PromptCraft
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo-light.svg" alt="PromptCraft" width="420">
+  </picture>
+</p>
 
-A sophisticated AI-powered prompt optimization platform with FastAPI backend and Next.js frontend. Features real-time optimization, comprehensive analytics, and **local AI support via Ollama** - no external API keys required!
+<h4 align="center">Local, private prompt optimization powered by DSPy and Ollama.</h4>
 
-![PromptCraft](./public/promptcraft.png)
+<p align="center">
+  <a href="https://github.com/shirkattack/PromptCraft/commits/main"><img src="https://img.shields.io/github/last-commit/shirkattack/PromptCraft.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub last commit"></a>
+  <a href="https://github.com/shirkattack/PromptCraft/issues"><img src="https://img.shields.io/github/issues-raw/shirkattack/PromptCraft.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub issues"></a>
+  <a href="https://github.com/shirkattack/PromptCraft/pulls"><img src="https://img.shields.io/github/issues-pr-raw/shirkattack/PromptCraft.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub pull requests"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey.svg?style=flat-square" alt="License: MIT"></a>
+</p>
 
-## 🔬 Research Inspiration
+<p align="center">
+  <a href="#usage">Usage</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#optimization-methods">Methods</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#development">Development</a> •
+  <a href="#troubleshooting">Troubleshooting</a> •
+  <a href="#credits">Credits</a> •
+  <a href="#license">License</a>
+</p>
 
-This project was inspired by the research paper ["Automated Prompt Engineering for Large Language Models"](https://arxiv.org/abs/2507.14241), which explores systematic approaches to prompt optimization and engineering. Building on these academic foundations, I created a practical frontend utility that automates prompt optimization workflows, making advanced prompt engineering techniques accessible through an intuitive user interface.
+---
 
-This implementation combines the theoretical insights from the research with real-world usability, providing both novice and expert users with powerful tools to enhance their AI interactions through optimized prompting strategies.
+<table>
+<tr>
+<td>
 
-## 🏗️ Project Structure
+**PromptCraft** takes a rough prompt, rewrites it with a local model, and shows you the before, the after, and a score. Everything runs on your machine through [Ollama](https://ollama.com); nothing leaves it and no API keys are needed.
+
+Give it a small dataset and the score stops being a guess: candidates are measured on held-out examples, few-shot examples are picked for coverage, and the **GEPA** method evolves your instructions from written feedback on every miss, showing you the lineage of each edit.
+
+<p align="center"><img src="docs/demo.gif" alt="PromptCraft: a GEPA run against a support-ticket dataset" width="880"></p>
+
+</td>
+</tr>
+</table>
+
+## Usage
+
+Open <http://localhost:3000>, paste a prompt, pick a model and a method, and click **Start Optimization**. The run happens in the background with live progress; the result appears alongside the original with a score, and a session entry you can rate and come back to.
+
+Every example below is a real run on `llama3.2` (3B) from this repository.
+
+#### Example 1: a rough prompt, rewritten
+
+**Before**
 
 ```
-PromptCraft/
-├── Web/                    # Next.js Frontend
-├── API/                    # FastAPI Backend
-├── package.json           # Root package.json for convenience scripts
-└── README.md              # This file
+Help me write a python script that makes exact change.
 ```
 
-## ✨ Features
+**After** · Meta-Prompt · 6.0s · heuristic score 70/100
 
-### 🚀 Core Functionality
-- **Local AI with Ollama**: Complete privacy with local model execution - no external API keys needed
-- **Real-time Prompt Optimization**: Advanced algorithms including DSPy and meta-prompting
-- **Live Performance Tracking**: Real-time analytics and session monitoring
-- **Interactive Results**: Before/after comparisons with improvement scores
-- **Multiple Local Models**: Support for Llama, Mistral, CodeLlama, and other Ollama models
+```
+Help me write a precise Python script that generates exact change for a given
+amount, considering denominations of $1, $5, $10, and $20. Please provide the total
+amount and the available denominations as input, and the output should be a list
+of coins that makes up the exact change, with each coin value represented by its
+denomination (e.g., 1 for $1, 5 for $5, 10 for $10, and 20 for $20). The output
+format should be a comma-separated string of coin values, with no duplicates.
+Ensure the script is able to handle amounts up to $100 and denominations, and
+provide clear instructions on how to use it.
+```
 
-### 📊 Analytics & Monitoring
-- **Performance Metrics**: Success rates, improvement scores, and cost tracking
-- **Provider Analytics**: Comparative analysis across different AI providers
-- **Session History**: Searchable optimization history with filtering
-- **Real-time Charts**: Interactive visualizations of optimization trends
+Without a dataset the score is a structural heuristic (length, sections, examples, constraints), and the UI says so. The next two examples replace it with a measurement.
 
-### 🗂️ Data Management
-- **Session Persistence**: SQLite database for optimization history
-- **Training Data**: Dataset management and analytics
-- **API Configuration**: Health monitoring and connection status
-- **Export/Import**: Session and data portability
+#### Example 2: measuring against a dataset
 
-## 🚀 Quick Start
+A dataset is a list of inputs and the outputs you expect. Import it as JSON or CSV in the sidebar, or start from [`docs/examples/support-tickets.csv`](docs/examples/support-tickets.csv):
 
-### Prerequisites
+```csv
+input,output
+"Production database is down, all customers affected",high
+"Question about how billing cycles work",medium
+"Thanks for the quick help yesterday!",low
+...
+```
 
-- **Node.js** 18.0.0 or higher
-- **Python** 3.11 or higher
-- **npm/yarn** package manager
-- **Ollama** (required for AI functionality) - [Install Ollama](https://ollama.ai/)
+**Growing the dataset.** *Generate Dataset* asks a local model for more samples in the same style. Near-duplicates of what you already have, judged by `nomic-embed-text` embeddings, are rejected and reported. Six samples, 4.3s:
 
-### Installation
+```
+high    User has not received their order and is requesting a refund.
+medium  Customer is experiencing a minor issue with their product, such as a small scratch...
+medium  User is requesting a password reset for an account that has been inactive for 6 months.
+high    Customer is reporting a critical issue with their product, such as a malfunction...
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
+**Measuring.** Pick the dataset when you optimize. The original prompt, the rewrite, and few-shot variants of each are all scored on samples the optimizer never saw. Here the dataset had 18 samples and k-fold scoring held each one out once across five class-balanced folds:
+
+| Candidate | Score on all 18 samples |
+| --- | ---: |
+| Original prompt (baseline) | 50% |
+| Rewrite | 33% |
+| Rewrite + examples | 39% |
+| **Original + examples** (selected) | **56%** |
+
+The few-shot examples are not the first that happened to pass. BootstrapFewShot validated 12 the model could reproduce; the 3 that best span the training inputs were kept, one per class first, and each is shown with the inputs it stands in for:
+
+```
+Two-factor codes never arrive, cannot access account  → high
+  covers inputs like "User has not received their order...", "Cannot log in since this morning..."
+Would like to change the email on my account          → medium
+  covers inputs like "User is requesting a password reset...", "Customer is requesting a feature..."
+```
+
+The returned prompt is plain text with an `{input}` placeholder:
+
+```
+Classify the priority of this support ticket as high, medium or low.
+
+Examples:
+
+Input: Two-factor codes never arrive, cannot access account
+Output: high
+
+Input: Would like to change the email on my account
+Output: medium
+
+Input: {input}
+Output:
+```
+
+#### Example 3: GEPA, evolving the instructions from feedback
+
+With a dataset you can also pick **GEPA**. Instead of one rewrite, the prompt is evolved: it runs on training samples, the metric writes feedback for each miss, a reflection model rewrites the instructions to address it, and candidates that win on different samples are kept and merged. Same 18-sample dataset, budget of 60 scored calls, 82s:
+
+| | Held-out score |
+| --- | ---: |
+| Original prompt | 25% |
+| **Evolved (candidate 2, generation 2)** | **87.5%** |
+
+The Prompt Evolution card shows why each candidate exists. The feedback the reflection read before proposing the winner:
+
+```
+The right answer 'medium' is in the response but buried in 19 words.
+Respond with 'medium' alone, no explanation.
+```
+
+and the instructions it wrote in response (excerpt):
+
+```
+Classify the severity of a user request as high, medium, or low. The severity level
+should be based on the impact it has on the user's experience, the resources required
+for resolution, and the potential risk of data loss or other adverse consequences.
+...
+Respond with a single word indicating the severity level: 'high', 'medium', or 'low'.
+```
+
+Every candidate is listed with its score, its parent, and a word diff against that parent. If nothing beats the original, the original is kept and the card says so.
+
+> [!TIP]
+> Small local models are weak reflectors. The *Reflection model* picker lets a larger model write the instructions while the small one does the fast scoring calls.
+
+## Installation
+
+#### Requirements
+
+- [Ollama](https://ollama.com/download)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (falls back to `python -m venv` + pip if missing; Python 3.11+ either way)
+- [Node.js](https://nodejs.org) 18+
+
+#### Steps
+
+1. **Install Ollama** and pull a model. Any model from the [Ollama library](https://ollama.com/library) works; `llama3.2` is a good default. The embedding model is optional but enables coverage-based example selection and de-duplication.
+
+   ```sh
+   ollama pull llama3.2
+   ollama pull nomic-embed-text
+   ```
+
+2. **Clone and install.**
+
+   ```sh
+   git clone https://github.com/shirkattack/PromptCraft.git
    cd PromptCraft
+   npm install
    ```
 
-2. **Install and Start Ollama**
-   ```bash
-   # Option A: Use our setup script (Recommended)
-   cd API
-   ./setup_ollama.sh
-   
-   # Option B: Manual setup
-   curl -fsSL https://ollama.ai/install.sh | sh
-   ollama serve  # Start Ollama service
-   ollama pull llama3.2:latest  # Pull models
-   ollama pull mistral:7b
-   ```
+   `npm install` runs `uv sync` in `API/`, `npm install` in `Web/`, and copies `API/.env.example` to `API/.env` if it does not exist.
 
-3. **Quick Setup (Recommended)**
-   ```bash
-   # Install all dependencies
-   npm run install:web
-   npm run install:api
-   
-   # Set up environment variables
-   cp API/.env.example API/.env
-   # No API keys needed - just verify Ollama URL
-   ```
+3. **Run.**
 
-4. **Manual Setup**
-
-   **Backend Setup:**
-   ```bash
-   # Install backend dependencies
-   cd API
-   pip install -r requirements.txt
-   
-   # Create environment file
-   cp .env.example .env
-   ```
-   
-   Edit `API/.env` for Ollama configuration:
-   ```env
-   # Ollama Configuration (Required)
-   OLLAMA_BASE_URL=http://localhost:11434
-   DEFAULT_MODEL_NAME=llama3.2:latest
-   
-   # Database
-   DATABASE_URL=sqlite:///./app.db
-   ```
-
-   **Frontend Setup:**
-   ```bash
-   # Install frontend dependencies
-   cd Web
-   npm install --legacy-peer-deps
-   ```
-
-4. **Start the Application**
-
-   **Option 1: Start both services together (Recommended)**
-   ```bash
-   # From project root
+   ```sh
    npm run dev
    ```
-   
-   **Option 2: Start services separately**
-   ```bash
-   # Terminal 1 - Backend
-   npm run dev:api
-   
-   # Terminal 2 - Frontend  
-   npm run dev:web
-   ```
-   
-   - Backend: http://127.0.0.1:8000
-   - Frontend: http://localhost:3000
 
-   Once both are up, `npm run dev` prints a block of clickable links (web app, API health, API docs). In iTerm2 and VS Code they open with Cmd+click; in macOS Terminal use Cmd+double-click.
+   Once both servers are up, a block of clickable links is printed: Web app <http://localhost:3000> · API <http://127.0.0.1:8000> · API docs <http://127.0.0.1:8000/docs>
 
-## 🧪 Testing Your Setup
+> [!NOTE]
+> Ollama runs as a background service after install. If the app reports it can't connect, start it with `ollama serve`.
 
-After installation, verify everything works correctly:
+> [!NOTE]
+> Models are listed with the configured default first, then smallest to largest, so the fast one is selected by default. Change `DEFAULT_MODEL_NAME` in `API/.env` to prefer another. See [Configuration](#configuration).
 
-### Quick Test
-```bash
-# Run automated setup tests
-./test_setup.sh
-```
+---
 
-### Full Optimization Test
-```bash
-# Start the API server (in one terminal)
-cd API && make dev
+## Optimization methods
 
-# Run optimization tests (in another terminal)
-python test_optimization.py
-```
+<details>
+<summary>Expand</summary>
 
-### Manual Testing
-See [TESTING_GUIDE.md](TESTING_GUIDE.md) for comprehensive manual testing instructions.
+| Method | What it does | Needs a dataset |
+| --- | --- | :-: |
+| **Meta-Prompt** | One structured rewrite guided by a prompt-engineering rubric (`dspy.Predict`). The fastest structured option and a good default. | |
+| **DSPy Chain-of-Thought** | `dspy.ChainOfThought` over a rewrite signature: the model reasons about what the prompt needs, then rewrites it; the reasoning is shown. Falls back to a template if the model cannot follow the structured format, and says so. | |
+| **GEPA** | Reflective prompt evolution (`dspy.teleprompt.GEPA`): feedback on every miss, a reflection model rewrites the instructions, a Pareto front of candidates. Returns the whole lineage. | yes |
+| **Simple** | A plain completion asked to improve the prompt. A quick baseline. | |
 
-## 🏗️ Detailed Architecture
+Any method plus a dataset turns on measurement: hold-out or k-fold splits (class-balanced for label datasets), `exact`, `contains` or model-judge metrics (`auto` picks by answer length), few-shot candidates compiled with `BootstrapFewShot`, and examples chosen for coverage with `nomic-embed-text` embeddings. Advanced settings cover temperature, max tokens, output format, target length, preserving wording, the metric, the split strategy, the example cap, the GEPA budget and the reflection model.
 
-### Backend (FastAPI) - `API/`
-```
-API/
-├── app/
-│   ├── api/
-│   │   └── v1/
-│   │       ├── endpoints/        # API endpoints
-│   │       │   ├── sessions.py   # Session management
-│   │       │   ├── providers.py  # AI provider integration
-│   │       │   ├── training.py   # Training data
-│   │       │   └── datasets.py   # Dataset management
-│   │       └── router.py         # API routing
-│   ├── core/
-│   │   ├── config.py            # Configuration
-│   │   └── database.py          # Database setup
-│   ├── models/                  # SQLAlchemy models
-│   ├── schemas/                 # Pydantic schemas
-│   ├── services/                # Business logic
-│   │   ├── optimization_service.py  # Core optimization
-│   │   ├── ollama_service.py        # Ollama integration
-│   │   └── lm_manager.py            # Language model management
-│   └── main.py                  # FastAPI application
-├── app.db                       # SQLite database
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Environment template
-└── pyproject.toml              # Project configuration
-```
+#### How DSPy is used
 
-### Frontend (Next.js) - `Web/`
-```
-Web/
-├── app/                        # Next.js app directory
-│   ├── globals.css            # Global styles
-│   ├── layout.tsx             # Root layout
-│   └── page.tsx               # Main page
-├── components/
-│   ├── ui/                    # shadcn/ui components
-│   ├── optimization-dashboard.tsx  # Main dashboard
-│   ├── session-sidebar.tsx        # Session management
-│   └── theme-provider.tsx          # Theme management
-├── lib/
-│   ├── api/                   # API integration
-│   │   ├── client.ts          # API client
-│   │   └── hooks.ts           # React hooks
-│   └── utils.ts               # Utilities
-├── types/
-│   └── index.ts               # TypeScript types
-└── package.json               # Frontend dependencies
-```
+[DSPy](https://dspy.ai) ([GitHub](https://github.com/stanfordnlp/dspy)) is the layer between the optimization service and Ollama: `dspy.LM` for model management, `dspy.context()` so each worker thread binds its own model, `Predict` and `ChainOfThought` over typed signatures for the rewrites, `BootstrapFewShot` to validate few-shot examples, `Evaluate` for held-out scoring, and `GEPA` for instruction evolution with a feedback metric that returns a score and a written reason.
 
-## 🔗 API Endpoints
+Papers: [GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning](https://arxiv.org/abs/2507.19457) and [Automated Prompt Engineering for Large Language Models](https://arxiv.org/abs/2507.14241), which inspired the project.
 
-### Sessions
-- `GET /api/v1/sessions/` - List all optimization sessions
-- `POST /api/v1/sessions/` - Create a new session
-- `GET /api/v1/sessions/{id}` - Get specific session
-- `POST /api/v1/sessions/{id}/optimize` - Optimize prompt and wait (body: `optimization_method`, advanced settings, optional `dataset_id` + `eval_metric` + `max_demos` to measure against a dataset)
-- `POST /api/v1/sessions/{id}/optimize/start` - Same body, returns 202 immediately; the web app uses this
-- `GET /api/v1/sessions/{id}/optimize/status` - Stage, progress, best score so far, and the result when finished
-- `POST /api/v1/sessions/{id}/feedback` - Thumbs up/down and a note on the optimized prompt
-- `GET /api/v1/sessions/analytics/performance` - Performance metrics, including feedback counts
+</details>
 
-### Training Data
-- `GET /api/v1/training/` - List datasets (newest first, with average sample quality)
-- `GET /api/v1/training/stats` - Totals and per-task-type breakdown for dashboards
-- `POST /api/v1/training/` - Create a dataset
-- `POST /api/v1/training/import` - Import a dataset from JSON or CSV text
-- `POST /api/v1/training/{id}/export` - Export as JSON or CSV
-- `POST /api/v1/training/{id}/generate` - Generate synthetic samples with a local model
-- `GET /api/v1/training/{id}/samples` - List samples
-- `DELETE /api/v1/training/{id}` - Delete a dataset and its samples
+## Configuration
 
-### Providers
-- `GET /api/v1/providers/` - List AI providers and models
-- `GET /api/v1/providers/ollama/health` - Check Ollama status
-- `GET /api/v1/providers/ollama/models` - List Ollama models
+<details>
+<summary>Expand</summary>
 
-### System
-- `GET /health` - API health check
-- `GET /` - API information
+All configuration lives in `API/.env`. The frontend needs nothing.
 
-## 🧪 Testing the Application
-
-### 1. Backend API Test
-```bash
-# Test backend health
-curl http://127.0.0.1:8000/health
-
-# Test sessions endpoint
-curl http://127.0.0.1:8000/api/v1/sessions/
-
-# Test providers
-curl http://127.0.0.1:8000/api/v1/providers/
-```
-
-### 2. Frontend Integration Test
-1. Open http://localhost:3000 in your browser
-2. Check that sessions load in the sidebar (should show existing sessions)
-3. Verify providers populate in the dashboard dropdown
-4. Test optimization flow:
-   - Enter prompt: "Help me write better emails"
-   - Select Ollama provider
-   - Choose an available model
-   - Click "Start Optimization"
-   - Wait for optimized result
-
-### 3. Full Integration Test
-- Create optimization session via frontend
-- Verify it appears in backend API
-- Check analytics update with new data
-- Test session persistence after page refresh
-
-## 🎯 Optimization Methods
-
-The application supports multiple optimization techniques:
-
-- **Meta-Prompt**: One structured rewrite guided by a prompt-engineering rubric
-- **DSPy Chain-of-Thought**: The model reasons about the prompt first, then rewrites it
-- **GEPA**: Evolves the instructions from written feedback on a dataset (see below)
-- **Simple**: A plain completion asked to improve the prompt
-
-### GEPA: reflective prompt evolution
-
-Pick a dataset and the GEPA method, and the prompt is evolved rather than rewritten once. Each generation runs the current prompt on a few training samples, the metric writes feedback for every miss (for example "the right label is buried in a 40-word answer"), and a reflection model rewrites the instructions to address that feedback. Candidates that win on different samples stay on a Pareto front and can be merged. The Prompt Evolution card shows the whole lineage: every candidate, its score on the held-out split, its parent, and the feedback it was bred from, with changes highlighted against the parent. A budget of 60 scored calls takes about a minute on a 3B model with 16 samples; a larger reflection model can be chosen separately from the task model. Based on [GEPA (Agrawal et al., 2025)](https://arxiv.org/abs/2507.19457).
-
-### Measuring a prompt against a dataset
-
-Pick a training dataset when optimizing and the score stops being a heuristic. The dataset is split into train and held-out samples; the original prompt, the rewrite, and few-shot versions of each (examples selected by DSPy's `BootstrapFewShot` on the train split) are all scored on the held-out samples with the chosen metric (`exact`, `contains`, or a model judge; `auto` picks by answer length). The best candidate is returned as a plain-text prompt with a `{input}` placeholder, alongside the full scoreboard and per-sample results. Each candidate costs roughly one model call per held-out sample, so a 10-sample dataset on a local 3B model takes about 20 seconds.
-
-For label datasets the split is class-balanced, so a two-sample held-out set is not two samples of the same label. Small datasets can use **k-fold** instead: every sample is held out once across up to five folds, each candidate type is scored on all of them, and the winner is refit on the whole dataset. The score then moves in steps of 1/N instead of 1/held-out, at about five times the model calls.
-
-Few-shot examples are chosen for coverage, not by order: BootstrapFewShot validates a pool of examples the model can reproduce, then the ones that best span the training inputs are kept, picked by farthest-point sampling over `nomic-embed-text` embeddings with one example per class first. Each kept example is shown with the inputs it stands in for. The same embeddings reject near-duplicates during synthetic data generation. Both fall back gracefully if the embedding model is not installed (`ollama pull nomic-embed-text`).
-
-### Database migrations
-
-The schema is managed with Alembic. The API applies pending migrations on startup, so an existing `app.db` is upgraded in place; to run them by hand:
-
-```bash
-cd API && alembic upgrade head
-```
-
-## 🔧 DSPy Integration
-
-PromptCraft leverages [DSPy](https://github.com/stanfordnlp/dspy) (Declarative Self-improving Language Programs) as a core framework for systematic prompt optimization. DSPy provides a programmatic approach to prompt engineering through composable modules and type-safe signatures. In this project, DSPy serves as the abstraction layer between the optimization service and local AI models via Ollama, enabling privacy-focused prompt optimization without external API dependencies. The integration uses DSPy's `LM` class for unified model management, `context()` for thread-safe operations in async environments, and sophisticated predictors like `Predict()` and `ChainOfThought()` for multi-step reasoning tasks. The architecture implements custom DSPy signatures with `InputField` and `OutputField` definitions, allowing structured prompt transformations with clear input/output contracts. This foundation supports the meta-prompt optimization method and enables task-specific prompt engineering for code generation, creative writing, analysis, and translation workflows, providing measurable improvement scores (0-100) with detailed performance metadata for each optimization session.
-
-## 🛠️ Available Scripts
-
-### Root Level (Convenience Scripts)
-```bash
-# Development (both services)
-npm run dev
-
-# Install dependencies
-npm run install:web
-npm run install:api
-
-# Production
-npm run start
-
-# Linting
-npm run lint:web
-
-# Clean build artifacts
-npm run clean
-```
-
-### Backend (API/)
-```bash
-# Start development server
-cd API && python -m uvicorn app.main:app --reload
-
-# Run tests
-cd API && python -m pytest tests/ -v
-
-# Install dependencies
-cd API && pip install -r requirements.txt
-```
-
-### Frontend (Web/)
-```bash
-# Development
-cd Web && npm run dev
-
-# Production build
-cd Web && npm run build
-cd Web && npm start
-
-# Linting
-cd Web && npm run lint
-
-# Install dependencies
-cd Web && npm install --legacy-peer-deps
-```
-
-## 🧩 Technology Stack
-
-### Backend
-- **FastAPI** - Modern Python web framework
-- **SQLAlchemy** - Database ORM
-- **Pydantic** - Data validation
-- **DSPy** - Prompt optimization framework
-- **httpx** - Async HTTP client
-- **SQLite** - Database storage
-
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - Component library
-- **Recharts** - Data visualization
-- **Lucide** - Icons
-
-## 🔧 Configuration
-
-### Environment Variables
-
-#### Backend (.env in API/)
-```env
-# Ollama (the only provider this build drives; no API keys needed)
+```ini
+# Ollama (the only provider in this build)
 OLLAMA_BASE_URL=http://localhost:11434
 DEFAULT_MODEL_NAME=llama3.2:latest
+EMBEDDING_MODEL=nomic-embed-text:latest   # optional; enables coverage selection + de-duplication
 
-# Application settings
+# Evaluation caps (bound the number of local model calls per run)
+EVAL_MAX_TRAIN_SAMPLES=40
+EVAL_MAX_DEV_SAMPLES=20
+EVAL_MAX_DEMOS=8
+EVAL_MAX_FOLDS=5
+EVAL_DEMO_POOL=12
+SYNTHETIC_DUPLICATE_THRESHOLD=0.92
+
+# Application
 DATABASE_URL=sqlite:///./app.db
 LOG_LEVEL=INFO
 ```
 
-See `API/.env.example` for the full list, including optional API-key auth and the evaluation caps.
+See `API/.env.example` for the full list, including optional API-key auth, allowed hosts and page-size limits.
 
-#### Frontend
-No environment variables required for basic functionality.
+#### Database
 
-## 🚨 Troubleshooting
+The SQLite schema is managed with Alembic and pending migrations are applied on API startup, so an existing `app.db` is upgraded in place. To run them by hand:
 
-### Common Issues
-
-1. **CORS errors**: Ensure backend is running on 127.0.0.1:8000
-2. **Module not found**: Run `npm install --legacy-peer-deps`
-3. **Ollama not connecting**: Check Ollama is running with `ollama serve`
-4. **Database errors**: Delete `app.db` and restart backend to recreate
-
-### Debug Commands
-```bash
-# Check if services are running
-curl http://127.0.0.1:8000/health
-curl -I http://localhost:3000
-
-# Check Ollama
-curl http://localhost:11434/api/tags
-
-# View logs (if logging is enabled)
-tail -f API/logs/*
-
-# Check API directly
-curl http://127.0.0.1:8000/api/v1/sessions/
-curl http://127.0.0.1:8000/api/v1/providers/
+```sh
+npm run migrate:api        # = cd API && uv run alembic upgrade head
 ```
 
-## 📈 Performance
+</details>
 
-- **Frontend**: Optimized React components with proper loading states
-- **Backend**: Async FastAPI with SQLite for fast local development
-- **Caching**: API response caching for improved performance
-- **Real-time**: WebSocket support for live optimization updates
+## Architecture
 
-## 🤝 Contributing
+<details>
+<summary>Expand</summary>
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+```
+PromptCraft/
+├── API/                       FastAPI backend (Python 3.11+, managed with uv)
+│   ├── app/
+│   │   ├── api/v1/endpoints/  sessions, providers, training, datasets (legacy)
+│   │   ├── core/              config, database, migrations, auth, logging
+│   │   ├── models/            SQLAlchemy 2.0 models
+│   │   ├── schemas/           Pydantic schemas
+│   │   └── services/          optimization_service, eval_service, gepa_service,
+│   │                          embedding_service, job_manager, ollama_service, lm_manager
+│   ├── alembic/               migrations (applied on startup)
+│   ├── tests/                 pytest suite (hermetic: no Ollama needed)
+│   └── pyproject.toml
+├── Web/                       Next.js 15 frontend (TypeScript, Tailwind, shadcn/ui)
+│   ├── components/            optimization-dashboard, session-sidebar,
+│   │                          optimized-prompt-view, eval-results-card, prompt-evolution-card
+│   └── lib/api/               API client and hooks
+├── docs/                      demo GIF, example dataset
+├── scripts/                   setup-api, run-api, dev-links
+└── package.json               root scripts
+```
 
-## 📄 License
+**Backend:** FastAPI · SQLAlchemy · Alembic · Pydantic · DSPy · httpx · SQLite
+**Frontend:** Next.js 15 · TypeScript · Tailwind CSS · shadcn/ui · Recharts
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+#### API endpoints
 
-## 🆘 Support
+Interactive docs are served at <http://127.0.0.1:8000/docs> while the backend is running.
 
-- **Issues**: Open a GitHub issue for bugs and feature requests
-- **Documentation**: Check the `/docs` directory for detailed guides
-- **API Docs**: Visit http://127.0.0.1:8000/docs when backend is running
+| Endpoint | Purpose |
+| --- | --- |
+| `GET/POST /api/v1/sessions/` | List or create optimization sessions |
+| `POST /api/v1/sessions/{id}/optimize/start` · `GET .../optimize/status` | Start an optimization in the background and poll its progress; the web app uses these |
+| `POST /api/v1/sessions/{id}/optimize` | Same, but waits for the result |
+| `POST /api/v1/sessions/{id}/feedback` | Thumbs up/down and a note on the optimized prompt |
+| `GET /api/v1/sessions/optimization-methods` | The methods above, described as the code implements them |
+| `GET /api/v1/sessions/analytics/performance` | Aggregate metrics and feedback counts |
+| `GET/POST /api/v1/training/` · `GET /api/v1/training/stats` | Datasets and totals |
+| `POST /api/v1/training/import` · `POST /api/v1/training/{id}/export` | JSON or CSV in and out |
+| `POST /api/v1/training/{id}/generate` | Generate synthetic samples with a local model, de-duplicated |
+| `GET /api/v1/providers/ollama/health` · `/models` | Ollama status and available models with real metadata |
+| `GET /health` | API health check |
+
+Optimize requests accept `optimization_method`, the advanced settings, and optionally `dataset_id`, `eval_metric`, `eval_strategy`, `max_demos`, `gepa_budget` and `reflection_model`. Measured runs return `metadata.eval` (scoreboard, chosen examples, per-sample results, split) and GEPA runs add `metadata.gepa` (the candidate timeline).
+
+</details>
+
+## Development
+
+<details>
+<summary>Expand</summary>
+
+#### Scripts
+
+```sh
+npm run dev          # backend + frontend + clickable links when both are up
+npm run dev:api      # backend only  (uv run uvicorn app.main:app --reload)
+npm run dev:web      # frontend only
+npm run test:api     # backend tests
+npm run lint:api     # ruff + mypy (strict)
+npm run lint:web
+npm run migrate:api
+```
+
+#### Tests
+
+```sh
+npm run test:api                          # pytest; hermetic, no Ollama needed
+cd Web && npx tsc --noEmit                # type check (the build fails on errors)
+uv run --project API python test_optimization.py   # end-to-end run against a live API
+```
+
+The backend suite runs without Ollama: model calls use DSPy's `DummyLM` and embeddings a deterministic stand-in. Manual test cases are in [TESTING_GUIDE.md](TESTING_GUIDE.md).
+
+#### Contributing
+
+Fork, branch from `main`, open a pull request. Keep changes focused and include a test where it makes sense. `make lint` in `API/` and `tsc` in `Web/` are expected to be clean.
+
+</details>
+
+## Troubleshooting
+
+<details>
+<summary>Expand</summary>
+
+| Symptom | Fix |
+| --- | --- |
+| Ollama not connecting | `ollama serve`, then `curl http://localhost:11434/api/tags` |
+| No models in the dropdown | `ollama pull llama3.2` (or any model from the [library](https://ollama.com/library)) |
+| Runs are slow | Check the selected model; the default is the configured one, then the smallest. A 35B model is 10x slower than a 3B one for the same run. |
+| "Coverage selection was skipped" / no de-duplication | `ollama pull nomic-embed-text` (optional feature, falls back without it) |
+| A session stuck on "running" | It was interrupted by a restart; the API marks it failed on the next start |
+| CORS errors | Make sure the backend is on `127.0.0.1:8000`, not `localhost` |
+| Module not found (frontend) | `cd Web && npm install --legacy-peer-deps` |
+| Database errors | Delete `API/app.db` and restart the backend; migrations recreate it |
+
+```sh
+curl http://127.0.0.1:8000/health      # backend up?
+curl -I http://localhost:3000          # frontend up?
+```
+
+</details>
+
+## Credits
+
+- [DSPy](https://github.com/stanfordnlp/dspy) — Stanford NLP
+- [GEPA](https://arxiv.org/abs/2507.19457) — Agrawal et al., 2025
+- [Ollama](https://ollama.com)
+- [Automated Prompt Engineering for Large Language Models](https://arxiv.org/abs/2507.14241)
+
+## License
+
+[MIT](LICENSE)
 
 ---
 
-**Built using FastAPI, Next.js, and modern AI optimization techniques**
+<p align="center">If PromptCraft is useful to you, a star helps other people find it. Please and thank you.</p>

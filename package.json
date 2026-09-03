@@ -5,18 +5,21 @@
   "private": true,
   "scripts": {
     "install:web": "cd Web && npm install --legacy-peer-deps",
-    "install:api": "cd API && pip install -r requirements.txt",
+    "install:api": "node scripts/setup-api.mjs",
     "dev:web": "cd Web && npm run dev",
-    "dev:api": "cd API && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:api": "node scripts/run-api.mjs uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
     "dev": "concurrently -n api,web,links -c blue,magenta,green \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:links\"",
     "build:web": "cd Web && npm run build",
     "start:web": "cd Web && npm start",
-    "start:api": "cd API && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
+    "start:api": "node scripts/run-api.mjs uvicorn app.main:app --host 127.0.0.1 --port 8000",
     "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
     "lint:web": "cd Web && npm run lint",
-    "test:api": "cd API && python -m pytest tests/ -v",
+    "test:api": "node scripts/run-api.mjs pytest tests -v",
     "clean": "rm -rf Web/node_modules Web/.next API/__pycache__ API/**/__pycache__",
-    "dev:links": "node scripts/dev-links.mjs"
+    "dev:links": "node scripts/dev-links.mjs",
+    "postinstall": "node scripts/setup-api.mjs",
+    "lint:api": "node scripts/run-api.mjs ruff check app tests && node scripts/run-api.mjs mypy app",
+    "migrate:api": "node scripts/run-api.mjs alembic upgrade head"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
