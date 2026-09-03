@@ -405,7 +405,14 @@ export function SessionSidebar() {
       notifyTrainingChanged()
       toast({
         title: "Samples generated",
-        description: `${result.generated_count} added${result.failed_count ? `, ${result.failed_count} failed` : ""} in ${result.processing_time.toFixed(1)}s`,
+        description: [
+          `${result.generated_count} added`,
+          result.rejected_duplicates ? `${result.rejected_duplicates} near-duplicate${result.rejected_duplicates === 1 ? "" : "s"} rejected` : null,
+          result.failed_count ? `${result.failed_count} failed` : null,
+          `in ${result.processing_time.toFixed(1)}s`,
+        ]
+          .filter(Boolean)
+          .join(", "),
       })
       setGenerateOpen(false)
       setGenerateForm({ ...EMPTY_GENERATE, model: generateForm.model })

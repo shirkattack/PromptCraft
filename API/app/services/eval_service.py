@@ -27,6 +27,7 @@ import dspy
 from dspy.teleprompt import BootstrapFewShot
 
 from app.core.config import settings
+from app.services.embedding_service import EmbeddingUnavailable, coverage_selection
 from app.services.progress import ProgressCallback, no_progress
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ class Candidate:
     score: float | None = None
     results: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
+    selection: dict[str, Any] | None = None
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -307,6 +309,7 @@ class DatasetOptimizer:
             else []
         )
         self.metric = self._build_metric()
+        self.last_selection: dict[str, Any] | None = None
 
     def _build_metric(self) -> MetricFn:
         if self.metric_name == "exact":
@@ -330,25 +333,81 @@ class DatasetOptimizer:
         """Bootstrap few-shot demos for ``instructions`` on a train split."""
         train = self.train if train is None else train
         demo_cap = min(self.max_demos, len(train))
+        # Validate a larger pool than we keep, then choose the demos that
+        # best cover the inputs rather than the first that passed.
+        pool_cap = min(max(demo_cap, settings.eval_demo_pool), len(train))
         teleprompter = BootstrapFewShot(
             metric=self.metric,
-            max_bootstrapped_demos=demo_cap,
-            max_labeled_demos=demo_cap,
+            max_bootstrapped_demos=pool_cap,
+            max_labeled_demos=pool_cap,
             max_rounds=1,
         )
         compiled = teleprompter.compile(
             self._program(instructions),
             trainset=[s.to_example() for s in train],
         )
+        pool = list(compiled.demos)
+        chosen, covers, selection = self._select_demos(pool, train, demo_cap)
+        compiled.demos = [pool[i] for i in chosen]
+        self.last_selection = selection
         demos = [
             {
-                "input": str(demo.input),
-                "output": str(demo.output),
-                "bootstrapped": bool(getattr(demo, "augmented", False)),
+                "input": str(pool[i].input),
+                "output": str(pool[i].output),
+                "bootstrapped": bool(getattr(pool[i], "augmented", False)),
+                "covers": covers.get(i, []),
             }
-            for demo in compiled.demos
+            for i in chosen
         ]
         return compiled, demos
+
+    def _select_demos(
+        self, pool: list[Any], train: list[Sample], k: int
+    ) -> tuple[list[int], dict[int, list[str]], dict[str, Any]]:
+        """Pick ``k`` demos from the validated pool by input coverage."""
+        if len(pool) <= k:
+            return (
+                list(range(len(pool))),
+                {},
+                {"method": "bootstrap", "pool": len(pool), "kept": len(pool)},
+            )
+        labels = (
+            [normalize(str(demo.output)) for demo in pool]
+            if is_label_dataset(train)
+            else None
+        )
+        try:
+            chosen, covers = coverage_selection(
+                [str(demo.input) for demo in pool],
+                [s.input_text for s in train],
+                k,
+                labels=labels,
+            )
+        except EmbeddingUnavailable as exc:
+            logger.warning(
+                f"Coverage selection unavailable, keeping first demos: {exc}"
+            )
+            return (
+                list(range(k)),
+                {},
+                {
+                    "method": "bootstrap",
+                    "pool": len(pool),
+                    "kept": k,
+                    "reason": str(exc),
+                },
+            )
+        return (
+            chosen,
+            covers,
+            {
+                "method": "coverage",
+                "pool": len(pool),
+                "kept": len(chosen),
+                "embedding_model": settings.embedding_model,
+                "label_balanced": labels is not None,
+            },
+        )
 
     def _evaluate(self, candidate: Candidate, dev: list[Sample] | None = None) -> None:
         dev = self.dev if dev is None else dev
@@ -404,6 +463,7 @@ class DatasetOptimizer:
                     )
                     program, demos = self._compile(instructions)
                     candidate = Candidate(name, instructions, program, demos)
+                    candidate.selection = self.last_selection
                 else:
                     candidate = Candidate(
                         name, instructions, self._program(instructions)
@@ -454,6 +514,7 @@ class DatasetOptimizer:
             "optimized_prompt": render_prompt(best.instructions, best.demos),
             "instructions": best.instructions,
             "split": describe_split(self.samples, self.train, self.dev, "holdout"),
+            "demo_selection": best.selection,
         }
 
     def _run_kfold(self, original: str, rewritten: str | None) -> dict[str, Any]:
@@ -556,6 +617,7 @@ class DatasetOptimizer:
 
         # Fit the winning candidate type on everything for the returned prompt.
         final_demos: list[dict[str, Any]] = []
+        final_selection: dict[str, Any] | None = None
         if best.name in few_shot:
             report(
                 f"Choosing examples for '{best.name.replace('_', ' ')}' from all {len(self.samples)} samples"
@@ -564,6 +626,7 @@ class DatasetOptimizer:
                 _, final_demos = self._compile(
                     best.instructions, self.samples[: settings.eval_max_train_samples]
                 )
+                final_selection = self.last_selection
             except Exception as exc:
                 logger.warning(
                     f"Final compile failed, returning instructions only: {exc}"
@@ -605,6 +668,7 @@ class DatasetOptimizer:
             "results": best.results,
             "optimized_prompt": render_prompt(best.instructions, final_demos),
             "instructions": best.instructions,
+            "demo_selection": final_selection,
             "split": describe_split(
                 self.samples,
                 self.samples[fold_size:],  # a typical fold's training share

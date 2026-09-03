@@ -149,6 +149,27 @@ export interface EvalSampleResult {
   passed: boolean
 }
 
+/** A few-shot example kept in the returned prompt. */
+export interface EvalDemo {
+  input: string
+  output: string
+  /** True when the model reproduced this answer itself during bootstrapping. */
+  bootstrapped?: boolean
+  /** Training inputs this example stands closest to, by embedding. */
+  covers?: string[]
+}
+
+/** How the few-shot examples were chosen from the validated pool. */
+export interface DemoSelection {
+  method: 'coverage' | 'bootstrap'
+  pool: number
+  kept: number
+  embedding_model?: string
+  label_balanced?: boolean
+  /** Why coverage selection was skipped (embedding model missing). */
+  reason?: string
+}
+
 /** metadata.eval on a measured run. */
 export interface EvalReport {
   metric: string
@@ -161,7 +182,7 @@ export interface EvalReport {
   best: string
   improved: boolean
   candidates: EvalCandidate[]
-  demos: { input: string; output: string; bootstrapped?: boolean }[]
+  demos: EvalDemo[]
   baseline_results: EvalSampleResult[]
   results: EvalSampleResult[]
   instructions: string
@@ -175,6 +196,7 @@ export interface EvalReport {
     train_size: number
     dev_size: number
   }
+  demo_selection?: DemoSelection | null
 }
 
 export interface OptimizeResponse {
@@ -299,6 +321,10 @@ export interface GenerateSamplesResponse {
   failed_count: number
   samples: TrainingSample[]
   processing_time: number
+  /** Generated samples dropped as near-duplicates (embedding similarity). */
+  rejected_duplicates: number
+  duplicates: { input: string; similar_to: string; similarity: number }[]
+  dedup_skipped_reason: string | null
 }
 
 export class APIError extends Error {

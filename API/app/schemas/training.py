@@ -139,12 +139,24 @@ class SyntheticDataRequest(BaseModel):
     )
 
 
+class RejectedDuplicate(BaseModel):
+    input: str
+    similar_to: str
+    similarity: float
+
+
 class SyntheticDataResponse(BaseModel):
     dataset_id: str
     generated_count: int
     failed_count: int
     samples: list[TrainingSampleResponse]
     processing_time: float
+    # Generated samples dropped because they were near-duplicates (by
+    # embedding similarity) of existing samples or of each other.
+    rejected_duplicates: int = 0
+    duplicates: list[RejectedDuplicate] = []
+    # Set when the embedding model was unavailable and no de-duplication ran.
+    dedup_skipped_reason: str | None = None
 
 
 # Import/Export

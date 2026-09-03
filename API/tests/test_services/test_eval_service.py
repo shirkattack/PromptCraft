@@ -321,3 +321,44 @@ class TestKFold:
             report = DatasetOptimizer(LABELLED, metric="exact").run("Classify.", None)
         assert report["split"]["strategy"] == "holdout"
         assert report["split"]["stratified"] is True
+
+
+class TestDemoCoverage:
+    def test_more_validated_demos_than_kept_triggers_coverage_selection(self):
+        # Every answer is right, so BootstrapFewShot validates the whole pool.
+        answers = {s.input_text: {"output": s.expected_output} for s in LABELLED}
+        with dspy.context(lm=DummyLM(answers)):
+            optimizer = DatasetOptimizer(LABELLED, metric="exact", max_demos=3)
+            report = optimizer.run("Classify.", None)
+
+        assert report["best"] == "original_fewshot"
+        assert len(report["demos"]) == 3
+        selection = report["demo_selection"]
+        assert selection["method"] == "coverage"
+        assert selection["pool"] > 3 and selection["kept"] == 3
+        assert selection["label_balanced"] is True
+        # One example per class before any class repeats.
+        assert {normalize(d["output"]) for d in report["demos"]} == {
+            "high",
+            "medium",
+            "low",
+        }
+        assert all(isinstance(d["covers"], list) for d in report["demos"])
+
+    def test_falls_back_to_bootstrap_order_without_embeddings(self, monkeypatch):
+        from app.services import eval_service as module
+        from app.services.embedding_service import EmbeddingUnavailable
+
+        def boom(*args, **kwargs):
+            raise EmbeddingUnavailable("no model")
+
+        monkeypatch.setattr(module, "coverage_selection", boom)
+        answers = {s.input_text: {"output": s.expected_output} for s in LABELLED}
+        with dspy.context(lm=DummyLM(answers)):
+            report = DatasetOptimizer(LABELLED, metric="exact", max_demos=2).run(
+                "Classify.", None
+            )
+
+        assert len(report["demos"]) == 2
+        assert report["demo_selection"]["method"] == "bootstrap"
+        assert "no model" in report["demo_selection"]["reason"]

@@ -287,6 +287,8 @@ Pick a training dataset when optimizing and the score stops being a heuristic. T
 
 For label datasets the split is class-balanced, so a two-sample held-out set is not two samples of the same label. Small datasets can use **k-fold** instead: every sample is held out once across up to five folds, each candidate type is scored on all of them, and the winner is refit on the whole dataset. The score then moves in steps of 1/N instead of 1/held-out, at about five times the model calls.
 
+Few-shot examples are chosen for coverage, not by order: BootstrapFewShot validates a pool of examples the model can reproduce, then the ones that best span the training inputs are kept, picked by farthest-point sampling over `nomic-embed-text` embeddings with one example per class first. Each kept example is shown with the inputs it stands in for. The same embeddings reject near-duplicates during synthetic data generation. Both fall back gracefully if the embedding model is not installed (`ollama pull nomic-embed-text`).
+
 ### Database migrations
 
 The schema is managed with Alembic. The API applies pending migrations on startup, so an existing `app.db` is upgraded in place; to run them by hand:
