@@ -132,3 +132,96 @@ class TestQualityScoring:
         assert service.validate_sample_quality(
             echoed
         ) < service.validate_sample_quality(distinct)
+
+
+class TestTolerantSyntheticParsing:
+    """Small local models drift from the requested JSON layout in many ways."""
+
+    def _parse(self, text):
+        from app.services.training_service import TrainingDataService
+
+        return TrainingDataService()._parse_synthetic_response(text, "general")
+
+    def test_fenced_json_with_sentencepiece_indentation(self):
+        # gemma3n through Ollama: code fence plus U+2581 in place of spaces.
+        text = '```json\n[\n▁▁{\n▁▁▁▁"input": "My▁website▁is▁down",\n▁▁▁▁"output": "high"\n▁▁}\n]\n```'
+        samples = self._parse(text)
+        assert len(samples) == 1
+        assert samples[0].input_text == "My website is down"
+        assert samples[0].expected_output == "high"
+
+    def test_object_wrapping_the_list(self):
+        samples = self._parse(
+            '{"examples": [{"input": "a", "output": "b"}, {"input": "c", "output": "d"}]}'
+        )
+        assert [s.input_text for s in samples] == ["a", "c"]
+
+    def test_renamed_keys(self):
+        samples = self._parse(
+            '[{"prompt": "q1", "response": "r1"}, {"question": "q2", "answer": "r2"}, {"text": "q3", "label": "low"}]'
+        )
+        assert [(s.input_text, s.expected_output) for s in samples] == [
+            ("q1", "r1"),
+            ("q2", "r2"),
+            ("q3", "low"),
+        ]
+
+    def test_json_lines(self):
+        samples = self._parse(
+            '{"input": "a", "output": "b"}\n{"input": "c", "output": "d"}\n'
+        )
+        assert len(samples) == 2
+
+    def test_plain_text_pairs_as_last_resort(self):
+        text = "Here are examples:\n\n1. Input: Server is down\n   Output: high\n\n2. Input: Thanks!\n   Output: low\n"
+        samples = self._parse(text)
+        assert [(s.input_text, s.expected_output) for s in samples] == [
+            ("Server is down", "high"),
+            ("Thanks!", "low"),
+        ]
+
+    def test_leftover_fields_become_extra_data(self):
+        samples = self._parse('[{"input": "a", "output": "b", "difficulty": "hard"}]')
+        assert samples[0].extra_data == {"difficulty": "hard"}
+
+    def test_nothing_usable_raises(self):
+        from app.core.exceptions import SyntheticDataGenerationError
+
+        with pytest.raises(SyntheticDataGenerationError):
+            self._parse("I cannot help with that request.")
+
+    @pytest.mark.asyncio
+    async def test_repair_retry_rescues_prose(self):
+        from unittest.mock import patch
+
+        from app.schemas.training import SyntheticDataRequest
+        from app.services.training_service import TrainingDataService
+
+        calls = []
+
+        def lm(prompt, **kwargs):
+            calls.append(prompt)
+            if len(calls) == 1:
+                return ["Sure! Example one: a ticket about an outage is high priority."]
+            return ['[{"input": "a ticket about an outage", "output": "high"}]']
+
+        with patch("app.services.lm_manager.LMManager.get_lm", return_value=lm):
+            samples = await TrainingDataService().generate_synthetic_data(
+                SyntheticDataRequest(
+                    dataset_id="d",
+                    sample_count=3,
+                    base_prompt="Classify tickets",
+                    task_type="classification",
+                )
+            )
+
+        assert len(calls) == 2
+        assert "JSON array" in calls[1]
+        assert samples[0].expected_output == "high"
+
+
+def test_normalize_strips_sentencepiece_marker():
+    from app.services.eval_service import normalize
+
+    assert normalize("▁high") == "high"
+    assert normalize("high▁priority") == "high priority"

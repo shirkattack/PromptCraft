@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import logging
+import re
 from typing import Any
 
 from fastapi.concurrency import run_in_threadpool
@@ -13,6 +14,7 @@ from app.schemas.training import (
     TrainingSampleCreate,
 )
 from app.services.lm_manager import LMManager
+from app.services.text import clean_model_text, strip_code_fence
 
 logger = logging.getLogger(__name__)
 
@@ -63,15 +65,27 @@ class TrainingDataService:
             # The model call is synchronous and can run for minutes against a
             # local model, so it must not block the event loop.
             response = await run_in_threadpool(lm, synthetic_prompt, max_tokens=2000)
+            response_text = self._response_text(response)
 
-            # Handle both string and list responses
-            if isinstance(response, list):
-                response_text = response[0] if response else ""
-            else:
-                response_text = str(response)
-
-            # Parse the response into training samples
-            return self._parse_synthetic_response(response_text, request.task_type)
+            try:
+                return self._parse_synthetic_response(response_text, request.task_type)
+            except SyntheticDataGenerationError as first_error:
+                # Small models often answer in prose or a broken layout. One
+                # repair pass asks the same model to restate its reply as JSON.
+                logger.info(
+                    "Synthetic reply unparseable; asking the model to repair it"
+                )
+                repaired = await run_in_threadpool(
+                    lm,
+                    self._repair_prompt(response_text, request.sample_count),
+                    max_tokens=2000,
+                )
+                try:
+                    return self._parse_synthetic_response(
+                        self._response_text(repaired), request.task_type
+                    )
+                except SyntheticDataGenerationError:
+                    raise first_error from None
 
         except SyntheticDataGenerationError:
             raise
@@ -86,6 +100,12 @@ class TrainingDataService:
                     "error": str(e),
                 },
             ) from e
+
+    @staticmethod
+    def _response_text(response: Any) -> str:
+        if isinstance(response, list):
+            return str(response[0]) if response else ""
+        return str(response)
 
     def _generate_general_prompt(
         self, base_prompt: str, sample_count: int, task_type: str
@@ -112,6 +132,8 @@ Example format:
   ...
 ]
 
+Respond with only the JSON array: no code fence, no commentary, plain spaces for indentation.
+
 Generate {sample_count} examples now:"""
 
     def _generate_creative_prompt(
@@ -134,6 +156,8 @@ Format as JSON array:
   {{"input": "creative prompt", "output": "creative response", "extra_data": "style/tone notes"}},
   ...
 ]
+
+Respond with only the JSON array: no code fence, no commentary, plain spaces for indentation.
 
 Generate {sample_count} creative examples:"""
 
@@ -158,6 +182,8 @@ Format as JSON array:
   ...
 ]
 
+Respond with only the JSON array: no code fence, no commentary, plain spaces for indentation.
+
 Generate {sample_count} coding examples:"""
 
     def _generate_analysis_prompt(
@@ -180,6 +206,8 @@ Format as JSON array:
   {{"input": "content to analyze", "output": "detailed analysis", "extra_data": "analysis type/framework"}},
   ...
 ]
+
+Respond with only the JSON array: no code fence, no commentary, plain spaces for indentation.
 
 Generate {sample_count} analysis examples:"""
 
@@ -204,55 +232,143 @@ Format as JSON array:
   ...
 ]
 
+Respond with only the JSON array: no code fence, no commentary, plain spaces for indentation.
+
 Generate {sample_count} translation examples:"""
+
+    INPUT_KEYS = (
+        "input",
+        "input_text",
+        "prompt",
+        "question",
+        "text",
+        "instruction",
+        "query",
+    )
+    OUTPUT_KEYS = (
+        "output",
+        "expected_output",
+        "response",
+        "answer",
+        "completion",
+        "label",
+        "target",
+    )
+
+    @classmethod
+    def _pair_from_item(cls, item: Any) -> tuple[str, str, Any] | None:
+        """Extract (input, output, extra) from one generated item, if it has both."""
+        if not isinstance(item, dict):
+            return None
+        lowered = {str(k).strip().lower(): v for k, v in item.items()}
+        input_value = next((lowered[k] for k in cls.INPUT_KEYS if lowered.get(k)), None)
+        output_value = next(
+            (lowered[k] for k in cls.OUTPUT_KEYS if lowered.get(k) not in (None, "")),
+            None,
+        )
+        if input_value is None or output_value is None:
+            return None
+        used = set(cls.INPUT_KEYS) | set(cls.OUTPUT_KEYS)
+        extra = lowered.get("extra_data")
+        if extra is None:
+            leftovers = {k: v for k, v in lowered.items() if k not in used}
+            extra = leftovers or None
+        return str(input_value).strip(), str(output_value).strip(), extra
+
+    @staticmethod
+    def _find_json_payload(text: str) -> Any:
+        """Best-effort JSON extraction: a list, an object wrapping a list, or JSON lines."""
+        text = strip_code_fence(clean_model_text(text))
+        candidates: list[str] = []
+        for opener, closer in (("[", "]"), ("{", "}")):
+            start, stop = text.find(opener), text.rfind(closer)
+            if start != -1 and stop > start:
+                candidates.append(text[start : stop + 1])
+        for candidate in candidates:
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+        # JSON lines: one object per line.
+        rows = []
+        for line in text.splitlines():
+            line = line.strip().rstrip(",")
+            if line.startswith("{") and line.endswith("}"):
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+        return rows or None
+
+    _TEXT_PAIR = re.compile(
+        r"(?:^|\n)\s*(?:\d+[.)]\s*)?\**\s*input\s*\**\s*[:\-]\s*(?P<input>.+?)\s*\n\s*\**\s*output\s*\**\s*[:\-]\s*(?P<output>.+?)(?=\n\s*(?:\d+[.)]\s*)?\**\s*input\b|\Z)",
+        re.I | re.S,
+    )
 
     def _parse_synthetic_response(
         self, response: str, task_type: str
     ) -> list[TrainingSampleCreate]:
-        """Parse the model response into training samples."""
-        json_start = response.find("[")
-        json_end = response.rfind("]") + 1
+        """Turn a model reply into samples, tolerating the usual formatting drift.
 
-        if json_start == -1 or json_end <= json_start:
+        Accepts a bare JSON array, a fenced code block, an object wrapping the
+        list under any key, JSON lines, renamed keys (prompt/response,
+        question/answer, ...), sentencepiece whitespace markers, and as a last
+        resort "Input: ... / Output: ..." pairs in plain text.
+        """
+        payload = self._find_json_payload(response)
+        items: list[Any] = []
+        if isinstance(payload, list):
+            items = payload
+        elif isinstance(payload, dict):
+            nested = next((v for v in payload.values() if isinstance(v, list)), None)
+            items = nested if nested is not None else [payload]
+
+        pairs = [pair for pair in (self._pair_from_item(i) for i in items) if pair]
+
+        if not pairs:
+            cleaned = clean_model_text(response)
+            pairs = [
+                (m.group("input").strip(), m.group("output").strip(), None)
+                for m in self._TEXT_PAIR.finditer(cleaned)
+            ]
+
+        if not pairs:
+            logger.warning(
+                "Synthetic data reply had no usable pairs; first 300 chars: %r",
+                response[:300],
+            )
+            if items:
+                raise SyntheticDataGenerationError(
+                    "Model response contained no usable input/output pairs",
+                    error_code="SYNTHETIC_DATA_EMPTY",
+                    details={"task_type": task_type, "items_returned": len(items)},
+                )
             raise SyntheticDataGenerationError(
-                "Model response did not contain a JSON array of examples",
+                "The model's reply contained no input/output pairs. Try again, "
+                "a different model, or lower the creativity setting.",
                 error_code="SYNTHETIC_DATA_PARSE_FAILED",
                 details={"task_type": task_type, "response_preview": response[:500]},
             )
 
-        try:
-            data = json.loads(response[json_start:json_end])
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse synthetic data JSON: {e}")
-            raise SyntheticDataGenerationError(
-                "Model response was not valid JSON",
-                error_code="SYNTHETIC_DATA_PARSE_FAILED",
-                details={
-                    "task_type": task_type,
-                    "error": str(e),
-                    "response_preview": response[:500],
-                },
-            ) from e
-
-        samples = [
+        return [
             TrainingSampleCreate(
-                input_text=str(item["input"]),
-                expected_output=str(item["output"]),
-                extra_data=self._as_extra_data(item.get("extra_data")),
+                input_text=input_text,
+                expected_output=output_text,
+                extra_data=self._as_extra_data(extra),
                 quality_score=0.8,  # Default quality score for synthetic data
             )
-            for item in data
-            if isinstance(item, dict) and "input" in item and "output" in item
+            for input_text, output_text, extra in pairs
+            if input_text and output_text
         ]
 
-        if not samples:
-            raise SyntheticDataGenerationError(
-                "Model response contained no usable input/output pairs",
-                error_code="SYNTHETIC_DATA_EMPTY",
-                details={"task_type": task_type, "items_returned": len(data)},
-            )
-
-        return samples
+    @staticmethod
+    def _repair_prompt(raw: str, sample_count: int) -> str:
+        return (
+            "Convert the following text into a JSON array of objects with exactly two "
+            'string keys, "input" and "output". Output only the JSON array, with no '
+            "code fence and no commentary. Keep at most "
+            f"{sample_count} items.\n\nText:\n{raw[:6000]}\n\nJSON array:"
+        )
 
     @staticmethod
     def _as_extra_data(value: Any) -> dict[str, Any]:
