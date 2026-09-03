@@ -76,6 +76,8 @@ Whatever the score, the **Try it** card under the result runs the original and t
 
 Thumbs-down a result and leave a note ("too long", "changed the meaning") and the next optimization of that prompt takes it into account: the rewrite methods treat it as a constraint, and GEPA's reflection reads it next to every miss. Optimization Insights lists the notes that were used.
 
+**Iterate on this** makes a result the starting prompt for the next run, method and dataset kept, so you can follow a Meta-Prompt rewrite with GEPA, or evolve twice. The follow-up session is named after the one it came from.
+
 #### Example 2: measuring against a dataset
 
 A dataset is a list of **inputs** and the **outputs** you expect for them. The prompt you optimize is the *instruction* that should turn one input into its output; the app appends each input to your prompt where `{input}` goes, runs it, and compares the answer with the expected output.
