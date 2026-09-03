@@ -8,7 +8,7 @@
 // interpreter in API/.venv created by scripts/setup-api.mjs, otherwise
 // whatever `python` is on PATH.
 
-import { execSync, spawnSync } from "node:child_process"
+import { execSync, spawn } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 
@@ -40,5 +40,10 @@ if (hasUv) {
   argv = args
 }
 
-const result = spawnSync(exe, argv, { cwd: api, stdio: "inherit" })
-process.exit(result.status ?? 1)
+// Spawn (not spawnSync) so signals sent to this wrapper reach the child;
+// otherwise killing the wrapper leaves uvicorn running on its port.
+const child = spawn(exe, argv, { cwd: api, stdio: "inherit" })
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(signal, () => child.kill(signal))
+}
+child.on("exit", (code, signal) => process.exit(code ?? (signal ? 1 : 0)))
