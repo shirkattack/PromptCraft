@@ -60,6 +60,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exceptions raised while handling another exception now chain with `from`.
 
 ### Added
+- `GET /sessions/{id}/result`: a past session with the full stored result of
+  its last optimization (migration `0004` adds `result_json`), so the
+  scoreboard, chosen examples and GEPA timeline can be reopened later.
+- Dataset import accepts JSON Lines (`file_format: "jsonl"`, also detected
+  under `"json"`), an object wrapping the list, and key aliases
+  (`prompt`/`response`, `question`/`answer`, `text`/`label`,
+  `input_text`/`expected_output`); export gained `jsonl`.
 - `POST /sessions/{id}/feedback`: thumbs up/down with an optional note on the
   optimized prompt (migration `0003` adds `feedback_rating`, `feedback_comment`,
   `feedback_at`); a null rating clears it, and 409 if the session has no

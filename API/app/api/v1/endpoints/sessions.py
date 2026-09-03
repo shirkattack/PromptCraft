@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import Any
 
@@ -259,6 +260,30 @@ def get_session(session_id: str, db: Session = Depends(get_db)) -> OptimizationS
     return _get_session_or_404(db, session_id)
 
 
+@router.get("/{session_id}/result")
+def get_session_result(
+    session_id: str, db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """A past session with the full result of its last optimization.
+
+    ``optimization_details`` is null for sessions that never completed or
+    that predate result storage; the prompts and scores are still returned.
+    """
+    session = _get_session_or_404(db, session_id)
+    details = None
+    if session.result_json:
+        try:
+            details = json.loads(session.result_json)
+        except json.JSONDecodeError:
+            details = None
+    return {
+        "session": OptimizationSessionResponse.model_validate(session).model_dump(
+            mode="json"
+        ),
+        "optimization_details": details,
+    }
+
+
 @router.put("/{session_id}", response_model=OptimizationSessionResponse)
 def update_session(
     session_id: str,
@@ -391,6 +416,17 @@ async def _run_optimization(
     session.eval_sample_count = optimization_result.get("eval_sample_count")
     session.status = SessionStatus.COMPLETED
 
+    details = {
+        "method": optimization_result["method"],
+        "improvement_score": optimization_result["improvement_score"],
+        "score_type": optimization_result.get("score_type", "heuristic"),
+        "processing_time": optimization_result["processing_time"],
+        "metadata": optimization_result.get("metadata", {}),
+    }
+    # Persist the whole payload so the session can be reopened later with
+    # its scoreboard, chosen examples and evolution timeline intact.
+    session.result_json = json.dumps(details, default=str)
+
     db.commit()
     db.refresh(session)
 
@@ -399,13 +435,7 @@ async def _run_optimization(
         "session": OptimizationSessionResponse.model_validate(session).model_dump(
             mode="json"
         ),
-        "optimization_details": {
-            "method": optimization_result["method"],
-            "improvement_score": optimization_result["improvement_score"],
-            "score_type": optimization_result.get("score_type", "heuristic"),
-            "processing_time": optimization_result["processing_time"],
-            "metadata": optimization_result.get("metadata", {}),
-        },
+        "optimization_details": details,
     }
 
 

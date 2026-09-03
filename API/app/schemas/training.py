@@ -164,13 +164,13 @@ class DatasetImportRequest(BaseModel):
     name: str = Field(min_length=1)
     description: str | None = None
     task_type: str
-    file_format: Literal["json", "csv"] = "json"
-    data: str = Field(min_length=1)  # Raw JSON or CSV text
+    file_format: Literal["json", "jsonl", "csv"] = "json"
+    data: str = Field(min_length=1)  # Raw JSON, JSON Lines or CSV text
 
 
 class DatasetExportRequest(BaseModel):
     dataset_id: str
-    format: Literal["json", "csv"] = "json"
+    format: Literal["json", "jsonl", "csv"] = "json"
     include_metadata: bool = True
 
 

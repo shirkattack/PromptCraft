@@ -349,3 +349,24 @@ class TestSyntheticDeduplication:
         assert body["generated_count"] == 2
         assert body["rejected_duplicates"] == 0
         assert "no embedding model" in body["dedup_skipped_reason"]
+
+
+def test_jsonl_export_round_trips(client: TestClient, dataset_id: str):
+    _add_samples(client, dataset_id, 2)
+    exported = client.post(
+        f"{BASE}/{dataset_id}/export",
+        json={"dataset_id": dataset_id, "format": "jsonl"},
+    ).json()
+    lines = [line for line in exported["data"].splitlines() if line]
+    assert len(lines) == 2
+    reimported = client.post(
+        f"{BASE}/import",
+        json={
+            "name": "again",
+            "task_type": "t",
+            "file_format": "jsonl",
+            "data": exported["data"],
+        },
+    )
+    assert reimported.status_code == 200, reimported.text
+    assert reimported.json()["sample_count"] == 2

@@ -590,3 +590,46 @@ class TestFeedback:
             ).status_code
             == 422
         )
+
+
+class TestSessionResult:
+    def test_result_is_stored_and_reopened(self, client: TestClient, session_id: str):
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=AsyncMock(
+                return_value={
+                    "optimized_prompt": "Better",
+                    "method": "simple",
+                    "improvement_score": 70.0,
+                    "score_type": "heuristic",
+                    "processing_time": 1.0,
+                    "metadata": {
+                        "score_breakdown": [
+                            {"label": "Base", "points": 50, "applied": True}
+                        ]
+                    },
+                    "success": True,
+                }
+            ),
+        ):
+            client.post(
+                f"{BASE}/{session_id}/optimize", json={"optimization_method": "simple"}
+            )
+
+        response = client.get(f"{BASE}/{session_id}/result")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["session"]["optimized_prompt"] == "Better"
+        assert body["optimization_details"]["method"] == "simple"
+        assert (
+            body["optimization_details"]["metadata"]["score_breakdown"][0]["label"]
+            == "Base"
+        )
+
+    def test_result_is_null_before_optimization(
+        self, client: TestClient, session_id: str
+    ):
+        body = client.get(f"{BASE}/{session_id}/result").json()
+        assert body["optimization_details"] is None
+        assert body["session"]["id"] == session_id
+        assert client.get(f"{BASE}/nope/result").status_code == 404
