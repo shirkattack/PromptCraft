@@ -544,3 +544,49 @@ class TestEvalStrategyOption:
             f"{BASE}/{session_id}/optimize", json={"eval_strategy": "leave-one-out"}
         )
         assert response.status_code == 422
+
+
+class TestFeedback:
+    def _optimized(self, client: TestClient, session_id: str) -> None:
+        client.put(
+            f"{BASE}/{session_id}",
+            json={"optimized_prompt": "better", "status": "completed"},
+        )
+
+    def test_rate_then_clear(self, client: TestClient, session_id: str):
+        self._optimized(client, session_id)
+        response = client.post(
+            f"{BASE}/{session_id}/feedback", json={"rating": "up", "comment": "Nice"}
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["feedback_rating"] == "up" and body["feedback_comment"] == "Nice"
+        assert body["feedback_at"] is not None
+
+        metrics = client.get(f"{BASE}/analytics/performance").json()
+        assert metrics["thumbs_up"] == 1 and metrics["thumbs_down"] == 0
+
+        cleared = client.post(
+            f"{BASE}/{session_id}/feedback", json={"rating": None}
+        ).json()
+        assert (
+            cleared["feedback_rating"] is None and cleared["feedback_comment"] is None
+        )
+        assert client.get(f"{BASE}/analytics/performance").json()["thumbs_up"] == 0
+
+    def test_cannot_rate_before_optimization(self, client: TestClient, session_id: str):
+        assert (
+            client.post(
+                f"{BASE}/{session_id}/feedback", json={"rating": "down"}
+            ).status_code
+            == 409
+        )
+
+    def test_bad_rating_is_422(self, client: TestClient, session_id: str):
+        self._optimized(client, session_id)
+        assert (
+            client.post(
+                f"{BASE}/{session_id}/feedback", json={"rating": "meh"}
+            ).status_code
+            == 422
+        )

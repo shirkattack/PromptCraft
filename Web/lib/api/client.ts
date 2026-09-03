@@ -23,7 +23,12 @@ export interface OptimizationSession {
   eval_score: number | null
   eval_metric: string | null
   eval_sample_count: number | null
+  feedback_rating: FeedbackRating | null
+  feedback_comment: string | null
+  feedback_at: string | null
 }
+
+export type FeedbackRating = 'up' | 'down'
 
 export interface AIProvider {
   id: string
@@ -59,6 +64,8 @@ export interface PerformanceMetrics {
   total_processing_time: number | null
   /** Not tracked; local Ollama runs have no billed cost. */
   cost_savings: number | null
+  thumbs_up: number
+  thumbs_down: number
 }
 
 export interface CreateSessionRequest {
@@ -426,6 +433,14 @@ class APIClient {
 
   async getOptimizationStatus(sessionId: string): Promise<OptimizationJob> {
     return this.request<OptimizationJob>(`/sessions/${sessionId}/optimize/status`)
+  }
+
+  /** Thumbs up/down on the optimized prompt; a null rating clears it. */
+  async submitFeedback(sessionId: string, rating: FeedbackRating | null, comment?: string): Promise<OptimizationSession> {
+    return this.request<OptimizationSession>(`/sessions/${sessionId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ rating, comment: comment ?? null }),
+    })
   }
 
   // Provider endpoints

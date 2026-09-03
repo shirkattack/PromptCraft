@@ -12,6 +12,7 @@ class OllamaService:
     """Service for interacting with Ollama local AI models."""
 
     def __init__(self) -> None:
+        self._show_context_cache: dict[str, int | None] = {}
         self.base_url = settings.ollama_base_url
         # Local models are slow to load; a 30s ceiling silently killed
         # completions that the configured timeout allows for.
@@ -34,11 +35,16 @@ class OllamaService:
                 )
 
             data = response.json()
-            models = [
-                self._to_model_response(model)
-                for model in data.get("models", [])
-                if self._can_complete(model)
-            ]
+            models = []
+            for model in data.get("models", []):
+                if not self._can_complete(model):
+                    continue
+                context_length = (model.get("details") or {}).get("context_length")
+                if not context_length:
+                    # Some models (gemma3n) omit it from /api/tags but report
+                    # it in /api/show under "<architecture>.context_length".
+                    context_length = await self._context_length_from_show(model["name"])
+                models.append(self._to_model_response(model, context_length))
             return self._sort_models(models)
         except httpx.ConnectError as e:
             self.logger.error(f"Cannot connect to Ollama at {self.base_url}: {e}")
@@ -150,7 +156,29 @@ class OllamaService:
         capabilities = model.get("capabilities")
         return not capabilities or "completion" in capabilities
 
-    def _to_model_response(self, model: dict[str, Any]) -> AIModelResponse:
+    async def _context_length_from_show(self, name: str) -> int | None:
+        """Read the context length from /api/show; None if unavailable."""
+        if name in self._show_context_cache:
+            return self._show_context_cache[name]
+        context: int | None = None
+        try:
+            response = await self.client.post(
+                f"{self.base_url}/api/show", json={"model": name}
+            )
+            if response.status_code == 200:
+                info = response.json().get("model_info") or {}
+                for key, value in info.items():
+                    if key.endswith(".context_length") and value:
+                        context = int(value)
+                        break
+        except Exception as exc:  # a missing number is not worth failing the list
+            self.logger.debug(f"/api/show failed for {name}: {exc}")
+        self._show_context_cache[name] = context
+        return context
+
+    def _to_model_response(
+        self, model: dict[str, Any], context_length: int | None = None
+    ) -> AIModelResponse:
         """Build the API view of a model from what /api/tags reports."""
         name = model["name"]
         details = model.get("details") or {}
@@ -161,7 +189,9 @@ class OllamaService:
             id=name,
             name=name.split(":")[0].title(),
             context_window=int(
-                details.get("context_length") or self._fallback_context_window(name)
+                context_length
+                or details.get("context_length")
+                or self._fallback_context_window(name)
             ),
             cost_per_1k_tokens=0.0,  # Local models are free
             speed_rating=self._speed_rating(parameter_size),

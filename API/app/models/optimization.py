@@ -47,3 +47,11 @@ class OptimizationSession(Base):
     eval_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     eval_metric: Mapped[str | None] = mapped_column(String, nullable=True)
     eval_sample_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # Added by migration 0003: a thumbs up/down and note from the user on the
+    # optimized prompt, a second evaluation signal alongside the measured score.
+    feedback_rating: Mapped[str | None] = mapped_column(String, nullable=True)
+    feedback_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feedback_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
