@@ -34,6 +34,28 @@ export function requestOpenSession(sessionId: string) {
   window.dispatchEvent(new CustomEvent(OPEN_SESSION, { detail: { sessionId } }))
 }
 
+/** True for failures where the request never got an answer (API restarting, not up yet). */
+export function isTransientNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  if (err.name === 'TypeError') return true // fetch(): "Failed to fetch" / "NetworkError when attempting to fetch resource"
+  return /NetworkError|Failed to fetch|Load failed|ECONNREFUSED/i.test(err.message)
+}
+
+/** Retry a request a few times on transient network failure (dev-server reloads, startup races). */
+export async function withRetry<T>(fn: () => Promise<T>, attempts = 4, baseDelayMs = 500): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (!isTransientNetworkError(err) || attempt === attempts - 1) throw err
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * 2 ** attempt))
+    }
+  }
+  throw lastError
+}
+
 // Generic hook for async data fetching
 function useAsyncData<T>(
   fetchFunction: () => Promise<T>,
@@ -48,10 +70,16 @@ function useAsyncData<T>(
     try {
       setLoading(true)
       setError(null)
-      const result = await fetchFunction()
+      const result = await withRetry(fetchFunction)
       setData(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(
+        isTransientNetworkError(err)
+          ? 'The API did not answer. It may be starting or restarting; retry in a moment.'
+          : err instanceof Error
+            ? err.message
+            : 'An error occurred',
+      )
       setData(null)
     } finally {
       setLoading(false)
