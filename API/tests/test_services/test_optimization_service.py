@@ -245,3 +245,27 @@ class TestPromptOptimizationService:
         service.clear_history()
         assert len(service.get_optimization_history()) == 0
         assert service.optimized_prompt is None
+
+    def test_user_feedback_becomes_a_constraint(self, service):
+        constraints = service._build_constraints(
+            "auto", "auto", False, ["Too long", "Lost the deadline"]
+        )
+        assert "Too long" in constraints and "Lost the deadline" in constraints
+        assert "address it" in constraints
+        assert service._build_constraints("auto", "auto", False, ["", "  "]) == ""
+
+    @pytest.mark.asyncio
+    async def test_user_feedback_is_echoed_in_settings(
+        self, service, mock_successful_llm
+    ):
+        with patch(
+            "app.services.lm_manager.LMManager.get_lm", return_value=mock_successful_llm
+        ):
+            result = await service.optimize_prompt(
+                original_prompt="Write code",
+                provider="ollama",
+                model="llama3.2:latest",
+                optimization_method="simple",
+                user_feedback=["Too long", " "],
+            )
+        assert result["metadata"]["settings"]["user_feedback"] == ["Too long"]

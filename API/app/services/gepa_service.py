@@ -306,10 +306,17 @@ class GepaOptimizer:
         train_ratio: float | None = None,
         seed: int = 13,
         progress: ProgressCallback = no_progress,
+        user_feedback: list[str] | None = None,
     ) -> None:
         if len(samples) < 2:
             raise EvalError("GEPA needs a dataset with at least 2 samples")
         self.samples = samples
+        # Notes the user left on earlier versions of this prompt. They are
+        # appended to the metric's feedback on every miss, so the reflection
+        # step reads them next to the concrete failure.
+        self.user_feedback = [
+            n.strip()[:300] for n in (user_feedback or []) if n.strip()
+        ]
         self.metric_name = choose_metric(metric, samples)
         self.budget = max(10, budget)
         self.reflection_lm = reflection_lm
@@ -390,9 +397,13 @@ class GepaOptimizer:
             pred_trace: Any = None,
         ) -> dspy.Prediction:
             verdict = base_metric(gold, pred, trace, pred_name, pred_trace)
-            tracker.record_feedback(
-                str(getattr(verdict, "feedback", "") or ""), float(verdict.score)
-            )
+            score = float(verdict.score)
+            feedback = str(getattr(verdict, "feedback", "") or "")
+            if self.user_feedback and score < 1.0:
+                notes = "; ".join(f"'{n}'" for n in self.user_feedback)
+                feedback = f"{feedback} The user said about earlier versions: {notes}."
+                verdict = dspy.Prediction(score=score, feedback=feedback)
+            tracker.record_feedback(feedback, score)
             return verdict
 
         optimizer = GEPA(
@@ -447,6 +458,7 @@ class GepaOptimizer:
             "metric_calls": metric_calls,
             "iterations": tracker.current_iteration,
             "reflection_model": getattr(self.reflection_lm, "model", None),
+            "user_feedback": self.user_feedback,
             "baseline_score": baseline_score,
             "final_score": final_score,
             "improved": improved,

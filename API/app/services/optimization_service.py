@@ -55,6 +55,7 @@ class PromptOptimizationService:
         gepa_budget: int = 60,
         reflection_model: str | None = None,
         eval_strategy: EvalStrategy = "holdout",
+        user_feedback: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Optimize a prompt using the specified method and provider.
@@ -86,9 +87,12 @@ class PromptOptimizationService:
             "target_length": target_length,
             "preserve_wording": preserve_wording,
         }
+        user_feedback = [note.strip() for note in (user_feedback or []) if note.strip()]
         constraints = self._build_constraints(
-            output_format, target_length, preserve_wording
+            output_format, target_length, preserve_wording, user_feedback
         )
+        if user_feedback:
+            run_settings["user_feedback"] = user_feedback
 
         try:
             lm = LMManager.get_lm(
@@ -131,6 +135,7 @@ class PromptOptimizationService:
                 gepa_budget,
                 reflection_lm,
                 eval_strategy,
+                user_feedback,
             )
         except EvalError:
             raise
@@ -253,6 +258,7 @@ class PromptOptimizationService:
         gepa_budget: int = 60,
         reflection_lm: dspy.LM | None = None,
         eval_strategy: EvalStrategy = "holdout",
+        user_feedback: list[str] | None = None,
     ) -> dict[str, Any]:
         """Run the selected optimization strategy. Executed in a worker thread.
 
@@ -268,6 +274,7 @@ class PromptOptimizationService:
                     gepa_budget,
                     reflection_lm,
                     progress,
+                    user_feedback or [],
                 )
 
             progress("rewrite", f"Rewriting the prompt ({optimization_method})")
@@ -305,6 +312,7 @@ class PromptOptimizationService:
         budget: int,
         reflection_lm: dspy.LM | None,
         progress: ProgressCallback,
+        user_feedback: list[str],
     ) -> dict[str, Any]:
         """Evolve the instructions with GEPA; no separate rewrite step."""
         optimizer = GepaOptimizer(
@@ -313,6 +321,7 @@ class PromptOptimizationService:
             budget=budget,
             reflection_lm=reflection_lm,
             progress=progress,
+            user_feedback=user_feedback,
         )
         outcome = optimizer.run(original_prompt)
         return {
@@ -507,9 +516,16 @@ Improved prompt:"""
 
     @staticmethod
     def _build_constraints(
-        output_format: str, target_length: str, preserve_wording: bool
+        output_format: str,
+        target_length: str,
+        preserve_wording: bool,
+        user_feedback: list[str] | None = None,
     ) -> str:
-        """Turn the advanced settings into instructions the strategies can embed."""
+        """Turn the advanced settings into instructions the strategies can embed.
+
+        ``user_feedback`` holds notes the user left (thumbs down) on earlier
+        versions of this prompt; each becomes a constraint to address.
+        """
         lines = []
         if output_format == "markdown":
             lines.append("The prompt must ask for the answer in Markdown.")
@@ -536,6 +552,14 @@ Improved prompt:"""
         if preserve_wording:
             lines.append(
                 "Preserve the original wording of the request; improve structure and add instructions around it rather than rephrasing it."
+            )
+        for note in user_feedback or []:
+            note = note.strip()
+            if not note:
+                continue
+            lines.append(
+                "A previous version of this prompt drew this feedback from the user, "
+                f'address it: "{note[:300]}"'
             )
         return "\n".join(f"- {line}" for line in lines)
 

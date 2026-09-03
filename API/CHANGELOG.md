@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Your feedback steers the next run.** Thumbs-down notes left on earlier
+  runs of the same prompt (newest five) are passed to the optimizer: the
+  rewrite methods get them as constraints to address, and GEPA appends them
+  to the metric's feedback on every miss so the reflection step reads them
+  next to the concrete failure. The notes used are echoed in
+  `metadata.settings.user_feedback` (and `metadata.gepa.user_feedback`) and
+  shown in Optimization Insights.
 - `POST /sessions/{id}/try`: run the session's original and/or optimized
   prompt on one input with the session's model and get both answers, the
   exact text sent, timing and any per-prompt error. A prompt with an

@@ -1575,6 +1575,31 @@ export function OptimizationDashboard() {
                     )
                   })()}
 
+                  {(() => {
+                    const notes = (lastResult.metadata.settings as { user_feedback?: string[] } | undefined)?.user_feedback
+                    if (!notes?.length) return null
+                    return (
+                      <div className="flex items-start gap-2 rounded-md border border-sky-500/40 bg-sky-500/10 p-2 text-xs">
+                        <ThumbsDown className="w-3.5 h-3.5 mt-0.5 text-sky-500 shrink-0" />
+                        <div className="space-y-1 min-w-0">
+                          <p className="font-medium font-sans">
+                            Used {notes.length} note{notes.length === 1 ? "" : "s"} you left on earlier versions of this prompt
+                          </p>
+                          <ul className="space-y-0.5 text-muted-foreground font-serif">
+                            {notes.map((note, index) => (
+                              <li key={index} className="truncate" title={note}>
+                                &ldquo;{note}&rdquo;
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="text-[11px] text-muted-foreground">
+                            {lastResult.method === "gepa" ? "Appended to the feedback the reflection reads on every miss." : "Added as constraints the rewrite must address."}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
                   {(lastResult.metadata.predictor === "template_fallback" || lastResult.metadata.fallback === true) && (
                     <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
                       <AlertTriangle className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" />

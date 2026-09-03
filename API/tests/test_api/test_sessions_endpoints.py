@@ -735,3 +735,67 @@ class TestTryIt:
             ).status_code
             == 422
         )
+
+
+class TestFeedbackFlowsIntoOptimization:
+    def test_prior_thumbs_down_notes_are_passed(
+        self, client: TestClient, sample_optimization_session
+    ):
+        prompt = sample_optimization_session["original_prompt"]
+        # An earlier run of the same prompt, rated down with a note.
+        earlier = client.post(f"{BASE}/", json=sample_optimization_session).json()
+        client.put(
+            f"{BASE}/{earlier['id']}",
+            json={"optimized_prompt": "v1", "status": "completed"},
+        )
+        client.post(
+            f"{BASE}/{earlier['id']}/feedback",
+            json={"rating": "down", "comment": "Way too long"},
+        )
+        # A rated-up run and one with a different prompt must not contribute.
+        liked = client.post(f"{BASE}/", json=sample_optimization_session).json()
+        client.put(
+            f"{BASE}/{liked['id']}",
+            json={"optimized_prompt": "v2", "status": "completed"},
+        )
+        client.post(
+            f"{BASE}/{liked['id']}/feedback", json={"rating": "up", "comment": "Great"}
+        )
+        other = client.post(
+            f"{BASE}/",
+            json={**sample_optimization_session, "original_prompt": "Something else"},
+        ).json()
+        client.put(
+            f"{BASE}/{other['id']}",
+            json={"optimized_prompt": "v3", "status": "completed"},
+        )
+        client.post(
+            f"{BASE}/{other['id']}/feedback",
+            json={"rating": "down", "comment": "Irrelevant"},
+        )
+
+        new = client.post(f"{BASE}/", json=sample_optimization_session).json()
+        mock = AsyncMock(
+            return_value={
+                "optimized_prompt": "v4",
+                "method": "simple",
+                "improvement_score": 1.0,
+                "score_type": "heuristic",
+                "processing_time": 0.1,
+                "metadata": {},
+                "success": True,
+            }
+        )
+        with patch(
+            "app.api.v1.endpoints.sessions.optimization_service.optimize_prompt",
+            new=mock,
+        ):
+            assert (
+                client.post(
+                    f"{BASE}/{new['id']}/optimize",
+                    json={"optimization_method": "simple"},
+                ).status_code
+                == 200
+            )
+        assert mock.call_args.kwargs["user_feedback"] == ["Way too long"]
+        assert prompt == sample_optimization_session["original_prompt"]
