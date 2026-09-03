@@ -11,6 +11,7 @@ npm run lint:api                # ruff + strict mypy
 cd Web && npx tsc --noEmit      # frontend types; the production build fails on errors
 cd Web && npm run build
 uv run --project API python test_optimization.py   # end-to-end against a running API (npm run dev:api first)
+npm run e2e:install && npm run e2e                  # browser smoke test against a running `npm run dev` (needs Ollama)
 ```
 
 The backend suite replaces model calls with DSPy's `DummyLM` and embeddings with a deterministic stand-in, so it runs in a few seconds anywhere.

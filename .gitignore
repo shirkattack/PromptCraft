@@ -107,3 +107,6 @@ logs/
 .cache/
 .temp/
 .tmp/
+
+# Playwright recordings for the README demo
+Web/e2e/video/
