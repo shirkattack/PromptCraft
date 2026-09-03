@@ -17,6 +17,7 @@ from app.services.eval_service import (
 from app.services.gepa_service import GepaOptimizer
 from app.services.lm_manager import LMManager
 from app.services.progress import ProgressCallback, no_progress
+from app.services.text import clean_model_text
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +159,7 @@ class PromptOptimizationService:
             )
 
         processing_time = (datetime.now(UTC) - start_time).total_seconds()
+        result["optimized_prompt"] = clean_model_text(result["optimized_prompt"])
         evaluation = result.get("metadata", {}).get("eval")
 
         if evaluation:

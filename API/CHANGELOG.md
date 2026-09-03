@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Synthetic generation failed with gemma3n** ("Model response was not valid
+  JSON"): the model indents its JSON with the sentencepiece marker U+2581 and
+  wraps it in a code fence. That marker is now replaced everywhere model text
+  enters the app (generated samples, rewrites, evaluated answers), and the
+  reply parser accepts fenced blocks, an object wrapping the list, renamed
+  keys (prompt/response, question/answer, text/label, ...), JSON lines and,
+  as a last resort, "Input: ... / Output: ..." pairs in prose. If nothing
+  parses, the model is asked once to restate its reply as JSON before the
+  request fails, and the first 300 characters of the reply are logged.
 - Ollama models are listed with the configured default first, then smallest to
   largest. Clients take the first entry as the default; Ollama's own order (by
   download time) put a 35B model ahead of llama3.2 and made the default run

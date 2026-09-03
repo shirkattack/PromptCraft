@@ -29,6 +29,7 @@ from dspy.teleprompt import BootstrapFewShot
 from app.core.config import settings
 from app.services.embedding_service import EmbeddingUnavailable, coverage_selection
 from app.services.progress import ProgressCallback, no_progress
+from app.services.text import clean_model_text
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class Candidate:
 
 def normalize(text: Any) -> str:
     """Lower-case, collapse whitespace and strip surrounding punctuation."""
-    normalized: str = str(text or "").strip().lower()
+    normalized: str = clean_model_text(str(text or "")).strip().lower()
     normalized = re.sub(r"\s+", " ", normalized)
     return normalized.strip(" .!?:;,\"'`*_")
 
