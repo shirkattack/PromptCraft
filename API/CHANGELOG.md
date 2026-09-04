@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-03
+
+The feedback-loop release. Results can be tried on your own input, rated,
+and iterated on, and what you say about a result feeds the next one.
+
+### Highlights
+- **Try it**: run the original and the optimized prompt on an input you type,
+  same model, side by side, with a match verdict against a held-out sample.
+- **Your feedback steers the next run**: thumbs-down notes become constraints
+  for the rewrite methods and extra feedback for GEPA's reflection step.
+- **Iterate on a result**: one click makes a result the next starting prompt,
+  method and dataset kept.
+- **CI on every pull request** and a committed browser smoke test.
+
+### Web
+- Try it card under the Optimized Prompt: input box, "Use a held-out sample",
+  two answer panes with timing, word count, copy, the text actually sent,
+  and a match badge and verdict when the expected output is known.
+- "Iterate on this" next to Share; a banner names the source session; the
+  follow-up session is named "Iteration of <source>".
+- Optimization Insights lists the thumbs-down notes that were applied and how.
+- Data requests retry transient failures (API restarting, dev-server reload)
+  with backoff and show a Retry button instead of sticking on an error.
+- Logo SVGs stripped of embedded metadata (8.7 KB to 0.9 KB each).
+
+### Tooling
+- GitHub Actions CI: ruff, black, isort, strict mypy and the test suite for
+  the API; type check and production build for the web app. Badge in the
+  README.
+- `npm run e2e`: Playwright smoke test against a running app (import, preview,
+  export, measured optimization, Try it, analytics, delete, reload).
+  `npm run demo:record` re-records `docs/demo.gif`.
+
 ### Added
 - **Your feedback steers the next run.** Thumbs-down notes left on earlier
   runs of the same prompt (newest five) are passed to the optimizer: the
@@ -300,13 +333,13 @@ the app runs entirely on `uv` + Ollama with one-command setup.
 
 ## Version History Summary
 
+- **v1.2.0**: Try it, feedback into the optimizers, iterate on a result, CI, browser smoke test
 - **v1.1.0**: Measured optimization, GEPA, background jobs, migrations, uv setup, new UI
 - **v1.0.0**: Professional production-ready refactoring with comprehensive improvements
 - **v0.1.0**: Initial development version with basic functionality
 
 ## Planned
 
-- [ ] "Try it" panel: run the original and optimized prompts on an input of your choosing, side by side
-- [ ] End-to-end browser smoke test in the repository (`npm run e2e`)
-- [ ] Feed thumbs-down notes into GEPA's reflection as extra feedback
-- [ ] Script to regenerate the README demo GIF
+- [ ] Compare two sessions side by side
+- [ ] Run the same measured evaluation on two models
+- [ ] Export an evolved prompt as a DSPy program
