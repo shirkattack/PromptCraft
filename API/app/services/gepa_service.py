@@ -26,6 +26,7 @@ import dspy
 from dspy.teleprompt import GEPA
 
 from app.core.config import settings
+from app.services.code_eval_service import evaluate_response
 from app.services.eval_service import (
     SHORT_ANSWER_CHARS,
     EvalError,
@@ -33,8 +34,11 @@ from app.services.eval_service import (
     Sample,
     choose_metric,
     describe_split,
+    example_code_fields,
     normalize,
     render_prompt,
+    require_code_eval,
+    result_identity,
     split_samples,
 )
 from app.services.progress import ProgressCallback, no_progress
@@ -142,6 +146,37 @@ def judge_feedback_metric() -> FeedbackMetric:
     return metric
 
 
+def code_feedback_metric() -> FeedbackMetric:
+    """Feedback for code outputs: fraction of asserts passed, and why not all.
+
+    ``no_code``, ``syntax_error``, ``wrong_name`` and ``timeout`` score 0.0;
+    a partial run scores passed/total; a full pass scores 1.0. The reported
+    score of a run stays binary pass@1 (see ``GepaOptimizer._evaluate``); the
+    fraction only steers the search.
+    """
+
+    def metric(
+        gold: dspy.Example,
+        pred: Any,
+        trace: Any = None,
+        pred_name: str | None = None,
+        pred_trace: Any = None,
+    ) -> dspy.Prediction:
+        response = str(getattr(pred, "output", "") or "")
+        result = evaluate_response(response, example_code_fields(gold))
+        if result.status == "pass":
+            return dspy.Prediction(score=1.0, feedback=result.feedback)
+        if result.status in {"no_code", "syntax_error", "wrong_name", "timeout"}:
+            return dspy.Prediction(score=0.0, feedback=result.feedback)
+        return dspy.Prediction(score=result.fraction, feedback=result.feedback)
+
+    return metric
+
+
+# Metrics whose partial credit must not leak into the reported score.
+BINARY_REPORT_METRICS = {"tests"}
+
+
 def build_feedback_metric(metric_name: str) -> FeedbackMetric:
     if metric_name == "exact":
         return label_feedback_metric(exact=True)
@@ -149,6 +184,9 @@ def build_feedback_metric(metric_name: str) -> FeedbackMetric:
         return label_feedback_metric(exact=False)
     if metric_name == "llm_judge":
         return judge_feedback_metric()
+    if metric_name == "tests":
+        require_code_eval()
+        return code_feedback_metric()
     raise EvalError(f"Unknown metric: {metric_name}")
 
 
@@ -330,6 +368,10 @@ class GepaOptimizer:
             seed,
         )
         self.metric = build_feedback_metric(self.metric_name)
+        # For code, GEPA searches on the fraction of asserts passed but the
+        # number reported for a prompt is pass@1: a sample counts only when
+        # every assert passes.
+        self.report_binary = self.metric_name in BINARY_REPORT_METRICS
 
     # -- evaluation helpers
 
@@ -346,7 +388,7 @@ class GepaOptimizer:
                 pred = dspy.Prediction(output="")
             verdict = self.metric(example, pred)
             score = float(verdict.score)
-            total += score
+            total += (1.0 if score >= 1.0 else 0.0) if self.report_binary else score
             rows.append(
                 {
                     "input": sample.input_text,
@@ -355,6 +397,7 @@ class GepaOptimizer:
                     "passed": score >= 1.0,
                     "score": score,
                     "feedback": str(getattr(verdict, "feedback", "") or ""),
+                    **result_identity(example),
                 }
             )
         percent = round(total / len(self.dev) * 100, 2) if self.dev else 0.0

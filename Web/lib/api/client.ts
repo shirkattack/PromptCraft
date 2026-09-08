@@ -92,7 +92,7 @@ export interface OptimizationMethodInfo {
 
 export type OutputFormat = 'auto' | 'markdown' | 'plain' | 'json'
 export type TargetLength = 'auto' | 'concise' | 'balanced' | 'detailed'
-export type EvalMetric = 'auto' | 'exact' | 'contains' | 'llm_judge'
+export type EvalMetric = 'auto' | 'exact' | 'contains' | 'llm_judge' | 'tests'
 /** holdout: one held-out split. kfold: every sample held out once (k times the cost). */
 export type EvalStrategy = 'holdout' | 'kfold'
 export type ScoreType = 'measured' | 'heuristic'

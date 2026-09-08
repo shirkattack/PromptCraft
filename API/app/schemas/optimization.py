@@ -94,7 +94,7 @@ class SessionFeedback(BaseModel):
 
 OutputFormat = Literal["auto", "markdown", "plain", "json"]
 TargetLength = Literal["auto", "concise", "balanced", "detailed"]
-EvalMetric = Literal["auto", "exact", "contains", "llm_judge"]
+EvalMetric = Literal["auto", "exact", "contains", "llm_judge", "tests"]
 EvalStrategy = Literal["holdout", "kfold"]
 
 

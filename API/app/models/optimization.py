@@ -60,3 +60,8 @@ class OptimizationSession(Base):
     # scores, eval scoreboard, GEPA timeline) as JSON, so a past session can
     # be reopened with everything the run produced.
     result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Added by migration 0005: completions of the optimized prompt on a
+    # benchmark split ({split: {task_id: completion}}), written by
+    # scripts/export_evalplus_samples.py so a re-export does not re-run the model.
+    completions_json: Mapped[str | None] = mapped_column(Text, nullable=True)
