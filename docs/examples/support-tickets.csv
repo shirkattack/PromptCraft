@@ -11,3 +11,9 @@ input,output
 "Would like to change the email on my account",medium
 "Two-factor codes never arrive, cannot access account",high
 "How do I download last month's invoice?",medium
+"I need urgent assistance with my account being locked due to suspicious activity.",high
+"I'm experiencing issues with my software not being able to connect to the server.",medium
+"I need help with a security issue where my account has been compromised.",high
+"The software is not working properly and I need assistance with the installation.",medium
+"I'm experiencing issues with my email not being able to send emails.",medium
+"I need help with a new feature that I'm having trouble using.",medium
