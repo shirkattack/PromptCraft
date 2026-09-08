@@ -1,0 +1,9 @@
+# Only for scripts/build_mbppplus_dataset.py (downloads MBPP+ from EvalPlus)
+# and for cross-checking results with `evalplus.evaluate`. Not an API runtime
+# dependency: the "tests" metric itself is standard library only.
+#
+#   pip install -r API/requirements-bench.txt
+#
+evalplus>=0.3.1
+# Fallback source when the evalplus import fails: datasets.load_dataset("evalplus/mbppplus")
+datasets>=2.19
