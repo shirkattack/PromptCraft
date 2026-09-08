@@ -70,7 +70,7 @@ PromptCraft supplies the feedback metric, the split and budget controls, the sep
 
 ## Coding benchmarks (MBPP+)
 
-PromptCraft can optimize a prompt for Python code generation and score it by running tests. The dataset is MBPP+ from [EvalPlus](https://github.com/evalplus/evalplus): 378 short programming tasks, each with a function name and three asserts.
+PromptCraft can optimize a prompt for Python code generation and score it by running tests. The dataset is MBPP+ from [EvalPlus](https://github.com/evalplus/evalplus): 378 short programming tasks, each with a function name, the three original MBPP asserts (*base*) and EvalPlus's extended inputs (about a hundred more asserts per task, *plus*). A task's base result is the base asserts passing; its plus result is every assert passing, which is what "MBPP+ pass@1" means. Expect plus to be about ten points below base.
 
 **Warning.** The `tests` metric executes code written by the model on your machine, inside a subprocess with a timeout, a memory cap and a guard that disables `os.system`, file deletion, process spawning and sockets. It is not a container. Run it on a machine you don't mind, and set `CODE_EVAL_ENABLED=false` in `API/.env` to switch it off.
 
@@ -83,9 +83,19 @@ uv run --project API --with-requirements API/requirements-bench.txt \
 
 `--with-requirements` overlays EvalPlus on the API environment for that one command. It is not an API dependency and `uv sync` never installs it.
 
-This writes `train.jsonl` (120 tasks), `val.jsonl` (60) and `test.jsonl` (198) plus `split.json` with the task ids, and checks that every canonical solution passes its own asserts in the sandbox. Import `train.jsonl` through the Import dialog (JSON Lines): `input` and `output` map as usual and `task_id`, `entry_point`, `test_imports` and `tests` land in each sample's extra data, where the metric reads them. The app holds part of the imported dataset out as its own dev split. `test.jsonl` is never used during optimization; it is only for the cross-check below.
+This writes `train.jsonl` (120 tasks), `val.jsonl` (60) and `test.jsonl` (198) plus `split.json` with the task ids, which is fixed: the build refuses to change it. Every assert's expected value comes from running the canonical solution on that input in the sandbox, and the build aborts unless all 378 canonical solutions pass all of their asserts. Each task also carries a `timeout_s` of four times its slowest canonical assert (clamped to 2–20 s), because some extended inputs are large and a flat timeout would produce false timeouts; the runner uses the larger of that and `CODE_EVAL_TIMEOUT_SECONDS`. See [docs/benchmarks/mbppplus/README.md](docs/benchmarks/mbppplus/README.md) for the counts.
 
-**How it scores.** The metric extracts the first fenced code block (or the `def`) from the answer, checks that it defines the task's function, and runs each assert in its own interpreter. A sample passes only when every assert passes, which is pass@1 as MBPP+ defines it. GEPA's feedback metric additionally scores the fraction of asserts passed and says why the rest failed (no code, syntax error, wrong function name, the failing assert, an exception, or a timeout), so the reflection model has something to act on. The reported score of a run is always the binary pass@1, never the fraction.
+Import `train.jsonl` through the Import dialog (JSON Lines): `input` and `output` map as usual and `task_id`, `entry_point`, `test_imports`, `tests`, `base_count` and `timeout_s` land in each sample's extra data, where the metric reads them. The app holds part of the imported dataset out as its own dev split. `test.jsonl` is never used during optimization; it is only for the runner and the cross-check below.
+
+**How it scores.** The metric extracts the first fenced code block (or the `def`) from the answer, checks that it defines the task's function, and runs all of the task's asserts in one sandboxed interpreter, each under its own timer. A sample passes only when every assert passes, which is pass@1 as MBPP+ defines it. GEPA's feedback metric additionally scores the fraction of asserts passed and says why the rest failed (no code, syntax error, wrong function name, the failing assert, an exception, or a timeout), so the reflection model has something to act on. The reported score of a run is always the binary pass@1, computed by a separate function from the loop metric, never the fraction; every run logs its dev size and metric at the start.
+
+**The benchmark runner.** `scripts/run_benchmark.py` calls the services directly with the fixed split and none of the app's caps: train is the demo pool and GEPA's training set, val is GEPA's selection set, and test is evaluated exactly once per finished candidate. It writes one JSON file per (model, prompt, method, seed) under `docs/results/` as each run finishes, with the model digest, git commit, final prompt, demo ids, per-task results and the completions as `samples.jsonl`; `scripts/summarize_results.py` turns those into [docs/results/README.md](docs/results/README.md).
+
+```bash
+uv run --project API python scripts/run_benchmark.py --model llama3.2 --reflection-model qwen3.6:27b \
+    --prompt bare --methods original one_line random_demos coverage_demos gepa gepa_demos --seeds 1 2 3 --budget 500
+uv run --project API python scripts/summarize_results.py
+```
 
 **Recommended run settings for code.** Temperature 0, thinking off, a `max_tokens` of about 512, and few-shot examples placed before the task input (the default rendering). Raise `EVAL_MAX_TRAIN_SAMPLES` to use all 120 training tasks; the default caps keep a run to 60 samples.
 
