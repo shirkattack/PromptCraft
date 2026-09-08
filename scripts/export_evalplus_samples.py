@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Export a session's completions on a benchmark split in EvalPlus's samples.jsonl format.
 
-    python scripts/export_evalplus_samples.py --session <id> --split test --out samples.jsonl
+    uv run --project API python scripts/export_evalplus_samples.py \
+        --session <id> --split test --out samples.jsonl
 
 Runs the session's optimized prompt (its instructions plus the few-shot
 examples that were measured) on every task of the split, extracts the code
@@ -11,7 +12,8 @@ export does not re-run the model; pass ``--regenerate`` to force it.
 
 Cross-check with the official harness:
 
-    evalplus.evaluate --dataset mbpp --samples samples.jsonl
+    uv run --project API --with-requirements API/requirements-bench.txt \
+        evalplus.evaluate --dataset mbpp --samples samples.jsonl
 
 The script also prints PromptCraft's own pass@1 on the split (base asserts
 only) so the two numbers can be compared. Needs Ollama and the session's model.

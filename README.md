@@ -77,9 +77,11 @@ PromptCraft can optimize a prompt for Python code generation and score it by run
 **Build and import the dataset.**
 
 ```bash
-pip install -r API/requirements-bench.txt
-python scripts/build_mbppplus_dataset.py --out docs/benchmarks/mbppplus --seed 1234
+uv run --project API --with-requirements API/requirements-bench.txt \
+    python scripts/build_mbppplus_dataset.py --out docs/benchmarks/mbppplus --seed 1234
 ```
+
+`--with-requirements` overlays EvalPlus on the API environment for that one command. It is not an API dependency and `uv sync` never installs it.
 
 This writes `train.jsonl` (120 tasks), `val.jsonl` (60) and `test.jsonl` (198) plus `split.json` with the task ids, and checks that every canonical solution passes its own asserts in the sandbox. Import `train.jsonl` through the Import dialog (JSON Lines): `input` and `output` map as usual and `task_id`, `entry_point`, `test_imports` and `tests` land in each sample's extra data, where the metric reads them. The app holds part of the imported dataset out as its own dev split. `test.jsonl` is never used during optimization; it is only for the cross-check below.
 
@@ -90,8 +92,8 @@ This writes `train.jsonl` (120 tasks), `val.jsonl` (60) and `test.jsonl` (198) p
 **Cross-check with EvalPlus.** Export the optimized prompt's completions on the fixed test split and score them with the official harness:
 
 ```bash
-python scripts/export_evalplus_samples.py --session <session id> --split test --out samples.jsonl
-evalplus.evaluate --dataset mbpp --samples samples.jsonl
+uv run --project API python scripts/export_evalplus_samples.py --session <session id> --split test --out samples.jsonl
+uv run --project API --with-requirements API/requirements-bench.txt evalplus.evaluate --dataset mbpp --samples samples.jsonl
 ```
 
 The export prints PromptCraft's own pass@1 on the base asserts; EvalPlus adds its extended tests, so its number is usually lower. Report both and the agreement between them.

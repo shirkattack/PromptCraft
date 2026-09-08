@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Build the MBPP+ (EvalPlus) train/val/test split PromptCraft optimizes against.
 
-    python scripts/build_mbppplus_dataset.py --out docs/benchmarks/mbppplus --seed 1234
+    uv run --project API --with-requirements API/requirements-bench.txt \
+        python scripts/build_mbppplus_dataset.py --out docs/benchmarks/mbppplus --seed 1234
 
 Loads MBPP+ via ``evalplus`` (falling back to the Hugging Face ``datasets``
 copy), writes one JSONL row per task in the importer's ``input``/``output``
@@ -9,7 +10,8 @@ schema with the test fields in the remaining keys, splits the task ids
 deterministically, and finally runs every canonical solution through the same
 sandbox the ``tests`` metric uses, aborting if any of them fails its asserts.
 
-Needs ``pip install -r API/requirements-bench.txt``.
+``--with-requirements`` overlays evalplus on the API environment for this run
+only; it is not an API dependency.
 """
 
 from __future__ import annotations
