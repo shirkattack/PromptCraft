@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     embedding_model: str = "nomic-embed-text:latest"
     synthetic_duplicate_threshold: float = 0.92
 
+    # The "tests" metric runs model-written Python in a subprocess sandbox
+    # (see code_eval_service). Off switch, per-assert timeout and memory cap.
+    code_eval_enabled: bool = True
+    code_eval_timeout_seconds: float = 10.0
+    code_eval_memory_mb: int = 1024
+
     # Ollama-specific settings
     ollama_timeout: int = 120  # Longer timeout for local models
     ollama_max_retries: int = 3
