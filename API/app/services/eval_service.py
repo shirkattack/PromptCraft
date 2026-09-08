@@ -19,7 +19,7 @@ import logging
 import random
 import re
 import statistics
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -56,7 +56,14 @@ class EvalError(Exception):
 
 # Fields of extra_data that ride along on the dspy.Example so a metric can
 # reach them (the "tests" metric needs the asserts and the function name).
-CODE_FIELDS = ("tests", "entry_point", "test_imports", "task_id")
+CODE_FIELDS = (
+    "tests",
+    "entry_point",
+    "test_imports",
+    "task_id",
+    "base_count",
+    "timeout_s",
+)
 
 
 @dataclass
@@ -152,6 +159,19 @@ def tests_metric(example: dspy.Example, pred: Any, trace: Any = None) -> bool:
     """pass@1 as MBPP+ defines it: every assert of the task must pass."""
     response = str(getattr(pred, "output", "") or "")
     return evaluate_response(response, example_code_fields(example)).status == "pass"
+
+
+def report_pass_at_1(scores: Iterable[float]) -> float:
+    """The reported score of a run: the percentage of samples with full credit.
+
+    Kept separate from any optimizer loop metric on purpose. GEPA searches on
+    a fractional metric (for code, the share of asserts passed); this is what
+    gets reported and stored, and a sample counts only when its score is 1.0.
+    """
+    values = list(scores)
+    if not values:
+        return 0.0
+    return round(sum(1 for v in values if v >= 1.0) / len(values) * 100, 2)
 
 
 def build_metric(metric_name: str) -> MetricFn:
@@ -498,6 +518,10 @@ class DatasetOptimizer:
         has_rewrite = bool(rewritten and rewritten.strip() != original.strip())
         total_steps = 1 + (3 if has_rewrite else 1)
         step = 0
+        logger.info(
+            f"Dataset evaluation: metric={self.metric_name} strategy=holdout "
+            f"train={len(self.train)} dev={len(self.dev)}"
+        )
 
         def report(message: str, best: float | None = None) -> None:
             self.progress(
@@ -584,6 +608,10 @@ class DatasetOptimizer:
         winning candidate type recompiled on the whole dataset.
         """
         has_rewrite = bool(rewritten and rewritten.strip() != original.strip())
+        logger.info(
+            f"Dataset evaluation: metric={self.metric_name} strategy=kfold "
+            f"folds={len(self.folds)} samples={len(self.samples)}"
+        )
         names = [BASELINE]
         if has_rewrite:
             names += ["rewritten", "rewritten_fewshot"]

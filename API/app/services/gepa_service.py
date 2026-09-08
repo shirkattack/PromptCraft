@@ -37,6 +37,7 @@ from app.services.eval_service import (
     example_code_fields,
     normalize,
     render_prompt,
+    report_pass_at_1,
     require_code_eval,
     result_identity,
     split_samples,
@@ -345,7 +346,11 @@ class GepaOptimizer:
         seed: int = 13,
         progress: ProgressCallback = no_progress,
         user_feedback: list[str] | None = None,
+        train: list[Sample] | None = None,
+        dev: list[Sample] | None = None,
     ) -> None:
+        """``train``/``dev`` override the internal split (and its caps) when a
+        caller such as the benchmark runner brings a fixed split of its own."""
         if len(samples) < 2:
             raise EvalError("GEPA needs a dataset with at least 2 samples")
         self.samples = samples
@@ -360,13 +365,18 @@ class GepaOptimizer:
         self.reflection_lm = reflection_lm
         self.seed = seed
         self.progress = progress
-        self.train, self.dev = split_samples(
-            samples,
-            settings.default_train_ratio if train_ratio is None else train_ratio,
-            settings.eval_max_train_samples,
-            settings.eval_max_dev_samples,
-            seed,
-        )
+        if train is not None and dev is not None:
+            if not train or not dev:
+                raise EvalError("GEPA needs non-empty train and dev sets")
+            self.train, self.dev = list(train), list(dev)
+        else:
+            self.train, self.dev = split_samples(
+                samples,
+                settings.default_train_ratio if train_ratio is None else train_ratio,
+                settings.eval_max_train_samples,
+                settings.eval_max_dev_samples,
+                seed,
+            )
         self.metric = build_feedback_metric(self.metric_name)
         # For code, GEPA searches on the fraction of asserts passed but the
         # number reported for a prompt is pass@1: a sample counts only when
@@ -378,7 +388,7 @@ class GepaOptimizer:
     def _evaluate(self, program: dspy.Module) -> tuple[float, list[dict[str, Any]]]:
         """Score a program on the held-out split; returns (percent, rows)."""
         rows = []
-        total = 0.0
+        scores: list[float] = []
         for sample in self.dev:
             example = sample.to_example()
             try:
@@ -388,7 +398,7 @@ class GepaOptimizer:
                 pred = dspy.Prediction(output="")
             verdict = self.metric(example, pred)
             score = float(verdict.score)
-            total += (1.0 if score >= 1.0 else 0.0) if self.report_binary else score
+            scores.append(score)
             rows.append(
                 {
                     "input": sample.input_text,
@@ -400,7 +410,11 @@ class GepaOptimizer:
                     **result_identity(example),
                 }
             )
-        percent = round(total / len(self.dev) * 100, 2) if self.dev else 0.0
+        if self.report_binary:
+            # pass@1: the loop metric's partial credit never reaches the report.
+            percent = report_pass_at_1(scores)
+        else:
+            percent = round(sum(scores) / len(scores) * 100, 2) if scores else 0.0
         return percent, rows
 
     @staticmethod
@@ -411,6 +425,11 @@ class GepaOptimizer:
 
     def run(self, original: str) -> dict[str, Any]:
         started = time.time()
+        logger.info(
+            f"GEPA run: metric={self.metric_name} train={len(self.train)} "
+            f"dev={len(self.dev)} budget={self.budget} "
+            f"report={'pass@1' if self.report_binary else 'mean score'}"
+        )
         self.progress(
             "evaluate",
             f"Scoring the original prompt on {len(self.dev)} held-out samples",
@@ -566,6 +585,14 @@ class GepaOptimizer:
         candidates = list(getattr(detailed, "candidates", None) or [])
         parents = list(getattr(detailed, "parents", None) or [])
         scores = list(getattr(detailed, "val_aggregate_scores", None) or [])
+        if self.report_binary:
+            # GEPA's aggregate is the loop metric (partial credit); report the
+            # candidates on the same scale as the run, pass@1 over the dev set.
+            subscores = list(getattr(detailed, "val_subscores", None) or [])
+            scores = [
+                report_pass_at_1(dict(per_instance).values()) / 100
+                for per_instance in subscores
+            ] or scores
         if not candidates:
             evolved = clean_instructions(
                 str(getattr(compiled.signature, "instructions", "") or original)
