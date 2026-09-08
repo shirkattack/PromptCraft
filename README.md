@@ -51,7 +51,7 @@ To verify the install: `./test_setup.sh`, then `python test_optimization.py` wit
 **With a dataset** of input/output pairs:
 
 1. Candidates are built: the original prompt, the rewrite, and each of those with selected few-shot examples.
-2. Each candidate is scored on held-out samples with the chosen metric: `exact`, `contains`, or `llm_judge` (a local model judges free-text answers). `auto` picks `contains` for short answers and the judge for longer ones.
+2. Each candidate is scored on held-out samples with the chosen metric: `exact`, `contains`, `llm_judge` (a local model judges free-text answers), or `tests` (the answer's code is run against the sample's asserts, see [Coding benchmarks](#coding-benchmarks-mbpp)). `auto` picks `tests` when every sample carries asserts, `contains` for short answers and the judge for longer ones.
 3. Evaluation is a fixed 80/20 split by default, or k-fold, where every sample is held out once. Splits and folds are stratified so every class appears in every fold.
 4. Few-shot examples are selected for coverage of the training inputs, so they are representative rather than lucky.
 5. The winner is whichever candidate scores highest held-out.
@@ -67,6 +67,36 @@ To verify the install: `./test_setup.sh`, then `python test_optimization.py` wit
 PromptCraft supplies the feedback metric, the split and budget controls, the separate reflection model, and the lineage view; the search itself is DSPy's.
 
 **Budgets.** A run uses at most 40 train and 20 held-out samples, 5 folds and 8 few-shot examples by default; GEPA gets 60 scored calls. That keeps a run to minutes on a laptop. Raise the `EVAL_MAX_*` values in `API/.env` and the GEPA budget in the run settings for stricter numbers.
+
+## Coding benchmarks (MBPP+)
+
+PromptCraft can optimize a prompt for Python code generation and score it by running tests. The dataset is MBPP+ from [EvalPlus](https://github.com/evalplus/evalplus): 378 short programming tasks, each with a function name and three asserts.
+
+**Warning.** The `tests` metric executes code written by the model on your machine, inside a subprocess with a timeout, a memory cap and a guard that disables `os.system`, file deletion, process spawning and sockets. It is not a container. Run it on a machine you don't mind, and set `CODE_EVAL_ENABLED=false` in `API/.env` to switch it off.
+
+**Build and import the dataset.**
+
+```bash
+pip install -r API/requirements-bench.txt
+python scripts/build_mbppplus_dataset.py --out docs/benchmarks/mbppplus --seed 1234
+```
+
+This writes `train.jsonl` (120 tasks), `val.jsonl` (60) and `test.jsonl` (198) plus `split.json` with the task ids, and checks that every canonical solution passes its own asserts in the sandbox. Import `train.jsonl` through the Import dialog (JSON Lines): `input` and `output` map as usual and `task_id`, `entry_point`, `test_imports` and `tests` land in each sample's extra data, where the metric reads them. The app holds part of the imported dataset out as its own dev split. `test.jsonl` is never used during optimization; it is only for the cross-check below.
+
+**How it scores.** The metric extracts the first fenced code block (or the `def`) from the answer, checks that it defines the task's function, and runs each assert in its own interpreter. A sample passes only when every assert passes, which is pass@1 as MBPP+ defines it. GEPA's feedback metric additionally scores the fraction of asserts passed and says why the rest failed (no code, syntax error, wrong function name, the failing assert, an exception, or a timeout), so the reflection model has something to act on. The reported score of a run is always the binary pass@1, never the fraction.
+
+**Recommended run settings for code.** Temperature 0, thinking off, a `max_tokens` of about 512, and few-shot examples placed before the task input (the default rendering). Raise `EVAL_MAX_TRAIN_SAMPLES` to use all 120 training tasks; the default caps keep a run to 60 samples.
+
+**Cross-check with EvalPlus.** Export the optimized prompt's completions on the fixed test split and score them with the official harness:
+
+```bash
+python scripts/export_evalplus_samples.py --session <session id> --split test --out samples.jsonl
+evalplus.evaluate --dataset mbpp --samples samples.jsonl
+```
+
+The export prints PromptCraft's own pass@1 on the base asserts; EvalPlus adds its extended tests, so its number is usually lower. Report both and the agreement between them.
+
+**Contamination.** llama3.2 and most models have seen MBPP during training. Absolute scores say little; compare within one model, before and after optimization, on the fixed test split.
 
 ## Results
 
@@ -101,6 +131,10 @@ EVAL_MAX_DEV_SAMPLES=20
 EVAL_MAX_FOLDS=5
 EVAL_MAX_DEMOS=8
 
+CODE_EVAL_ENABLED=true
+CODE_EVAL_TIMEOUT_SECONDS=10
+CODE_EVAL_MEMORY_MB=1024
+
 DATABASE_URL=sqlite:///./app.db
 LOG_LEVEL=INFO
 ```
@@ -114,6 +148,7 @@ API/   FastAPI + DSPy + SQLAlchemy/SQLite
        app/services/optimization_service.py   rewrite, heuristic score, candidate assembly
        app/services/eval_service.py           splits, folds, metrics, held-out scoring
        app/services/gepa_service.py           feedback metric, dspy.GEPA run, lineage tracking
+       app/services/code_eval_service.py      sandboxed test runner behind the "tests" metric
        app/services/embedding_service.py      coverage-based example selection, dedup
        app/services/training_service.py       datasets, import/export, synthetic samples
        app/services/try_service.py            side-by-side "Try it"
@@ -128,6 +163,7 @@ DSPy sits between the optimizer and the model: signatures define the input/outpu
 - The no-dataset score is a rubric about the prompt's shape. It says nothing about whether the prompt works.
 - `llm_judge` is a small local model judging free text. Expect noise; prefer `exact` or `contains` whenever answers are short.
 - Budgets are capped by default. Raise them for real runs and expect longer wall-clock time.
+- The `tests` metric runs model-written code in a subprocess, not a container. Its guard blocks the obvious damage, not a determined adversary.
 
 ## Contributing
 
