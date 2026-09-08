@@ -7,6 +7,9 @@
 Runs the session's optimized prompt (its instructions plus the few-shot
 examples that were measured) on every task of the split, extracts the code
 from each answer and writes one ``{"task_id", "solution"}`` line per task.
+Tasks outside the split are written with an empty solution, because
+``evalplus.evaluate`` refuses a file that does not list every MBPP+ task; use
+``scripts/evalplus_split_score.py`` to read its results for the split alone.
 ``--variant original`` runs the session's original prompt instead, so the
 before/after delta can be measured on the same fixed split. Completions are
 stored on the session (``completions_json``) so a second export does not
@@ -45,6 +48,15 @@ def load_split(benchmark: Path, split: str) -> list[dict[str, Any]]:
         )
     with path.open(encoding="utf-8") as handle:
         return [json.loads(line) for line in handle if line.strip()]
+
+
+def other_task_ids(benchmark: Path, split: str) -> list[str]:
+    """Task ids of the other splits, padded into the export for EvalPlus."""
+    split_file = benchmark / "split.json"
+    if not split_file.exists():
+        return []
+    lists = json.loads(split_file.read_text())
+    return [tid for name in SPLITS if name != split for tid in lists.get(name, [])]
 
 
 def session_program(session: Any, variant: str) -> tuple[str, list[dict[str, str]]]:
@@ -155,6 +167,7 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     tasks = load_split(args.benchmark, args.split)
+    padding = other_task_ids(args.benchmark, args.split)
     db = SessionLocal()
     try:
         session = db.get(OptimizationSession, args.session)
@@ -199,12 +212,25 @@ def main(argv: list[str] | None = None) -> None:
                 memory_mb=1024,
             )
             passed += result.status == "pass"
-    print(f"wrote {len(tasks)} samples to {args.out}")
+        for task_id in padding:
+            handle.write(json.dumps(to_evalplus_sample(task_id, "")) + "\n")
+    print(
+        f"wrote {len(tasks)} {args.split} samples to {args.out}"
+        + (
+            f" (+{len(padding)} empty rows for the other splits, which EvalPlus requires)"
+            if padding
+            else ""
+        )
+    )
     print(
         f"PromptCraft pass@1 of the {args.variant} prompt on {args.split} "
         f"(base asserts): {passed}/{len(tasks)} = {passed / len(tasks) * 100:.1f}%"
     )
-    print(f"cross-check: evalplus.evaluate --dataset mbpp --samples {args.out}")
+    print(
+        f"cross-check: evalplus.evaluate --dataset mbpp --samples {args.out}\n"
+        f"  then: python scripts/evalplus_split_score.py --split {args.split} "
+        f"--results {args.out.with_name(args.out.stem + '_eval_results.json')}"
+    )
 
 
 if __name__ == "__main__":

@@ -89,14 +89,18 @@ This writes `train.jsonl` (120 tasks), `val.jsonl` (60) and `test.jsonl` (198) p
 
 **Recommended run settings for code.** Temperature 0, thinking off, a `max_tokens` of about 512, and few-shot examples placed before the task input (the default rendering). Raise `EVAL_MAX_TRAIN_SAMPLES` to use all 120 training tasks; the default caps keep a run to 60 samples.
 
-**Cross-check with EvalPlus.** Export the optimized prompt's completions on the fixed test split and score them with the official harness:
+**Cross-check with EvalPlus.** Export a session's completions on the fixed test split, once for the prompt as written and once for the optimized prompt, and score them with the official harness:
 
 ```bash
-uv run --project API python scripts/export_evalplus_samples.py --session <session id> --split test --out samples.jsonl
-uv run --project API --with-requirements API/requirements-bench.txt evalplus.evaluate --dataset mbpp --samples samples.jsonl
+uv run --project API python scripts/export_evalplus_samples.py --session <session id> --variant original  --split test --out samples-original.jsonl
+uv run --project API python scripts/export_evalplus_samples.py --session <session id> --variant optimized --split test --out samples-optimized.jsonl
+uv run --project API --with-requirements API/requirements-bench.txt evalplus.evaluate --dataset mbpp --samples samples-optimized.jsonl
+uv run --project API python scripts/evalplus_split_score.py --split test --results samples-optimized_eval_results.json
 ```
 
-The export prints PromptCraft's own pass@1 on the base asserts; EvalPlus adds its extended tests, so its number is usually lower. Report both and the agreement between them.
+The export prints PromptCraft's own pass@1 on the base asserts. EvalPlus needs every MBPP+ task in the file, so tasks outside the split are written with empty solutions and its headline pass@1 covers all 378; the last command reads its per-task results for the split alone, with and without the extended tests. Report PromptCraft's number, EvalPlus's base number (they should agree to within a task or two) and EvalPlus's extended number.
+
+On macOS, prefix `evalplus.evaluate` with `EVALPLUS_MAX_MEMORY_BYTES=-1`. EvalPlus sets a memory cap that macOS rejects, and without this every task is reported as a timeout.
 
 **Contamination.** llama3.2 and most models have seen MBPP during training. Absolute scores say little; compare within one model, before and after optimization, on the fixed test split.
 
