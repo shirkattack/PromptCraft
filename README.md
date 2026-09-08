@@ -123,6 +123,15 @@ At the default 80/20 split (4 held out), three seeds produced no improvement at 
 
 GEPA picks candidates on the same held-out samples it reports, so its scores are optimistic. Nine held-out samples is a demonstration, not a benchmark. 7–8B results are next.
 
+**MBPP+ (code).** llama3.2 3B, `tests` metric, the fixed 198-task test split, temperature 0, 512 max tokens. Prompt: *Write a Python function for the task below. Respond with a single fenced Python code block and nothing else.* Scored by PromptCraft (base asserts) and by EvalPlus on the same completions.
+
+| Prompt | PromptCraft | EvalPlus base | EvalPlus base + extra |
+|---|---|---|---|
+| Original | 110/198 (55.6%) | 109/198 (55.1%) | 90/198 (45.5%) |
+| Original + 4 examples | 115/198 (58.1%) | 116/198 (58.6%) | 98/198 (49.5%) |
+
+The two harnesses agree to within one task. The few-shot variant came out of a meta-prompt run: on the app's 12-sample dev slice it tied the original at 50%, the rewrite alone scored 17% because the rewriter turned the generic instruction into one specific task, and GEPA with a 60-call budget and gemma3n as reflector found nothing better than the original. Five tasks out of 198 is inside the noise of a single run; the direction is consistent across both harnesses and both test suites. llama3.2 has seen MBPP, so read the delta, not the level.
+
 ## Configuration
 
 `API/.env`:
