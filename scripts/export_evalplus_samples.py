@@ -7,8 +7,10 @@
 Runs the session's optimized prompt (its instructions plus the few-shot
 examples that were measured) on every task of the split, extracts the code
 from each answer and writes one ``{"task_id", "solution"}`` line per task.
-Completions are stored on the session (``completions_json``) so a second
-export does not re-run the model; pass ``--regenerate`` to force it.
+``--variant original`` runs the session's original prompt instead, so the
+before/after delta can be measured on the same fixed split. Completions are
+stored on the session (``completions_json``) so a second export does not
+re-run the model; pass ``--regenerate`` to force it.
 
 Cross-check with the official harness:
 
@@ -45,8 +47,13 @@ def load_split(benchmark: Path, split: str) -> list[dict[str, Any]]:
         return [json.loads(line) for line in handle if line.strip()]
 
 
-def session_program(session: Any) -> tuple[str, list[dict[str, str]]]:
-    """Instructions and demos of the measured program, from the stored result."""
+def session_program(session: Any, variant: str) -> tuple[str, list[dict[str, str]]]:
+    """Instructions and demos of the measured program, from the stored result.
+
+    ``original`` is the prompt as the user wrote it, with no demos.
+    """
+    if variant == "original":
+        return session.original_prompt, []
     instructions = session.optimized_prompt or session.original_prompt
     demos: list[dict[str, str]] = []
     if session.result_json:
@@ -69,6 +76,7 @@ def complete_tasks(
     session: Any,
     tasks: list[dict[str, Any]],
     cached: dict[str, str],
+    variant: str,
     temperature: float,
     max_tokens: int,
 ) -> dict[str, str]:
@@ -79,7 +87,7 @@ def complete_tasks(
     todo = [t for t in tasks if t["task_id"] not in cached]
     if not todo:
         return cached
-    instructions, demos = session_program(session)
+    instructions, demos = session_program(session, variant)
     lm = LMManager.get_lm(
         provider=session.provider,
         model_name=session.model,
@@ -89,7 +97,8 @@ def complete_tasks(
     program = dspy.Predict(dspy.Signature("input -> output", instructions.strip()))
     program.demos = [dspy.Example(**d).with_inputs("input") for d in demos]
     print(
-        f"completing {len(todo)} tasks with {session.model} ({len(demos)} demos)",
+        f"completing {len(todo)} tasks with {session.model} "
+        f"({variant} prompt, {len(demos)} demos)",
         file=sys.stderr,
     )
     started = time.time()
@@ -114,6 +123,12 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument("--session", required=True, help="optimization session id")
     parser.add_argument("--split", choices=SPLITS, default="test")
+    parser.add_argument(
+        "--variant",
+        choices=("optimized", "original"),
+        default="optimized",
+        help="which of the session's prompts to run",
+    )
     parser.add_argument("--out", type=Path, default=Path("samples.jsonl"))
     parser.add_argument(
         "--benchmark", type=Path, default=REPO_ROOT / "docs" / "benchmarks" / "mbppplus"
@@ -144,8 +159,9 @@ def main(argv: list[str] | None = None) -> None:
         session = db.get(OptimizationSession, args.session)
         if session is None:
             raise SystemExit(f"Session {args.session} not found")
-        if not session.optimized_prompt:
+        if args.variant == "optimized" and not session.optimized_prompt:
             raise SystemExit(f"Session {args.session} has no optimized prompt yet")
+        store_key = f"{args.split}:{args.variant}"
 
         stored: dict[str, dict[str, str]] = {}
         if session.completions_json and not args.regenerate:
@@ -156,11 +172,12 @@ def main(argv: list[str] | None = None) -> None:
         completions = complete_tasks(
             session,
             tasks,
-            dict(stored.get(args.split) or {}),
+            dict(stored.get(store_key) or {}),
+            args.variant,
             args.temperature,
             args.max_tokens,
         )
-        stored[args.split] = completions
+        stored[store_key] = completions
         session.completions_json = json.dumps(stored)
         db.commit()
     finally:
@@ -183,7 +200,8 @@ def main(argv: list[str] | None = None) -> None:
             passed += result.status == "pass"
     print(f"wrote {len(tasks)} samples to {args.out}")
     print(
-        f"PromptCraft pass@1 on {args.split} (base asserts): {passed}/{len(tasks)} = {passed / len(tasks) * 100:.1f}%"
+        f"PromptCraft pass@1 of the {args.variant} prompt on {args.split} "
+        f"(base asserts): {passed}/{len(tasks)} = {passed / len(tasks) * 100:.1f}%"
     )
     print(f"cross-check: evalplus.evaluate --dataset mbpp --samples {args.out}")
 
