@@ -8,7 +8,7 @@ Paste a rough prompt and get a rewrite, a score and a diff. Give it 10–20 inpu
 
 ## Why
 
-Most prompt-optimization tools either send your prompts to a cloud API or hand back a rewrite with no evidence it is better than what you started with. PromptCraft keeps everything local and treats "is it better?" as a measurement question: a candidate only wins if it scores higher on samples it was not tuned on. If the winner turns out to be your original prompt plus three examples, it says so.
+Most prompt-optimization tools either send your prompts to a cloud API or hand back a rewrite with no evidence it is better than what you started with. PromptCraft keeps everything local and treats "is it better?" as a measurement question: a candidate only wins if it scores higher on samples it was not tuned on. If the rewrite scores below your original, it says so.
 
 ## Quick start
 
