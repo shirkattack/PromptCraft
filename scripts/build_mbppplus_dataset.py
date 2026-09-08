@@ -78,6 +78,13 @@ def __alt_digit_distance_nums(num1, num2):
     n = max(len(a), len(b))
     return sum(abs(int(x) - int(y)) for x, y in zip(a.zfill(n), b.zfill(n)))""",
 }
+# EvalPlus accepts a bare boolean for the not-None tasks, otherwise checks
+# whether the output is None.
+NOT_NONE_HELPER = """\
+def __not_none_ok(out, expected):
+    if isinstance(out, bool):
+        return out == expected
+    return (out is not None) == expected"""
 ALT_OK_HELPER = """\
 def __alt_ok(out, expected, alt, tol):
     if out == expected:
@@ -158,7 +165,7 @@ def __capture(index, value):
         ok = len(text) <= MAX_REPR_CHARS and eval(text) == value
     except Exception:
         text, ok = repr(value)[:200], False
-    __collect.write(__json.dumps({"index": index, "repr": text, "ok": bool(ok), "floats": __is_floats(value)}) + "\\n")
+    __collect.write(__json.dumps({"index": index, "repr": text, "ok": bool(ok), "floats": __is_floats(value), "not_none": value is not None}) + "\\n")
     __collect.flush()""".replace("MAX_REPR_CHARS", str(MAX_REPR_CHARS))
 )
 
@@ -338,7 +345,7 @@ def format_assert(
     if entry_point in SET_EQ_ENTRY_POINTS:
         return f"assert set({call}) == set({expected})"
     if entry_point in NOT_NONE_ENTRY_POINTS:
-        return f"assert ({call} is not None) == {expected != 'None'}"
+        return f"assert __not_none_ok({call}, {expected})"
     if entry_point in ALT_ORACLES:
         return f"assert __alt_ok({call}, {expected}, __alt_{entry_point}({args_text}), {atol!r})"
     tolerance = atol or (FLOAT_ATOL if is_floats else 0.0)
@@ -354,6 +361,8 @@ def setup_for(task: dict[str, Any]) -> list[str]:
         setup.append(CLOSE_HELPER)
     if task["entry_point"] in ALT_ORACLES:
         setup += [ALT_ORACLES[task["entry_point"]], ALT_OK_HELPER]
+    if task["entry_point"] in NOT_NONE_ENTRY_POINTS:
+        setup.append(NOT_NONE_HELPER)
     return setup
 
 
@@ -394,10 +403,15 @@ def capture_expected(
     expected: dict[int, str] = {}
     captured: set[int] = set()
     floats: dict[int, bool] = {}
+    not_none_task = task["entry_point"] in NOT_NONE_ENTRY_POINTS
     for line in run.collected.splitlines():
         row = json.loads(line)
         captured.add(int(row["index"]))
-        if row["ok"]:
+        if not_none_task:
+            # Only None-ness is checked; the value itself (often a regex
+            # match object) never needs to be written down.
+            expected[int(row["index"])] = repr(bool(row.get("not_none")))
+        elif row["ok"]:
             expected[int(row["index"])] = row["repr"]
             floats[int(row["index"])] = bool(row.get("floats"))
         else:

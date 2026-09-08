@@ -273,10 +273,38 @@ class TestBuildScript:
         assert build.format_assert("similar_elements", "(1, 2), (2, 3)", "(2,)", 0) == (
             "assert set(similar_elements((1, 2), (2, 3))) == set((2,))"
         )
-        assert build.format_assert("check_str", "'abc'", "None", 0) == (
-            "assert (check_str('abc') is not None) == False"
+        assert build.format_assert("check_str", "'abc'", "False", 0) == (
+            "assert __not_none_ok(check_str('abc'), False)"
         )
-        assert build.format_assert("check_str", "'abc'", "'abc'", 0).endswith("== True")
+        task = {
+            "task_id": "T/737",
+            "code": "import re\ndef check_str(s):\n    return re.match(r'[aeiou]', s)",
+            "entry_point": "check_str",
+            "setup": [],
+            "base_input": [["apple"], ["xyz"]],
+            "plus_input": [],
+            "atol": 0,
+        }
+        expected, skipped = build.capture_expected(task)
+        assert (
+            expected == {0: "True", 1: "False"} and skipped["output_not_literal"] == 0
+        )
+        tests, _ = build.asserts_for(task, expected)
+        setup = build.setup_for(task)
+        assert (
+            run_tests(
+                task["code"], tests, setup, "check_str", timeout_s=5, memory_mb=256
+            ).status
+            == "pass"
+        )
+        # A bare boolean answer is accepted too, as in EvalPlus.
+        boolean = "def check_str(s):\n    return s[0] in 'aeiou'"
+        assert (
+            run_tests(
+                boolean, tests, setup, "check_str", timeout_s=5, memory_mb=256
+            ).status
+            == "pass"
+        )
         alt = build.format_assert("surface_Area", "3, 4", "45", 0)
         assert (
             alt

@@ -4,12 +4,12 @@ Built by `scripts/build_mbppplus_dataset.py` on 2026-09-08.
 
 - Source: evalplus/mbppplus (evalplus 0.3.1, MBPP+ v0.2.0)
 - Tasks: 378
-- Asserts: 40851 in total (1169 base, the rest
-  EvalPlus's extended inputs); mean 108.1 and max
+- Asserts: 40931 in total (1174 base, the rest
+  EvalPlus's extended inputs); mean 108.3 and max
   150 per task
 - Inputs skipped because their arguments or the canonical output do not
-  round-trip through `repr`: 164
-  (arguments 0, outputs 140,
+  round-trip through `repr`: 84
+  (arguments 0, outputs 60,
   raised 24)
 - Split: seed 1234, train 120 / val 60 / test 198
   (`split.json` lists the task ids of each split; it is fixed and the build
