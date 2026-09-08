@@ -61,6 +61,9 @@ SET_EQ_ENTRY_POINTS = {
     "Diff",  # Mbpp/769
 }
 NOT_NONE_ENTRY_POINTS = {"check_str", "text_match_three", "text_starta_endb"}
+ANY_OUTPUT_ENTRY_POINTS = {"are_equivalent"}  # Mbpp/164: any output accepted
+ZERO_OR_EXPECTED_ENTRY_POINTS = {"sum_div"}  # Mbpp/295: 0 is also accepted
+FLOAT_ATOL = 1e-6  # EvalPlus's default tolerance for float-typed expected values
 ALT_ORACLES = {
     # Mbpp/581: the height may be read as the perpendicular height.
     "surface_Area": """\
@@ -87,40 +90,81 @@ TIMEOUT_FACTOR = 4.0
 TIMEOUT_MIN_S = 2.0
 TIMEOUT_MAX_S = 20.0
 
-# Setup line for tasks whose expected outputs carry a tolerance (EvalPlus
-# ``atol``): compare floats within ``tol`` at any depth, everything else exactly.
-ISCLOSE_HELPER = """\
-def __isclose(a, b, tol):
-    if isinstance(a, bool) or isinstance(b, bool):
-        return a == b
-    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-        return abs(a - b) <= tol
-    if type(a) is not type(b):
+# Comparison for asserts with a tolerance, mirroring EvalPlus: exact match
+# first, otherwise the same type and numpy-style allclose (rtol 1e-7).
+CLOSE_HELPER = """\
+def __close(out, exp, atol):
+    if out == exp:
+        return True
+    if type(out) is not type(exp):
         return False
-    if isinstance(a, (list, tuple)):
-        return len(a) == len(b) and all(__isclose(x, y, tol) for x, y in zip(a, b))
-    if isinstance(a, dict):
-        return a.keys() == b.keys() and all(__isclose(a[k], b[k], tol) for k in a)
-    return a == b"""
+    def ok(a, b):
+        if isinstance(a, bool) or isinstance(b, bool):
+            return a == b
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            return abs(a - b) <= atol + 1e-7 * abs(b)
+        if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+            return len(a) == len(b) and all(ok(x, y) for x, y in zip(a, b))
+        return a == b
+    return ok(out, exp)"""
+
+# Turns a value into Python source that evaluates back to it. Unlike repr it
+# writes float('inf'), and it refuses nan and non-literal objects, so the
+# build can skip inputs whose expected value cannot be written into an assert.
+LITERAL_SOURCE = """\
+def __literal(v):
+    if isinstance(v, bool) or v is None:
+        return repr(v)
+    if isinstance(v, float):
+        if v != v:
+            raise ValueError("nan")
+        if v in (float("inf"), float("-inf")):
+            return "float('inf')" if v > 0 else "float('-inf')"
+        return repr(v)
+    if isinstance(v, (int, str, bytes, complex)):
+        return repr(v)
+    if isinstance(v, list):
+        return "[" + ", ".join(__literal(x) for x in v) + "]"
+    if isinstance(v, tuple):
+        inner = ", ".join(__literal(x) for x in v)
+        return "(" + inner + ("," if len(v) == 1 else "") + ")"
+    if isinstance(v, frozenset):
+        return "frozenset(" + __literal(set(v)) + ")"
+    if isinstance(v, set):
+        return "{" + ", ".join(__literal(x) for x in v) + "}" if v else "set()"
+    if isinstance(v, dict):
+        return "{" + ", ".join(__literal(k) + ": " + __literal(x) for k, x in v.items()) + "}"
+    raise ValueError(type(v).__name__)
+
+
+def __is_floats(v):
+    if isinstance(v, float):
+        return True
+    return isinstance(v, (list, tuple)) and bool(v) and all(isinstance(i, float) for i in v)"""
 
 # Setup for the capture pass: record the repr of each canonical output and
 # whether it round-trips through ``ast.literal_eval`` (so it can be written
 # into an assert).
-CAPTURE_SETUP = """\
-import ast as __ast, json as __json
+CAPTURE_SETUP = (
+    LITERAL_SOURCE
+    + """
+import json as __json
 __collect = open("collect.jsonl", "w", encoding="utf-8")
 def __capture(index, value):
     if isinstance(value, dict) and type(value) is not dict:
         value = dict(value)  # Counter, defaultdict: compare as a plain dict
-    text = repr(value)
     try:
-        ok = len(text) <= MAX_REPR_CHARS and (
-            text == "set()" or __ast.literal_eval(text) == value
-        )
+        text = __literal(value)
+        ok = len(text) <= MAX_REPR_CHARS and eval(text) == value
     except Exception:
-        ok = False
-    __collect.write(__json.dumps({"index": index, "repr": text, "ok": bool(ok)}) + "\\n")
+        text, ok = repr(value)[:200], False
+    __collect.write(__json.dumps({"index": index, "repr": text, "ok": bool(ok), "floats": __is_floats(value)}) + "\\n")
     __collect.flush()""".replace("MAX_REPR_CHARS", str(MAX_REPR_CHARS))
+)
+
+# The same literalizer, for the build process itself (call arguments).
+_literal_ns: dict[str, Any] = {}
+exec(LITERAL_SOURCE, _literal_ns)  # noqa: S102 - our own source
 
 
 # -- loading -------------------------------------------------------------------
@@ -265,34 +309,49 @@ def load_tasks() -> tuple[dict[str, dict[str, Any]], str]:
 
 
 def args_literal(args: list[Any]) -> str | None:
-    """``repr`` of the call arguments, or None if it would not round-trip."""
-    text = ", ".join(repr(a) for a in args)
+    """Source for the call arguments, or None if it would not round-trip."""
     try:
-        back = ast.literal_eval(f"({text},)") if args else ()
+        text = ", ".join(_literal_ns["__literal"](a) for a in args)
+        back = eval(f"({text},)") if args else ()  # noqa: S307 - our own literal
     except Exception:
         return None
     return text if list(back) == list(args) else None
 
 
-def format_assert(entry_point: str, args_text: str, expected: str, atol: float) -> str:
-    """One assert for one input, following EvalPlus's oracle for the task."""
+def format_assert(
+    entry_point: str,
+    args_text: str,
+    expected: str,
+    atol: float,
+    is_floats: bool = False,
+) -> str:
+    """One assert for one input, following EvalPlus's oracle for the task.
+
+    Tolerance applies when the task has one, or when the expected value is a
+    float (or list/tuple of floats), where EvalPlus defaults to 1e-6.
+    """
     call = f"{entry_point}({args_text})"
+    if entry_point in ANY_OUTPUT_ENTRY_POINTS:
+        return call  # must run without raising; the value is not checked
+    if entry_point in ZERO_OR_EXPECTED_ENTRY_POINTS:
+        return f"assert {call} in ({expected}, 0)"
     if entry_point in SET_EQ_ENTRY_POINTS:
         return f"assert set({call}) == set({expected})"
     if entry_point in NOT_NONE_ENTRY_POINTS:
         return f"assert ({call} is not None) == {expected != 'None'}"
     if entry_point in ALT_ORACLES:
         return f"assert __alt_ok({call}, {expected}, __alt_{entry_point}({args_text}), {atol!r})"
-    if atol:
-        return f"assert __isclose({call}, {expected}, {atol!r})"
+    tolerance = atol or (FLOAT_ATOL if is_floats else 0.0)
+    if tolerance:
+        return f"assert __close({call}, {expected}, {tolerance!r})"
     return f"assert {call} == {expected}"
 
 
 def setup_for(task: dict[str, Any]) -> list[str]:
     """The task's test_imports: its own setup plus any oracle helpers."""
     setup = list(task["setup"])
-    if task["atol"]:
-        setup.append(ISCLOSE_HELPER)
+    if any("__close(" in t for t in task.get("_tests", [])):
+        setup.append(CLOSE_HELPER)
     if task["entry_point"] in ALT_ORACLES:
         setup += [ALT_ORACLES[task["entry_point"]], ALT_OK_HELPER]
     return setup
@@ -334,15 +393,18 @@ def capture_expected(
         )
     expected: dict[int, str] = {}
     captured: set[int] = set()
+    floats: dict[int, bool] = {}
     for line in run.collected.splitlines():
         row = json.loads(line)
         captured.add(int(row["index"]))
         if row["ok"]:
             expected[int(row["index"])] = row["repr"]
+            floats[int(row["index"])] = bool(row.get("floats"))
         else:
             skipped["output_not_literal"] += 1
     skipped["raised"] = len(literal_for) - len(captured)
     task["_literals"] = literal_for
+    task["_floats"] = floats
     return expected, skipped
 
 
@@ -352,16 +414,22 @@ def asserts_for(
     """The task's asserts, base inputs first; returns them and the base count."""
     base_n = len(task["base_input"])
     literals = task["_literals"]
-    base = [
-        format_assert(task["entry_point"], literals[i], expected[i], task["atol"])
-        for i in range(base_n)
-        if i in expected
-    ]
+    floats = task.get("_floats", {})
+
+    def one(i: int) -> str:
+        return format_assert(
+            task["entry_point"],
+            literals[i],
+            expected[i],
+            task["atol"],
+            floats.get(i, False),
+        )
+
+    base = [one(i) for i in range(base_n) if i in expected]
     plus = [
-        format_assert(task["entry_point"], literals[i], expected[i], task["atol"])
-        for i in range(base_n, base_n + len(task["plus_input"]))
-        if i in expected
+        one(i) for i in range(base_n, base_n + len(task["plus_input"])) if i in expected
     ]
+    task["_tests"] = base + plus
     return base + plus, len(base)
 
 

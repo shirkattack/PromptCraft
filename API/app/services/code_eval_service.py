@@ -82,7 +82,11 @@ import json as _json, os as _os0, signal as _signal, sys as _sys0, time as _time
     + """
 _spec = _json.load(open("spec.json", encoding="utf-8"))
 _results = open("results.jsonl", "w", encoding="utf-8")
-_ns = {"__name__": "__main__"}
+# The solution runs in its own namespace so the test setup (helpers, imports
+# the asserts need) cannot paper over a missing import in the solution; the
+# statements see both.
+_ns_solution = {"__name__": "__main__"}
+_ns_setup = {"__name__": "__main__"}
 _sys0.stdout = open(_os0.devnull, "w")
 
 
@@ -106,7 +110,8 @@ def _tail():
 _signal.signal(_signal.SIGALRM, _alarm)
 try:
     _signal.setitimer(_signal.ITIMER_REAL, _spec["timeout"])
-    exec(compile(_spec["setup"] + "\\n" + _spec["code"], "solution.py", "exec"), _ns)
+    exec(compile(_spec["code"], "solution.py", "exec"), _ns_solution)
+    exec(compile(_spec["setup"], "setup.py", "exec"), _ns_setup)
 except _Timeout:
     _emit(index=-1, status="timeout", exc="", msg="", tb="", elapsed=_spec["timeout"])
     _sys0.exit(0)
@@ -115,6 +120,8 @@ except BaseException as _e:
     _sys0.exit(0)
 finally:
     _signal.setitimer(_signal.ITIMER_REAL, 0)
+_ns = dict(_ns_setup)
+_ns.update(_ns_solution)
 
 for _i, _stmt in enumerate(_spec["statements"]):
     _t0 = _time.perf_counter()
@@ -345,7 +352,9 @@ def run_statements(
         except subprocess.TimeoutExpired as exc:
             killed = True
             raw = exc.stderr
-            stderr = raw.decode(errors="replace") if isinstance(raw, bytes) else (raw or "")
+            stderr = (
+                raw.decode(errors="replace") if isinstance(raw, bytes) else (raw or "")
+            )
 
         rows: list[dict[str, Any]] = []
         results_path = os.path.join(tmpdir, "results.jsonl")
@@ -389,7 +398,9 @@ def run_statements(
             AssertResult(
                 index=index,
                 status="timeout" if killed else "exception",
-                message="" if killed else f"Interpreter exited: {_short(_tail(stderr), 80)}",
+                message=""
+                if killed
+                else f"Interpreter exited: {_short(_tail(stderr), 80)}",
                 traceback=_tail(stderr),
             )
         )

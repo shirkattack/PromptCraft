@@ -251,9 +251,21 @@ class TestBuildScript:
     def test_format_assert_and_tolerance(self):
         build = _load("build_mbppplus_dataset")
         assert build.format_assert("f", "1, 'a'", "[1]", 0) == "assert f(1, 'a') == [1]"
+        assert build.format_assert("f", "2", "0.5", 1e-6) == (
+            "assert __close(f(2), 0.5, 1e-06)"
+        )
+        # A float expected value gets EvalPlus's default tolerance.
+        assert build.format_assert("f", "1", "2.5", 0, is_floats=True) == (
+            "assert __close(f(1), 2.5, 1e-06)"
+        )
+        assert build.format_assert("f", "1", "[1.0]", 0.001) == (
+            "assert __close(f(1), [1.0], 0.001)"
+        )
+        assert build.format_assert("are_equivalent", "'a', 'b'", "True", 0) == (
+            "are_equivalent('a', 'b')"
+        )
         assert (
-            build.format_assert("f", "2", "0.5", 1e-6)
-            == "assert __isclose(f(2), 0.5, 1e-06)"
+            build.format_assert("sum_div", "6", "6", 0) == "assert sum_div(6) in (6, 0)"
         )
 
     def test_special_oracles_follow_evalplus(self):
@@ -301,6 +313,49 @@ class TestBuildScript:
             build.args_literal([(1, 2), "x", {"k": [1]}]) == "(1, 2), 'x', {'k': [1]}"
         )
         assert build.args_literal([float("nan")]) is None
+        assert build.args_literal([float("inf"), (1,)]) == "float('inf'), (1,)"
+
+    def test_capture_writes_inf_and_flags_floats(self):
+        build = _load("build_mbppplus_dataset")
+        task = {
+            "task_id": "T/2",
+            "code": "def f(x):\n    return float('inf') if x == 0 else 1.0 / x",
+            "entry_point": "f",
+            "setup": [],
+            "base_input": [[0], [4]],
+            "plus_input": [],
+            "atol": 0,
+        }
+        expected, skipped = build.capture_expected(task)
+        assert expected == {0: "float('inf')", 1: "0.25"}
+        assert skipped["output_not_literal"] == 0
+        tests, _ = build.asserts_for(task, expected)
+        assert tests == [
+            "assert __close(f(0), float('inf'), 1e-06)",
+            "assert __close(f(4), 0.25, 1e-06)",
+        ]
+        setup = build.setup_for(task)
+        assert any("def __close" in line for line in setup)
+        assert (
+            run_tests(
+                task["code"], tests, setup, "f", timeout_s=5, memory_mb=256
+            ).status
+            == "pass"
+        )
+        # A last-bit float difference passes, as it does in EvalPlus.
+        close = "def f(x):\n    return float('inf') if x == 0 else 0.25000000000000006"
+        assert (
+            run_tests(close, tests, setup, "f", timeout_s=5, memory_mb=256).status
+            == "pass"
+        )
+
+    def test_setup_imports_do_not_leak_into_the_solution(self):
+        code = "def area(r):\n    return math.pi * r * r"  # forgot: import math
+        tests = ["assert __close(area(1), 3.141592653589793, 1e-06)"]
+        setup = ["import math", "def __close(a, b, t):\n    return abs(a - b) <= t"]
+        result = run_tests(code, tests, setup, "area", timeout_s=5, memory_mb=256)
+        assert result.status == "exception"
+        assert result.feedback.startswith("NameError")
 
     def test_clamp_timeout(self):
         build = _load("build_mbppplus_dataset")

@@ -124,10 +124,14 @@ class TestRunTests:
         assert "Timed out after 1s" in result.feedback
         assert "`assert add(1, 2) == 3`" in result.feedback
 
-    def test_test_imports_are_honoured(self):
-        code = "def add(a, b):\n    return math.fsum([a, b])"
-        assert _run(code, imports=["import math"]).status == "pass"
-        assert _run(code).status == "exception"  # NameError without the import
+    def test_test_imports_are_honoured_by_the_asserts_only(self):
+        # The asserts see the imports; the solution does not, so a solution
+        # that forgot its own import fails as it would under EvalPlus.
+        tests = ["assert math.isclose(add(1, 2), 3)"]
+        assert _run(GOOD, tests, imports=["import math"]).status == "pass"
+        assert _run(GOOD, tests).status == "exception"  # NameError in the assert
+        forgot = "def add(a, b):\n    return math.fsum([a, b])"
+        assert _run(forgot, imports=["import math"]).status == "exception"
 
     def test_reliability_guard_blocks_os_system(self):
         code = "import os\ndef add(a, b):\n    os.system('echo x')\n    return a + b"

@@ -39,8 +39,10 @@ def score(results: dict, task_ids: list[str]) -> dict[str, float | int]:
             missing += 1
             continue
         first = entries[0]  # one solution per task in PromptCraft's export
-        base += first.get("base_status") == "pass"
-        plus += first.get("plus_status") == "pass"
+        base_ok = first.get("base_status") == "pass"
+        base += base_ok
+        # EvalPlus's headline mbpp+ number needs base and plus to pass.
+        plus += base_ok and first.get("plus_status") == "pass"
     n = len(task_ids)
     return {
         "tasks": n,
