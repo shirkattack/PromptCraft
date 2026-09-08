@@ -133,9 +133,12 @@ def preload(base_url: str, tag: str) -> None:
 def make_lm(info: dict[str, Any], *, max_tokens: int) -> Any:
     from app.services.lm_manager import LMManager  # noqa: PLC0415
 
-    extra: dict[str, Any] = {}
+    # keep_alive rides along on every request so Ollama keeps the model
+    # resident between calls; think=False only where the model can think,
+    # because Ollama rejects the field otherwise.
+    extra: dict[str, Any] = {"keep_alive": KEEP_ALIVE}
     if "thinking" in info["capabilities"]:
-        extra["think"] = False  # Ollama rejects the field on models that cannot think
+        extra["think"] = False
     return LMManager.get_lm(
         provider="ollama",
         model_name=info["tag"],

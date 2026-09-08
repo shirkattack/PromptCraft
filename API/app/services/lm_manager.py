@@ -59,11 +59,13 @@ class LMManager:
             )
 
         try:
-            # Format model name for DSPy compatibility
-            if not model_name.startswith("ollama/"):
-                formatted_model = f"ollama/{model_name}"
-            else:
+            # Ollama's chat API keeps few-shot demos as real turns. The
+            # generate API (litellm's "ollama/" prefix) flattens them into one
+            # "### User / ### Assistant" block, which small models then copy.
+            if model_name.startswith(("ollama/", "ollama_chat/")):
                 formatted_model = model_name
+            else:
+                formatted_model = f"ollama_chat/{model_name}"
 
             logger.info(f"Initializing Ollama model: {model_name}")
 
