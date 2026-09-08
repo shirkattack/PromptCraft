@@ -33,6 +33,35 @@ router = APIRouter(dependencies=[Depends(verify_api_key)])
 OPTIMIZATION_METHODS = {"meta_prompt", "dspy", "simple", "gepa"}
 
 
+def _parse_extra_data(raw: str | None) -> dict[str, Any] | None:
+    """The stored extra_data JSON as a dict; anything else is treated as none."""
+    if not raw:
+        return None
+    try:
+        loaded = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return loaded if isinstance(loaded, dict) else None
+
+
+def _require_code_samples(samples: list[Sample] | None) -> None:
+    """422 unless every sample carries the asserts the 'tests' metric runs."""
+    if not samples:
+        raise HTTPException(
+            status_code=422,
+            detail="The 'tests' metric scores code by running each sample's asserts; "
+            "pick a dataset imported from a coding benchmark (see docs/benchmarks).",
+        )
+    missing = sum(1 for s in samples if s.code is None)
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{missing} of {len(samples)} samples have no 'tests' in their "
+            "extra_data, so the 'tests' metric cannot score them. Import a coding "
+            "benchmark such as docs/benchmarks/mbppplus/train.jsonl, or pick another metric.",
+        )
+
+
 def _load_dataset_samples(db: Session, dataset_id: str) -> list[Sample]:
     """Samples of a dataset for evaluation; 404 if missing, 422 if too small."""
     if (
@@ -43,13 +72,20 @@ def _load_dataset_samples(db: Session, dataset_id: str) -> list[Sample]:
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     rows = (
-        db.query(TrainingSample.input_text, TrainingSample.expected_output)
+        db.query(
+            TrainingSample.input_text,
+            TrainingSample.expected_output,
+            TrainingSample.extra_data,
+        )
         .filter(TrainingSample.dataset_id == dataset_id)
         .order_by(TrainingSample.created_at, TrainingSample.id)
         .limit(settings.eval_max_train_samples + settings.eval_max_dev_samples)
         .all()
     )
-    samples = [Sample(input_text, expected) for input_text, expected in rows]
+    samples = [
+        Sample(input_text, expected, _parse_extra_data(extra))
+        for input_text, expected, extra in rows
+    ]
     if len(samples) < 2:
         raise HTTPException(
             status_code=422,
@@ -425,6 +461,8 @@ async def _run_optimization(
     dataset_samples = (
         _load_dataset_samples(db, options.dataset_id) if options.dataset_id else None
     )
+    if options.eval_metric == "tests":
+        _require_code_samples(dataset_samples)
     user_feedback = _prior_user_feedback(db, session.original_prompt, session.id)
 
     session.status = SessionStatus.RUNNING

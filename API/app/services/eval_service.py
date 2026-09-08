@@ -27,13 +27,14 @@ import dspy
 from dspy.teleprompt import BootstrapFewShot
 
 from app.core.config import settings
+from app.services.code_eval_service import code_fields, evaluate_response
 from app.services.embedding_service import EmbeddingUnavailable, coverage_selection
 from app.services.progress import ProgressCallback, no_progress
 from app.services.text import clean_model_text
 
 logger = logging.getLogger(__name__)
 
-EvalMetric = Literal["auto", "exact", "contains", "llm_judge"]
+EvalMetric = Literal["auto", "exact", "contains", "llm_judge", "tests"]
 EvalStrategy = Literal["holdout", "kfold"]
 
 # Expected outputs at or below this length are treated as labels (classes,
@@ -53,15 +54,32 @@ class EvalError(Exception):
     """Raised when a dataset cannot be used for evaluation."""
 
 
+# Fields of extra_data that ride along on the dspy.Example so a metric can
+# reach them (the "tests" metric needs the asserts and the function name).
+CODE_FIELDS = ("tests", "entry_point", "test_imports", "task_id")
+
+
 @dataclass
 class Sample:
     input_text: str
     expected_output: str
+    # The sample's stored extra_data (imported fields other than input/output).
+    extra_data: dict[str, Any] | None = None
+
+    @property
+    def code(self) -> dict[str, Any] | None:
+        """Code-eval fields (tests, entry_point, ...) when the sample has them."""
+        return code_fields(self.extra_data)
 
     def to_example(self) -> dspy.Example:
-        return dspy.Example(
-            input=self.input_text, output=self.expected_output
-        ).with_inputs("input")
+        fields: dict[str, Any] = {
+            "input": self.input_text,
+            "output": self.expected_output,
+        }
+        code = self.code
+        if code:
+            fields.update({k: v for k, v in code.items() if v is not None})
+        return dspy.Example(**fields).with_inputs("input")
 
 
 @dataclass
@@ -125,6 +143,43 @@ class JudgeOutput(dspy.Signature):
 MetricFn = Callable[[dspy.Example, Any, Any], bool]
 
 
+def example_code_fields(example: dspy.Example) -> dict[str, Any]:
+    """The code-eval fields carried on an example (see Sample.to_example)."""
+    return {name: getattr(example, name, None) for name in CODE_FIELDS}
+
+
+def tests_metric(example: dspy.Example, pred: Any, trace: Any = None) -> bool:
+    """pass@1 as MBPP+ defines it: every assert of the task must pass."""
+    response = str(getattr(pred, "output", "") or "")
+    return evaluate_response(response, example_code_fields(example)).status == "pass"
+
+
+def build_metric(metric_name: str) -> MetricFn:
+    if metric_name == "exact":
+        return exact_metric
+    if metric_name == "contains":
+        return contains_metric
+    if metric_name == "llm_judge":
+        return make_judge_metric()
+    if metric_name == "tests":
+        require_code_eval()
+        return tests_metric
+    raise EvalError(f"Unknown metric: {metric_name}")
+
+
+def require_code_eval() -> None:
+    if not settings.code_eval_enabled:
+        raise EvalError(
+            "The 'tests' metric executes model-written code and is disabled. "
+            "Set CODE_EVAL_ENABLED=true in API/.env to turn it on."
+        )
+
+
+def is_code_dataset(samples: list[Sample]) -> bool:
+    """True when every sample carries a non-empty list of asserts."""
+    return bool(samples) and all(s.code is not None for s in samples)
+
+
 def make_judge_metric() -> MetricFn:
     judge = dspy.Predict(JudgeOutput)
 
@@ -143,6 +198,8 @@ def make_judge_metric() -> MetricFn:
 def choose_metric(metric: EvalMetric, samples: list[Sample]) -> str:
     if metric != "auto":
         return metric
+    if is_code_dataset(samples):
+        return "tests"
     median_len = statistics.median(len(s.expected_output.strip()) for s in samples)
     return "contains" if median_len <= SHORT_ANSWER_CHARS else "llm_judge"
 
@@ -257,6 +314,12 @@ def describe_split(
     }
 
 
+def result_identity(example: dspy.Example) -> dict[str, Any]:
+    """Extra keys for a per-sample result row: the task id when there is one."""
+    task_id = getattr(example, "task_id", None)
+    return {"task_id": task_id} if task_id else {}
+
+
 def render_prompt(instructions: str, demos: list[dict[str, Any]]) -> str:
     """Turn instructions plus demos into a copy-pasteable prompt.
 
@@ -313,13 +376,7 @@ class DatasetOptimizer:
         self.last_selection: dict[str, Any] | None = None
 
     def _build_metric(self) -> MetricFn:
-        if self.metric_name == "exact":
-            return exact_metric
-        if self.metric_name == "contains":
-            return contains_metric
-        if self.metric_name == "llm_judge":
-            return make_judge_metric()
-        raise EvalError(f"Unknown metric: {self.metric_name}")
+        return build_metric(self.metric_name)
 
     # -- candidates -------------------------------------------------------
 
@@ -428,6 +485,7 @@ class DatasetOptimizer:
                 "expected": str(example.output),
                 "actual": str(getattr(prediction, "output", "") or ""),
                 "passed": bool(score),
+                **result_identity(example),
             }
             for example, prediction, score in outcome.results
         ]
