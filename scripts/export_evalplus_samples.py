@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -123,7 +124,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--max-tokens", type=int, default=512)
     args = parser.parse_args(argv)
+    args.out = args.out.resolve()
+    args.benchmark = args.benchmark.resolve()
 
+    # The API reads API/.env and its default DATABASE_URL is relative, so the
+    # session store is only found when the process runs inside API/.
+    os.chdir(REPO_ROOT / "API")
     from app.core.database import SessionLocal  # noqa: PLC0415
     from app.models.optimization import OptimizationSession  # noqa: PLC0415
     from app.services.code_eval_service import (  # noqa: PLC0415
