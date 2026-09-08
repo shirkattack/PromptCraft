@@ -146,6 +146,7 @@ def main(argv: list[str] | None = None) -> None:
     # session store is only found when the process runs inside API/.
     os.chdir(REPO_ROOT / "API")
     from app.core.database import SessionLocal  # noqa: PLC0415
+    from app.models import training  # noqa: F401, PLC0415 - resolves the FK
     from app.models.optimization import OptimizationSession  # noqa: PLC0415
     from app.services.code_eval_service import (  # noqa: PLC0415
         extract_code,
