@@ -1,5 +1,5 @@
 {
-  "_comment": "Model ladder for the MBPP+ benchmark. Not started: run each entry with scripts/run_benchmark.py in this order once the llama3.2 floor is in. Tags must exist in `ollama list`; check `ollama show <tag>` for the thinking capability (the runner turns it off for the task model).",
+  "_comment": "Model ladder for the MBPP+ benchmark. Status: qwen3.5:4b bare prompt done for original, one_line, random_demos, coverage_demos, gepa (gepa_demos and the fixed prompt not run); the rest not started. Run each entry with scripts/run_benchmark.py in this order once the llama3.2 floor is in. Tags must exist in `ollama list`; check `ollama show <tag>` for the thinking capability (the runner turns it off for the task model).",
   "dataset": "docs/benchmarks/mbppplus",
   "prompts": ["bare", "fixed"],
   "methods": ["original", "one_line", "random_demos", "coverage_demos", "gepa", "gepa_demos"],

@@ -143,6 +143,8 @@ The 50/50 runs set `train_ratio` on the GEPA service directly; the UI always use
 
 Four few-shot examples are the only method that clearly beats the original prompt, by 12 to 16 points with intervals well clear of zero; random and coverage selection are indistinguishable. GEPA alone gains five points on the bare prompt and nothing significant on the fixed one, moves five to seven points across seeds, and its val gains overstate its test gains. GEPA's instructions on top of demos add nothing. The one-line format instruction costs this model three points. A demo run takes 2 to 5 minutes; a GEPA run about 24.
 
+A second task model reverses the picture. qwen3.5 4B on the same split and bare prompt scores 65.7% plus with the original prompt and every method lands below it: one_line -4.0 pp, random demos -3.2 pp, coverage demos -5.1 pp, GEPA -2.7 pp (CI -5.4 to +0.0). GEPA's val gain (63.3% to 68.9%) did not carry to test, and all three of its returned prompts describe specific training tasks the reflector saw fail. The demo gain is a property of the weaker model, not of the method, and the app's held-out comparison against the original is what catches this.
+
 The harness agrees with EvalPlus on every one of the 198 test tasks for the anchor prompt (97 base, 80 plus). One finding along the way matters beyond the benchmark: the app had been talking to Ollama through litellm's generate API, which flattens few-shot examples into one turn; small models then copy the example instead of solving the task. Through the chat API the same four demos went from 8 to 18 correct on a 30-task slice, and the app now uses it everywhere.
 
 ## Configuration

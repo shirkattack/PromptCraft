@@ -29,6 +29,19 @@ Model digest `a80c4f17acd5`, reflection model `qwen3.6:27b`, commit `cb97c55a3`,
 | gepa | 1, 2, 3 | 41.4% (82/198), 38.9–45.5 | 51.9% (102.7/198) | +1.0 pp [-2.7, +4.9] | 51.1% | 24 min |
 | gepa_demos | 1, 2, 3 | 56.4% (111.7/198), 55.6–57.6 | 65.8% (130.3/198) | +16.0 pp [+12.5, +19.7] | 61.7% | 4 min |
 
+## qwen3.5:4b · prompt `bare`
+
+Prompt: *Write a Python function for the task below.*  
+Model digest `2a654d98e6fb`, reflection model `qwen3.6:27b`, commit `aaf386cd3`, budget 500, 4 demos.
+
+| Method | Seeds | Plus pass@1 mean (min–max) | Base pass@1 mean | Δ plus vs original, 95% CI | Val plus | Wall-clock |
+|---|---|---|---|---|---|---|
+| original | 1, 2, 3 | 65.7% (130/198), 65.7–65.7 | 79.3% (157/198) | — | 63.3% | 1 min |
+| one_line | 1, 2, 3 | 61.6% (122/198), 61.6–61.6 | 74.2% (147/198) | -4.0 pp [-6.6, -1.5] | 65.0% | 1 min |
+| random_demos | 1, 2, 3 | 62.5% (123.7/198), 60.6–63.6 | 74.7% (148/198) | -3.2 pp [-6.7, +0.0] | 68.3% | 11 min |
+| coverage_demos | 1, 2, 3 | 60.6% (120/198), 60.6–60.6 | 72.7% (144/198) | -5.1 pp [-8.4, -1.9] | 66.7% | 1 min |
+| gepa | 1, 2, 3 | 63.0% (124.7/198), 61.6–64.6 | 74.4% (147.3/198) | -2.7 pp [-5.4, +0.0] | 68.9% | 78 min |
+
 ## Findings
 
 llama3.2 3B, fixed 198-task test split, three seeds, temperature 0, 512 tokens, Ollama chat API. Reflection model qwen3.6:27b (Q4_K_M, thinking off), budget 500 scored calls.
@@ -41,3 +54,14 @@ llama3.2 3B, fixed 198-task test split, three seeds, temperature 0, 512 tokens, 
 - **Cost.** A demo run is 2 to 5 minutes end to end; a GEPA run is about 24 minutes (median), most of it the 27B reflector.
 
 Two caveats. GEPA returns the candidate that is best on its own fraction-of-asserts metric, which on one seed was not the best candidate on val pass@1 (46.7% returned, 48.3% available). And llama3.2 has seen MBPP during training; read the deltas, not the levels.
+
+## Model ladder, rung 1: qwen3.5:4b
+
+Same protocol, task model qwen3.5:4b (digest `2a654d98e6fb`, thinking off), bare prompt only. Five of the six methods ran, three seeds each; `gepa_demos` and the fixed-prompt pass were not run, the ladder was stopped after `gepa` seed 3.
+
+- **Nothing beats `original` on this model.** It scores 65.7% plus (79.3% base), 22 points above llama3.2 with the same prompt. Every method lands below it: one_line -4.0 pp (CI -6.6 to -1.5), random demos -3.2 pp (-6.7 to +0.0), coverage demos -5.1 pp (-8.4 to -1.9), GEPA -2.7 pp (-5.4 to +0.0). The two demo intervals that touch zero do so at the edge; none crosses into a gain.
+- **The demo effect flips sign with the model.** Four examples were worth +12.5 pp on llama3.2 and cost 3 to 5 pp here. The 4B model already writes the function correctly from the bare instruction; the examples appear to pull its output toward the example's shape instead.
+- **GEPA's val gain does not transfer.** Val went from 63.3% to 68.9% (seeds 68.3, 71.7, 66.7) while test went from 65.7% to 63.0% (61.6 to 64.6). All three returned prompts are specific to the training tasks the reflector saw fail: seed 1 is a specification of `is_Monotonic` with worked examples, seed 2 discusses `angle_complex(0, 1j)` at length and ends with a literal `{task_input}` placeholder that the reflector invented, seed 3 is a list of "critical domain-specific rules" for the Perrin sequence, string rotation, tuple concatenation and `is_not_prime`. This is the template leak noted on llama3.2, now on every seed; the val set contains some of those tasks, the test set does not.
+- **Cost.** A GEPA run is 78 minutes median here (72 to 84), three times the llama3.2 figure, since the 4B model is slower per call and the reflector's prompts get longer. Evaluating 198 tasks with four demos takes about 11 minutes; the 1-minute rows are cache hits on deterministic methods after their first seed.
+
+What this rung changes: the recommendation "add four examples" is model-specific, and the app should measure the original against each candidate on held-out data before choosing, which it does. GEPA's reflection step needs a guard against task-specific instructions before it is worth running on a model that already solves the bare prompt.
