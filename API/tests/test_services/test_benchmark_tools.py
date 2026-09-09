@@ -177,6 +177,78 @@ class TestReportedScore:
         assert loop_average > percent
         assert sum(r["passed"] for r in rows) == 5
 
+    def test_returned_candidate_is_the_best_on_val_pass_at_1(self):
+        from types import SimpleNamespace
+
+        samples = [
+            Sample(
+                f"task {i}",
+                "def f(): pass",
+                {
+                    "task_id": f"T/{i}",
+                    "entry_point": "f",
+                    "tests": ["assert 1", "assert 2"],
+                    "base_count": 1,
+                },
+            )
+            for i in range(4)
+        ]
+
+        class Fake:
+            def __init__(self, **kwargs):
+                pass
+
+            def compile(self, student, *, trainset, valset):
+                program = dspy.Predict(
+                    dspy.Signature("input -> output", "aggregate winner")
+                )
+                # Candidate 1 wins on the fraction metric (GEPA's best_idx),
+                # candidate 2 wins on pass@1 with a lower aggregate.
+                program.detailed_results = SimpleNamespace(
+                    best_idx=1,
+                    total_metric_calls=3,
+                    candidates=[
+                        {"self": "seed"},
+                        {"self": "aggregate winner"},
+                        {"self": "pass@1 winner"},
+                    ],
+                    parents=[[None], [0], [0]],
+                    val_aggregate_scores=[0.4, 0.8, 0.6],
+                    val_subscores=[
+                        {0: 0.5, 1: 0.5, 2: 0.3, 3: 0.3},
+                        {0: 1.0, 1: 0.9, 2: 0.9, 3: 0.4},
+                        {0: 1.0, 1: 1.0, 2: 0.2, 3: 0.2},
+                    ],
+                )
+                return program
+
+        answers = {
+            f"task {i}": {"output": "```python\ndef f(): pass\n```"} for i in range(4)
+        }
+        calls = {"n": 0}
+
+        def improving(response, extra):
+            # The baseline evaluation (the first two dev calls) fails, the
+            # evolved prompt's evaluation passes, so the run counts as improved.
+            calls["n"] += 1
+            if calls["n"] > 2:
+                return _fake_result("pass", 2)
+            return _fake_result("assert_failed", 1)
+
+        with (
+            dspy.context(lm=DummyLM(answers)),
+            patch("app.services.gepa_service.GEPA", Fake),
+            patch("app.services.gepa_service.evaluate_response", improving),
+        ):
+            outcome = GepaOptimizer(
+                samples, metric="tests", budget=10, train=samples[:2], dev=samples[2:]
+            ).run("seed")
+        assert outcome["gepa"]["best_index"] == 1
+        assert outcome["gepa"]["selected_index"] == 2
+        assert outcome["gepa"]["selection"] == "val pass@1"
+        assert outcome["instructions"] == "pass@1 winner"
+        assert [c["score"] for c in outcome["gepa"]["timeline"]] == [0.0, 25.0, 50.0]
+
     def test_explicit_train_and_dev_bypass_the_caps(self):
         samples = [Sample(f"in {i}", "high") for i in range(6)]
         optimizer = GepaOptimizer(

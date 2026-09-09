@@ -300,6 +300,18 @@ class GepaTracker(logging.Handler):
         return [e.iteration for e in self.events if e.kind == "accepted"]
 
 
+def _candidate_instructions(candidate: Any) -> str:
+    """The instruction text of a GEPA candidate, whatever shape it comes in."""
+    if isinstance(candidate, dict):
+        return str(next(iter(candidate.values()), ""))
+    if hasattr(candidate, "signature"):  # a compiled dspy program
+        return str(getattr(candidate.signature, "instructions", ""))
+    if hasattr(candidate, "predictors"):
+        preds = list(candidate.predictors())
+        return str(getattr(preds[0].signature, "instructions", "")) if preds else ""
+    return str(candidate)
+
+
 def _trailing_float(text: str) -> float | None:
     match = re.search(r"(-?\d+(?:\.\d+)?)\s*$", text)
     return float(match.group(1)) if match else None
@@ -503,6 +515,16 @@ class GepaOptimizer:
         evolved_instructions = clean_instructions(
             str(getattr(compiled.signature, "instructions", "") or original)
         )
+        selected_index, selection = self._select_candidate(compiled)
+        if selected_index is not None:
+            evolved_instructions = (
+                clean_instructions(
+                    _candidate_instructions(
+                        compiled.detailed_results.candidates[selected_index]
+                    )
+                )
+                or evolved_instructions
+            )
         evolved_program = self._program(evolved_instructions)
         final_score, final_rows = self._evaluate(evolved_program)
 
@@ -527,6 +549,8 @@ class GepaOptimizer:
             "best_index": (
                 getattr(detailed, "best_idx", None) if detailed is not None else None
             ),
+            "selected_index": selected_index,
+            "selection": selection,
             "timeline": [c.as_dict() for c in timeline],
             "instructions": chosen_instructions,
             "elapsed_seconds": elapsed,
@@ -572,6 +596,30 @@ class GepaOptimizer:
             "eval": evaluation,
         }
 
+    def _select_candidate(self, compiled: Any) -> tuple[int | None, str]:
+        """Which candidate to return, and by what rule.
+
+        GEPA's own pick (``best_idx``) is the best on the loop metric. When
+        the run reports pass@1, the returned candidate is instead the best on
+        val pass@1, ties broken by GEPA's aggregate and then the lower index,
+        so the reported score belongs to the prompt actually handed back.
+        """
+        detailed = getattr(compiled, "detailed_results", None)
+        subscores = list(getattr(detailed, "val_subscores", None) or [])
+        candidates = list(getattr(detailed, "candidates", None) or [])
+        if not self.report_binary or not subscores or len(subscores) != len(candidates):
+            return None, "gepa aggregate"
+        aggregate = list(getattr(detailed, "val_aggregate_scores", None) or [])
+        ranked = sorted(
+            range(len(subscores)),
+            key=lambda i: (
+                -report_pass_at_1(dict(subscores[i]).values()),
+                -(aggregate[i] if i < len(aggregate) else 0.0),
+                i,
+            ),
+        )
+        return ranked[0], "val pass@1"
+
     def _timeline(
         self, compiled: Any, original: str, tracker: GepaTracker
     ) -> list[GepaCandidate]:
@@ -605,16 +653,7 @@ class GepaOptimizer:
         accepted = tracker.accepted_iterations()
         timeline: list[GepaCandidate] = []
         for index, candidate in enumerate(candidates):
-            instructions: Any = candidate
-            if isinstance(candidate, dict):
-                instructions = next(iter(candidate.values()), "")
-            elif hasattr(candidate, "signature"):  # a compiled dspy program
-                instructions = getattr(candidate.signature, "instructions", "")
-            elif hasattr(candidate, "predictors"):
-                preds = list(candidate.predictors())
-                instructions = (
-                    getattr(preds[0].signature, "instructions", "") if preds else ""
-                )
+            instructions = _candidate_instructions(candidate)
             parent_list = parents[index] if index < len(parents) else [None]
             parent = next((p for p in (parent_list or [None]) if p is not None), None)
             generation = 0 if parent is None else timeline[parent].generation + 1
