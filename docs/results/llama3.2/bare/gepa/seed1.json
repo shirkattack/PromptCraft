@@ -1,0 +1,1830 @@
+{
+  "config": {
+    "dataset": "/Users/esteban/PromptCraft/docs/benchmarks/mbppplus",
+    "model": {
+      "tag": "llama3.2:latest",
+      "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+      "capabilities": [
+        "completion",
+        "tools"
+      ]
+    },
+    "reflection_model": {
+      "tag": "qwen3.6:27b",
+      "digest": "9d5803d493a991af27b9441c098aa56f2ed7bbd260877f075ec09b575c049bc3",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "reflection_max_tokens": 2048,
+    "timeouts_s": {
+      "task": 300,
+      "reflection": 900
+    },
+    "thinking": "not supported by model",
+    "budget": 500,
+    "demos": 4,
+    "code_eval_timeout_seconds": 10.0,
+    "code_eval_memory_mb": 1024,
+    "git_commit": "cb97c55a3b851ce321c49895daa3ab684aad49ac",
+    "split_sizes": {
+      "train": 120,
+      "val": 60,
+      "test": 198
+    },
+    "method": "gepa",
+    "seed": 1,
+    "prompt_name": "bare",
+    "prompt": "Write a Python function for the task below."
+  },
+  "final_prompt": "Write a Python function for the task below.\n\nStrictly adhere to the following constraints:\n1. Define the function with the exact name specified in the input description or assertion.\n2. The output must contain ONLY the Python code for the function definition. Do not include any markdown formatting (like ```python), explanations, comments, or extra text.\n3. Do not include any test cases, assertions, or print statements in the output.\n4. Ensure the logic correctly implements the described task. For example, if the task asks for the product of the *first* even and *first* odd number, do not calculate the product of *all* even and *all* odd numbers.\n5. Ensure the function handles edge cases appropriately if implied by the task description.",
+  "demos": [],
+  "gepa": {
+    "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following constraints:\n1. Define the function with the exact name specified in the input description or assertion.\n2. The output must contain ONLY the Python code for the function definition. Do not include any markdown formatting (like ```python), explanations, comments, or extra text.\n3. Do not include any test cases, assertions, or print statements in the output.\n4. Ensure the logic correctly implements the described task. For example, if the task asks for the product of the *first* even and *first* odd number, do not calculate the product of *all* even and *all* odd numbers.\n5. Ensure the function handles edge cases appropriately if implied by the task description.",
+    "improved": true,
+    "baseline_val_pass_at_1": 40.0,
+    "final_val_pass_at_1": 46.67,
+    "metric_calls": 549,
+    "iterations": 13,
+    "timeline": [
+      {
+        "index": 0,
+        "parent": null,
+        "generation": 0,
+        "instructions": "Write a Python function for the task below.",
+        "score": 40.0,
+        "iteration": null,
+        "feedback": []
+      },
+      {
+        "index": 1,
+        "parent": 0,
+        "generation": 1,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following constraints:\n1. Define the function with the exact name specified in the input description or assertion.\n2. The output must contain ONLY the Python code for the function definition. Do not include any markdown formatting (like ```python), explanations, comments, or extra text.\n3. Do not include any test cases, assertions, or print statements in the output.\n4. Ensure the logic correctly implements the described task. For example, if the task asks for the product of the *first* even and *first* odd number, do not calculate the product of *all* even and *all* odd numbers.\n5. Ensure the function handles edge cases appropriately if implied by the task description.",
+        "score": 46.67,
+        "iteration": 2,
+        "feedback": [
+          "Passed 28/105 asserts. First failure: `assert mul_even_odd([1, 3, 5, 7, 4, 1, 6, 8]) == 4`",
+          "NameError: name 'output' is not defined while loading the code.",
+          "The tests call `remove_length` but the code defines no function. Define `remove_length` exactly.",
+          "Passed 43/106 asserts. First failure: `assert find_adverb_position('clearly!! we can see the sky') == (0, 7, 'clearly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 0/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 27/110 asserts. First failure: `assert sum_range_list([2, 1, 5, 6, 8, 3, 4, 9, 10, 11, 8, 12], 8, 10) == 29`",
+          "Passed 7/105 asserts. First failure: `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`",
+          "IndexError: list index out of range while running `assert pack_consecutive_duplicates([]) == []`.",
+          "Passed 0/39 asserts. First failure: `assert find_lucas(9) == 76`"
+        ]
+      },
+      {
+        "index": 2,
+        "parent": 0,
+        "generation": 1,
+        "instructions": "Write a Python function for the task below.\n\nThe function must be defined with the exact name specified in the input description or assertion.\nThe function must correctly implement the logic described.\n- For string manipulation tasks, ensure the function returns the modified string.\n- For mathematical or algorithmic tasks, ensure the function handles edge cases and specific sequence definitions correctly (e.g., Newman-Shanks-Williams numbers are defined by the recurrence $NS_0 = 0, NS_1 = 1, NS_n = 2NS_{n-1} + NS_{n-2}$, and we are looking for primes within this sequence, not just the nth prime number).\n- For array/list processing tasks, carefully distinguish between \"subsequence\" (elements don't need to be contiguous but must maintain relative order) and \"subarray\" (contiguous elements). Ensure the logic respects the specific constraints (e.g., \"increasing subsequence\").\n\nDo not output JSON or any other format. Output only the Python code defining the function.",
+        "score": 48.33,
+        "iteration": 5,
+        "feedback": [
+          "The tests call `replace_spaces` but the code defines no function. Define `replace_spaces` exactly.",
+          "Passed 1/107 asserts. First failure: `assert newman_prime(3) == 7`",
+          "Passed 3/113 asserts. First failure: `assert max_product([3, 100, 4, 5, 150, 6]) == 3000`",
+          "Passed 4/107 asserts. First failure: `assert newman_prime(3) == 7`",
+          "Passed 34/113 asserts. First failure: `assert max_product([3, 100, 4, 5, 150, 6]) == 3000`",
+          "Passed 86/106 asserts. First failure: `assert find_adverb_position('awaquicklyy') == (0, 10, 'awaquickly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 79/110 asserts. First failure: `assert sum_range_list([-10, -5, 0, 5, 10, 15, 20, 25, 30], 0, 8) == 90`",
+          "ZeroDivisionError: division by zero while running `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`."
+        ]
+      },
+      {
+        "index": 3,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following constraints:\n1. Define the function with the exact name specified in the input description or assertion.\n2. The output must contain ONLY the Python code for the function definition. Do not include any markdown formatting (like ```python), explanations, comments, or extra text.\n3. Do not include any test cases, assertions, or print statements in the output.\n4. Ensure the logic correctly implements the described task. Pay close attention to specific wording:\n   - If the task asks for \"sum and average of first n natural numbers\", calculate the sum of integers from 1 to n and the average of those same integers. Do not separate them into even/odd categories unless explicitly requested.\n   - If the task asks to check if a sequence follows a pattern, ensure the mapping is consistent. Note that in some contexts, multiple distinct values in the input sequence might map to the same pattern character if the pattern character is repeated, but typically a bijection or consistent mapping is required. Specifically, verify if the pattern implies a one-to-one mapping or if multiple input items can share a pattern label. In the case of `is_samepatterns`, the feedback indicated that `['red', 'red', 'red', 'red', 'red', 'red']` matching `['a', 'b', 'c', 'a', 'b', 'c']` should return `True`. This implies that the pattern array defines the *structure* of repetition, but the specific values in the input array do not need to be unique per pattern character if the pattern character itself is not unique? No, wait. The feedback said `is_samepatterns(['red', 'red', 'red', 'red', 'red', 'red'], ['a', 'b', 'c', 'a', 'b', 'c']) == True`. This is a very specific edge case. It suggests that the function should check if the *indices* of identical elements in the input array correspond to identical elements in the pattern array. However, the previous implementation failed this. Let's re-read the failure. The previous implementation returned False. The expected result was True. This implies that the pattern `['a', 'b', 'c', 'a', 'b', 'c']` is considered \"same\" as `['red', 'red', 'red', 'red', 'red', 'red']`? That seems contradictory to standard pattern matching. Let's look closer. If the input is all 'red', then every element is the same. The pattern has 'a', 'b', 'c'. They are different. Why would it be True? Perhaps the task description implies checking if the *relative* positions match? Or maybe the task is simply checking if the pattern array's structure of *equality* matches the input array's structure of *equality*. \n   - Actually, looking at the failure: `assert is_samepatterns(['red', 'red', 'red', 'red', 'red', 'red'], ['a', 'b', 'c', 'a', 'b', 'c']) == True`. This assertion is extremely unusual for standard pattern matching. Usually, `['red', 'red']` matches `['a', 'a']`. Here, `['red', 'red', ...]` (all same) is being matched against `['a', 'b', 'c', ...]` (all different). This suggests the task might be misinterpreted or the example feedback is highlighting a specific, non-standard definition of \"same patterns\". However, without the full task description, I must rely on the general instruction to \"correctly implement the described task\". The key takeaway from the feedback is that the assistant's logic for pattern matching was too strict or incorrect for the specific definition used in the test suite. \n   - For the `last` function, ensure binary search correctly finds the *last* occurrence. If the target is not found, return -1. If found, return the highest index.\n\n5. Ensure the function handles edge cases appropriately if implied by the task description. For example, empty arrays, single elements, or missing targets.\n\nSpecifically, for pattern matching tasks:\n- Verify if the mapping is bidirectional (bijection) or unidirectional.\n- Be aware that some test cases may have non-intuitive expectations regarding what constitutes a \"match\" (e.g., whether distinct pattern characters must map to distinct input values). If the feedback indicates a failure on a case where input values are identical but pattern characters are distinct, re-evaluate the definition of \"pattern\". However, in standard problems, `is_samepatterns` usually requires that if `pattern[i] == pattern[j]`, then `input[i] == input[j]`, and often vice-versa. The failure in Example 2 suggests the test suite might have a bug or a very specific definition. Since I cannot change the test suite, I must ensure the code is robust. But wait, the prompt asks me to write instructions for the *assistant*. The assistant failed Example 2. The feedback says it failed. This means the assistant's code was wrong. The correct behavior for that specific assertion was to return True. This is highly counter-intuitive. It implies that the pattern `['a', 'b', 'c', 'a', 'b', 'c']` is considered equivalent to `['red', 'red', 'red', 'red', 'red', 'red']`? This is likely a mistake in the example feedback or a very specific domain rule. Given the ambiguity, I will instruct the assistant to strictly follow the logical implication of the task description provided in the input. If the input description is vague, default to standard algorithmic interpretations (e.g., bijection for pattern matching).\n\nHowever, the most critical error in Example 1 was a complete misunderstanding of the task (calculating even/odd sums instead of total sum/average). The instruction must emphasize reading the task description literally.\n\nRevised Instruction Strategy:\n1. Literal interpretation of task descriptions.\n2. Standard algorithmic implementations for common tasks (sum/average, pattern matching, binary search).\n3. No extra text.",
+        "score": 48.33,
+        "iteration": 6,
+        "feedback": [
+          "Passed 0/91 asserts. First failure: `assert sum_average(10) == (55, 5.5)`",
+          "Passed 118/120 asserts. First failure: `assert is_samepatterns(['red', 'red', 'red', 'red', 'red', 'red'], ['a', 'b', 'c', 'a', 'b', 'c']) == True`",
+          "Passed 113/120 asserts. First failure: `assert is_samepatterns(['red', 'green', 'greenn'], ['a', 'b', 'b']) == False`",
+          "Passed 0/106 asserts. First failure: `assert find_adverb_position('clearly!! we can see the sky') == (0, 7, 'clearly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 0/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 49/110 asserts. First failure: `assert sum_range_list([2, 1, 5, 6, 8, 3, 4, 9, 10, 11, 8, 12], 8, 10) == 29`",
+          "ZeroDivisionError: division by zero while running `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`.",
+          "IndexError: list index out of range while running `assert pack_consecutive_duplicates([]) == []`.",
+          "SyntaxError at line 8: invalid syntax."
+        ]
+      },
+      {
+        "index": 4,
+        "parent": 2,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nThe function must be defined with the exact name specified in the input description or assertion.\nThe function must correctly implement the logic described.\n- For string manipulation tasks, ensure the function returns the modified string.\n- For mathematical or algorithmic tasks, ensure the function handles edge cases and specific sequence definitions correctly (e.g., Newman-Shanks-Williams numbers are defined by the recurrence $NS_0 = 0, NS_1 = 1, NS_n = 2NS_{n-1} + NS_{n-2}$, and we are looking for primes within this sequence, not just the nth prime number).\n- For array/list processing tasks, carefully distinguish between \"subsequence\" (elements don't need to be contiguous but must maintain relative order) and \"subarray\" (contiguous elements). Ensure the logic respects the specific constraints (e.g., \"increasing subsequence\").\n- For number theory problems involving representations (e.g., difference of two squares), rely on established mathematical theorems rather than brute-force search if possible. Specifically, a positive integer $n$ can be represented as the difference of two squares ($n = a^2 - b^2$) if and only if $n$ is not congruent to $2 \\pmod 4$. This means odd numbers and multiples of 4 can be represented, while numbers of the form $4k+2$ cannot. Ensure the function correctly identifies these cases.\n\nDo not output JSON or any other format. Output only the Python code defining the function.",
+        "score": 46.67,
+        "iteration": 8,
+        "feedback": [
+          "Passed 35/107 asserts. First failure: `assert dif_Square(5) == True`",
+          "Passed 86/106 asserts. First failure: `assert find_adverb_position('awaquicklyy') == (0, 10, 'awaquickly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 79/110 asserts. First failure: `assert sum_range_list([-10, -5, 0, 5, 10, 15, 20, 25, 30], 0, 8) == 90`",
+          "TypeError: 'float' object is not subscriptable while running `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`.",
+          "IndexError: list index out of range while running `assert pack_consecutive_duplicates([]) == []`.",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while running `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`.",
+          "Passed 1/105 asserts. First failure: `assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]`"
+        ]
+      },
+      {
+        "index": 5,
+        "parent": 2,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nThe function must be defined with the exact name specified in the input description or assertion.\nThe function must correctly implement the logic described.\n- For string manipulation tasks, ensure the function returns the modified string.\n- For mathematical or algorithmic tasks, ensure the function handles edge cases and specific sequence definitions correctly (e.g., Newman-Shanks-Williams numbers are defined by the recurrence $NS_0 = 0, NS_1 = 1, NS_n = 2NS_{n-1} + NS_{n-2}$, and we are looking for primes within this sequence, not just the nth prime number).\n- For array/list processing tasks, carefully distinguish between \"subsequence\" (elements don't need to be contiguous but must maintain relative order) and \"subarray\" (contiguous elements). Ensure the logic respects the specific constraints (e.g., \"increasing subsequence\").\n\nCRITICAL LOGIC GUIDELINES:\n1. Handling Duplicates in \"Top N\" or \"Largest/Smallest N\" Tasks:\n   - If the task asks for the \"n largest items\" or similar, check the expected output in the assertions.\n   - If the expected output contains duplicate values (e.g., finding the 4 largest in `[4, 5, 3, 8, 5, 2, 6, 4]` results in `[8, 6, 5, 5]`), you MUST preserve duplicates. Do NOT use `set()` to remove duplicates before sorting or selecting. Instead, sort the original list (or a copy) and select the top n elements.\n   - If the expected output implies unique values only, then using `set()` is appropriate. Always verify against the provided assertions.\n\n2. Finding Common Elements in Nested Lists:\n   - When finding elements common to ALL sublists in a nested list structure, the most robust and efficient method is to use set intersection.\n   - Initialize the result set with the elements of the first sublist.\n   - Iterate through the remaining sublists and update the result set by intersecting it with the set of elements in each subsequent sublist.\n   - Avoid complex nested loops with manual checks for presence in other lists, as this can lead to logical errors regarding whether an element is present in *all* lists versus *any* other list.\n\nDo not output JSON or any other format. Output only the Python code defining the function.",
+        "score": 41.67,
+        "iteration": 10,
+        "feedback": [
+          "Passed 43/113 asserts. First failure: `assert set(common_in_nested_lists([[2, 3, 4, 1], [4, 5], [6, 4, 8], [4, 5], [6, 8, 4]])) == set([4])`",
+          "Passed 57/106 asserts. First failure: `assert set(larg_nnum([4, 5, 3, 8, 5, 2, 6, 4], 4)) == set([8, 6, 5, 5])`",
+          "Passed 86/106 asserts. First failure: `assert find_adverb_position('awaquicklyy') == (0, 10, 'awaquickly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 79/110 asserts. First failure: `assert sum_range_list([-10, -5, 0, 5, 10, 15, 20, 25, 30], 0, 8) == 90`",
+          "ZeroDivisionError: division by zero while running `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`.",
+          "IndexError: list index out of range while running `assert pack_consecutive_duplicates([]) == []`.",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while running `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`."
+        ]
+      },
+      {
+        "index": 6,
+        "parent": 4,
+        "generation": 3,
+        "instructions": "Write a Python function for the task below.\n\nThe function must be defined with the exact name specified in the input description or assertion.\nThe function must correctly implement the logic described.\n- For string manipulation tasks, ensure the function returns the modified string.\n- For mathematical or algorithmic tasks, ensure the function handles edge cases and specific sequence definitions correctly (e.g., Newman-Shanks-Williams numbers are defined by the recurrence $NS_0 = 0, NS_1 = 1, NS_n = 2NS_{n-1} + NS_{n-2}$, and we are looking for primes within this sequence, not just the nth prime number).\n- For array/list processing tasks, carefully distinguish between \"subsequence\" (elements don't need to be contiguous but must maintain relative order) and \"subarray\" (contiguous elements). Ensure the logic respects the specific constraints (e.g., \"increasing subsequence\").\n- For number theory problems involving representations (e.g., difference of two squares), rely on established mathematical theorems rather than brute-force search if possible. Specifically, a positive integer $n$ can be represented as the difference of two squares ($n = a^2 - b^2$) if and only if $n$ is not congruent to $2 \\pmod 4$. This means odd numbers and multiples of 4 can be represented, while numbers of the form $4k+2$ cannot. Ensure the function correctly identifies these cases.\n- For tasks requiring external libraries (such as `math` for trigonometric functions or constants), ensure that the necessary `import` statements are included within the code block. Do not assume standard libraries are pre-imported.\n- For sorting algorithms, ensure the implementation is robust and does not cause index errors. If implementing a specific algorithm like Pancake Sort, verify that flip operations are handled correctly without modifying list lengths unexpectedly or accessing out-of-bounds indices.\n\nDo not output JSON or any other format. Output only the Python code defining the function.",
+        "score": 43.33,
+        "iteration": 12,
+        "feedback": [
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(radian_degree(90), 1.5707963267948966, 1e-06)`.",
+          "IndexError: list index out of range while running `assert pancake_sort([15, 79, 25, 38, 69]) == [15, 25, 38, 69, 79]`.",
+          "Passed 86/106 asserts. First failure: `assert find_adverb_position('awaquicklyy') == (0, 10, 'awaquickly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 79/110 asserts. First failure: `assert sum_range_list([-10, -5, 0, 5, 10, 15, 20, 25, 30], 0, 8) == 90`",
+          "ZeroDivisionError: division by zero while running `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`.",
+          "IndexError: list index out of range while running `assert pack_consecutive_duplicates([]) == []`.",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while running `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`."
+        ]
+      },
+      {
+        "index": 7,
+        "parent": 5,
+        "generation": 3,
+        "instructions": "Write a Python function for the task below.\n\nThe function must be defined with the exact name specified in the input description or assertion.\nThe function must correctly implement the logic described.\n- For string manipulation tasks, ensure the function returns the modified string.\n- For mathematical or algorithmic tasks, ensure the function handles edge cases and specific sequence definitions correctly (e.g., Newman-Shanks-Williams numbers are defined by the recurrence $NS_0 = 0, NS_1 = 1, NS_n = 2NS_{n-1} + NS_{n-2}$, and we are looking for primes within this sequence, not just the nth prime number).\n- For array/list processing tasks, carefully distinguish between \"subsequence\" (elements don't need to be contiguous but must maintain relative order) and \"subarray\" (contiguous elements). Ensure the logic respects the specific constraints (e.g., \"increasing subsequence\").\n\nCRITICAL LOGIC GUIDELINES:\n1. Handling Duplicates in \"Top N\" or \"Largest/Smallest N\" Tasks:\n   - If the task asks for the \"n largest items\" or similar, check the expected output in the assertions.\n   - If the expected output contains duplicate values (e.g., finding the 4 largest in `[4, 5, 3, 8, 5, 2, 6, 4]` results in `[8, 6, 5, 5]`), you MUST preserve duplicates. Do NOT use `set()` to remove duplicates before sorting or selecting. Instead, sort the original list (or a copy) and select the top n elements.\n   - If the expected output implies unique values only, then using `set()` is appropriate. Always verify against the provided assertions.\n\n2. Finding Common Elements in Nested Lists:\n   - When finding elements common to ALL sublists in a nested list structure, the most robust and efficient method is to use set intersection.\n   - Initialize the result set with the elements of the first sublist.\n   - Iterate through the remaining sublists and update the result set by intersecting it with the set of elements in each subsequent sublist.\n   - Avoid complex nested loops with manual checks for presence in other lists, as this can lead to logical errors regarding whether an element is present in *all* lists versus *any* other list.\n\n3. Handling Range and Boundary Conditions:\n   - When a task involves a range of numbers (e.g., \"between X and Y\"), carefully check the assertions to determine if the bounds are inclusive or exclusive.\n   - If the assertions show that the start and end values are included in the result (e.g., `perfect_squares(1, 30)` includes 1 and 25, and potentially 0 if the range allows), ensure your loop or range function covers these boundaries correctly.\n   - Be cautious with edge cases where the start value is greater than the end value, or where the range includes negative numbers or zero, depending on the mathematical definition (e.g., perfect squares are non-negative).\n\n4. Type Consistency in Return Values:\n   - Ensure the return type matches the expected type in the assertions.\n   - If the assertion expects an integer (e.g., `first_Digit(123) == 1`), do not return a string (e.g., `'1'`). Convert the result to the appropriate type (e.g., `int()`) before returning.\n   - If the assertion expects a list, ensure you return a list, not a generator or tuple.\n\nDo not output JSON or any other format. Output only the Python code defining the function.",
+        "score": 41.67,
+        "iteration": 13,
+        "feedback": [
+          "Passed 88/106 asserts. First failure: `assert perfect_squares(1, 0) == [0, 1]`",
+          "Passed 0/106 asserts. First failure: `assert first_Digit(123) == 1`",
+          "Passed 3/106 asserts. First failure: `assert perfect_squares(1, 30) == [1, 4, 9, 16, 25]`",
+          "Passed 0/106 asserts. First failure: `assert find_adverb_position('clearly!! we can see the sky') == (0, 7, 'clearly')`",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Timed out after 10s on `assert count_divisors(987654321) == True`; likely an infinite loop or exponential solution.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "SyntaxError at line 3: unterminated triple-quoted string literal (detected at line 3).",
+          "NameError: the code uses `math` without importing it; add `import math` inside the code block while running `assert __close(volume_cone(5, 12), 314.15926535897927, 0.0001)`.",
+          "Passed 79/110 asserts. First failure: `assert sum_range_list([-10, -5, 0, 5, 10, 15, 20, 25, 30], 0, 8) == 90`",
+          "Passed 2/105 asserts. First failure: `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`",
+          "IndexError: list index out of range while running `assert pack_consecutive_duplicates([]) == []`."
+        ]
+      }
+    ],
+    "seconds": 644.9
+  },
+  "val": {
+    "n": 60,
+    "base_pass": 34,
+    "plus_pass": 28,
+    "base_pass_at_1": 56.67,
+    "plus_pass_at_1": 46.67,
+    "seconds": 12.7
+  },
+  "test": {
+    "n": 198,
+    "base_pass": 122,
+    "plus_pass": 102,
+    "base_pass_at_1": 61.62,
+    "plus_pass_at_1": 51.52,
+    "seconds": 271.4
+  },
+  "test_rows": [
+    {
+      "task_id": "Mbpp/728",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/16",
+      "status": "assert_failed",
+      "passed": 109,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/594",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/432",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/755",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/311",
+      "status": "exception",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/454",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/397",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/395",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/2",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/90",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/732",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/415",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/804",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/764",
+      "status": "assert_failed",
+      "passed": 41,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/84",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/800",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/306",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/733",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/773",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/769",
+      "status": "assert_failed",
+      "passed": 77,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/737",
+      "status": "exception",
+      "passed": 0,
+      "total": 110,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/256",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/608",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/626",
+      "status": "assert_failed",
+      "passed": 44,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/758",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/735",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/791",
+      "status": "assert_failed",
+      "passed": 26,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/637",
+      "status": "assert_failed",
+      "passed": 70,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/451",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/794",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/132",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/463",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/630",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 91,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/91",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/237",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/740",
+      "status": "pass",
+      "passed": 69,
+      "total": 69,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/269",
+      "status": "pass",
+      "passed": 85,
+      "total": 85,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/602",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/558",
+      "status": "pass",
+      "passed": 146,
+      "total": 146,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/167",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/446",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/453",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/108",
+      "status": "pass",
+      "passed": 121,
+      "total": 121,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/266",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/730",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/475",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/413",
+      "status": "assert_failed",
+      "passed": 51,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/96",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/227",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/67",
+      "status": "assert_failed",
+      "passed": 6,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/98",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/585",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/612",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/59",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/465",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/118",
+      "status": "assert_failed",
+      "passed": 88,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/290",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/57",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/252",
+      "status": "exception",
+      "passed": 2,
+      "total": 125,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/133",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/138",
+      "status": "assert_failed",
+      "passed": 22,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/412",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/564",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/770",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/586",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/64",
+      "status": "pass",
+      "passed": 120,
+      "total": 120,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/456",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/267",
+      "status": "exception",
+      "passed": 6,
+      "total": 122,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/723",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/748",
+      "status": "assert_failed",
+      "passed": 28,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/447",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/726",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/478",
+      "status": "assert_failed",
+      "passed": 5,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/18",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/239",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/441",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/87",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/744",
+      "status": "pass",
+      "passed": 131,
+      "total": 131,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/477",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/388",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/631",
+      "status": "assert_failed",
+      "passed": 75,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/276",
+      "status": "exception",
+      "passed": 0,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/137",
+      "status": "assert_failed",
+      "passed": 113,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/102",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/406",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 110,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/223",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/268",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/428",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/576",
+      "status": "assert_failed",
+      "passed": 109,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/99",
+      "status": "assert_failed",
+      "passed": 56,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/109",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/472",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/787",
+      "status": "assert_failed",
+      "passed": 103,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/171",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/113",
+      "status": "assert_failed",
+      "passed": 120,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/279",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/293",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/473",
+      "status": "assert_failed",
+      "passed": 72,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/596",
+      "status": "exception",
+      "passed": 0,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/809",
+      "status": "assert_failed",
+      "passed": 111,
+      "total": 125,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/160",
+      "status": "assert_failed",
+      "passed": 23,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/565",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/763",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/567",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/563",
+      "status": "assert_failed",
+      "passed": 29,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/404",
+      "status": "pass",
+      "passed": 126,
+      "total": 126,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/581",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/410",
+      "status": "assert_failed",
+      "passed": 99,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/435",
+      "status": "assert_failed",
+      "passed": 68,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/624",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/63",
+      "status": "assert_failed",
+      "passed": 64,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/786",
+      "status": "assert_failed",
+      "passed": 82,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/633",
+      "status": "assert_failed",
+      "passed": 10,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/296",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/135",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/278",
+      "status": "assert_failed",
+      "passed": 117,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/165",
+      "status": "assert_failed",
+      "passed": 3,
+      "total": 110,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/643",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/280",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/457",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/62",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/750",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/300",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/127",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/749",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/103",
+      "status": "assert_failed",
+      "passed": 44,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/792",
+      "status": "pass",
+      "passed": 118,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/19",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/741",
+      "status": "assert_failed",
+      "passed": 103,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/240",
+      "status": "assert_failed",
+      "passed": 115,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/620",
+      "status": "assert_failed",
+      "passed": 5,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/85",
+      "status": "exception",
+      "passed": 0,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/140",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/583",
+      "status": "pass",
+      "passed": 21,
+      "total": 21,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/641",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/86",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/69",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/142",
+      "status": "exception",
+      "passed": 65,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/429",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/566",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/128",
+      "status": "assert_failed",
+      "passed": 50,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/394",
+      "status": "pass",
+      "passed": 52,
+      "total": 52,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/4",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/82",
+      "status": "exception",
+      "passed": 0,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/590",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/14",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/603",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/555",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/230",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/775",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/274",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/798",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/572",
+      "status": "assert_failed",
+      "passed": 13,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/297",
+      "status": "pass",
+      "passed": 120,
+      "total": 120,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/752",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/75",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/619",
+      "status": "assert_failed",
+      "passed": 35,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/277",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/65",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/635",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/593",
+      "status": "assert_failed",
+      "passed": 7,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/92",
+      "status": "assert_failed",
+      "passed": 34,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/724",
+      "status": "assert_failed",
+      "passed": 9,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/80",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/562",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/610",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/765",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/77",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 119,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/265",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/577",
+      "status": "exception",
+      "passed": 13,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/587",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/11",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/105",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/168",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/806",
+      "status": "assert_failed",
+      "passed": 57,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/131",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/560",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 132,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/734",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/573",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/739",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/753",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/409",
+      "status": "assert_failed",
+      "passed": 31,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/796",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/56",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 128,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/12",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/257",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/414",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/97",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/89",
+      "status": "assert_failed",
+      "passed": 55,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/782",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/767",
+      "status": "assert_failed",
+      "passed": 96,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/58",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/638",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/93",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true
+    },
+    {
+      "task_id": "Mbpp/6",
+      "status": "assert_failed",
+      "passed": 107,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/106",
+      "status": "exception",
+      "passed": 0,
+      "total": 118,
+      "base_pass": false,
+      "plus_pass": false
+    },
+    {
+      "task_id": "Mbpp/474",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true
+    }
+  ],
+  "wall_clock": {
+    "optimization_seconds": 644.9,
+    "val_eval_seconds": 12.7,
+    "test_eval_seconds": 271.4,
+    "total_seconds": 928.9
+  },
+  "finished_at": "2026-09-09T03:26:57+00:00"
+}
