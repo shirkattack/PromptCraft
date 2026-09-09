@@ -277,6 +277,21 @@ class TestTemplateRewriter:
         )
         assert "similar_elements" in leaked
         assert "function" not in leaked  # in the original prompt and every input
+        # Ordinary words from one ticket are not names; "Diff(" is, by the call.
+        tickets = [
+            "Login issue since this morning",
+            "Typo on the pricing page",
+            "Diff(a, b) is slow",
+        ]
+        assert (
+            service.specific_tokens(
+                "Judge the issue with care.", tickets, "Classify it."
+            )
+            == []
+        )
+        assert service.specific_tokens(
+            "Speed up Diff first.", tickets, "Classify it."
+        ) == ["Diff"]
 
     def test_meta_prompt_frames_the_template_and_shows_inputs(self):
         service = PromptOptimizationService()

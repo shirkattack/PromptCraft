@@ -400,27 +400,36 @@ class PromptOptimizationService:
     def specific_tokens(
         rewrite: str, shown_inputs: list[str], original_prompt: str
     ) -> list[str]:
-        """Tokens of ``rewrite`` that come from exactly one shown input.
+        """Identifier-like tokens of ``rewrite`` that come from one shown input.
 
         A rewrite of a *template* prompt must not carry anything specific to
-        one input (a function name, a domain word). Tokens are identifiers of
-        four or more characters; the original prompt's own words are allowed.
+        one input. Only tokens that look like names count: ones with an
+        underscore, a digit or mixed case, or ones an input calls like a
+        function (``find_kth(...)``, ``Diff(...)``). Ordinary words that
+        happen to appear in a single input ("issue", "with") do not.
         """
         if not shown_inputs:
             return []
-        token_re = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
+        word_re = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
+        call_re = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(")
 
-        def tokens(text: str) -> set[str]:
-            return {t.lower() for t in token_re.findall(text)}
+        def name_like(token: str) -> bool:
+            return (
+                "_" in token
+                or any(ch.isdigit() for ch in token)
+                or (token[0].isupper() and any(ch.islower() for ch in token[1:]))
+                or (any(ch.isupper() for ch in token[1:]))
+            )
 
         counts: dict[str, int] = {}
         for text in shown_inputs:
-            for token in tokens(text):
+            called = set(call_re.findall(text))
+            tokens = {t for t in word_re.findall(text) if name_like(t) or t in called}
+            for token in tokens:
                 counts[token] = counts.get(token, 0) + 1
-        allowed = tokens(original_prompt)
-        return sorted(
-            t for t in tokens(rewrite) if counts.get(t) == 1 and t not in allowed
-        )
+        allowed = set(word_re.findall(original_prompt))
+        found = set(word_re.findall(rewrite))
+        return sorted(t for t in found if counts.get(t) == 1 and t not in allowed)
 
     def _optimize_with_meta_prompt(
         self,
