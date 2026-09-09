@@ -116,22 +116,19 @@ On macOS, prefix `evalplus.evaluate` with `EVALPLUS_MAX_MEMORY_BYTES=-1`. EvalPl
 
 ## Results
 
-All runs: llama3.2 3B via Ollama on a MacBook Pro (Apple M4 Pro, 48 GB), on the 18-sample support-ticket priority dataset in [`docs/examples/support-tickets.csv`](docs/examples/support-tickets.csv) (12 hand-written tickets plus 6 generated in the app). Prompt: *Classify the priority of this support ticket as high, medium or low.* Metric: `contains`, with half credit when the right label is present but buried in a longer answer.
+All runs: llama3.2 3B via Ollama on a MacBook Pro (Apple M4 Pro, 48 GB), on the 18-sample support-ticket priority dataset in [`docs/examples/support-tickets.csv`](docs/examples/support-tickets.csv) (12 hand-written tickets plus 6 generated in the app). Prompt: *Classify the priority of this support ticket as high, medium or low.* Metric: `contains`, with half credit when the right label is present but buried in a longer answer. These runs go through Ollama's chat API; an earlier version of this table, made through the generate API, showed GEPA failing to improve at the default split, and that turned out to be the transport, not the optimizer (see the note under the code results).
 
 | Method | Original | Best candidate | Protocol | Wall-clock |
 |---|---|---|---|---|
-| Meta-prompt rewrite | 44% | 50% | 5-fold, every sample held out once. Best candidate was the rewrite + 4 examples; the rewrite alone scored 39%, below the original. | 4m 47s |
-| GEPA, seed 1 | 50% | 67% | 50/50 split, 9 held out (3 per class), 60 scored calls. | 34s |
-| GEPA, seed 2 | 28% | 44% | same | 50s |
-| GEPA, seed 3 | 39% | 89% | same | 41s |
+| Meta-prompt rewrite | 39% | 78% | 5-fold, every sample held out once. Best candidate was the rewrite + 4 examples; the rewrite alone scored 44%, the original + 4 examples 56%. | 1m 9s |
+| GEPA, seed 1 | 17% | 67% | 50/50 split, 9 held out (3 per class), 60 scored calls. | 45s |
+| GEPA, seed 2 | 17% | 56% | same | 37s |
+| GEPA, seed 3 | 17% | 78% | same | 38s |
+| GEPA, seeds 13, 1, 2 | 12.5% | 50%, 50%, 37.5% | 80/20 split, 4 held out, 60 scored calls. | 64s to 114s |
 
-The "original" numbers differ from run to run because each split holds out different samples, and with 9 of them one sample is 11 points.
+The baseline is low because, asked bare, the model explains instead of labelling: the right label buried in a sentence or two (the feedback reads, roughly, *the right answer is in the response but buried in 38 words; respond with the label alone, no explanation*), or a clarifying question instead of a classification. Every GEPA seed improved on both splits; the winners define each priority level and end by demanding a single word. Seeds still move the 50/50 result by 22 points, and with 4 held out one sample is 25 points.
 
-The baseline misses are the same in every run: the right label buried in a sentence or two of explanation (the feedback reads, roughly, *the right answer is in the response but buried in 38 words; respond with the label alone, no explanation*), or the model asking a clarifying question instead of classifying. The seed-3 winner defines each priority level and ends with an instruction to answer with a single word.
-
-At the default 80/20 split (4 held out), three seeds produced no improvement at all: 25%, 50% and 25% before and after. With 4 held-out samples one sample is 25 points, and no proposal beat the original, so the run returned the original prompt, as it should. The 50/50 runs above set `train_ratio` on the GEPA service directly; the UI always uses the 80/20 default, so a bigger dataset is the way to get a bigger held-out set from the app.
-
-GEPA picks candidates on the same held-out samples it reports, so its scores are optimistic. Nine held-out samples is a demonstration, not a benchmark. 7–8B results are next.
+The 50/50 runs set `train_ratio` on the GEPA service directly; the UI always uses the 80/20 default, so a bigger dataset is the way to get a bigger held-out set from the app. GEPA picks candidates on the same held-out samples it reports, so its scores are optimistic, and for label metrics the reported number includes the half credit. Nine held-out samples is a demonstration, not a benchmark.
 
 **MBPP+ (code).** Full tables with per-seed ranges and bootstrap confidence intervals are in [docs/results/README.md](docs/results/README.md); every run's config, model digest, commit, prompt, demo ids, per-task results and completions are under `docs/results/`. llama3.2 3B on the fixed 198-task test split, three seeds, plus pass@1 (every assert, EvalPlus's extended inputs included):
 
