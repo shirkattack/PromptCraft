@@ -133,14 +133,20 @@ At the default 80/20 split (4 held out), three seeds produced no improvement at 
 
 GEPA picks candidates on the same held-out samples it reports, so its scores are optimistic. Nine held-out samples is a demonstration, not a benchmark. 7–8B results are next.
 
-**MBPP+ (code).** llama3.2 3B, `tests` metric, the fixed 198-task test split, temperature 0, 512 max tokens. Prompt: *Write a Python function for the task below. Respond with a single fenced Python code block and nothing else.* Scored by PromptCraft (base asserts) and by EvalPlus on the same completions.
+**MBPP+ (code).** Full tables with per-seed ranges and bootstrap confidence intervals are in [docs/results/README.md](docs/results/README.md); every run's config, model digest, commit, prompt, demo ids, per-task results and completions are under `docs/results/`. llama3.2 3B on the fixed 198-task test split, three seeds, plus pass@1 (every assert, EvalPlus's extended inputs included):
 
-| Prompt | PromptCraft | EvalPlus base | EvalPlus base + extra |
-|---|---|---|---|
-| Original | 110/198 (55.6%) | 109/198 (55.1%) | 90/198 (45.5%) |
-| Original + 4 examples | 115/198 (58.1%) | 116/198 (58.6%) | 98/198 (49.5%) |
+| Method | Bare prompt | Fixed prompt |
+|---|---|---|
+| original | 43.9% | 40.4% |
+| one_line | 40.4% (-3.5 pp) | — |
+| random_demos (4) | 56.4% (+12.5 pp, CI +8.9 to +16.0) | 56.7% (+16.3 pp, CI +12.8 to +20.0) |
+| coverage_demos (4) | 56.6% (+12.6 pp) | 56.6% (+16.2 pp) |
+| gepa (500 calls, qwen3.6:27b reflector) | 49.0% (+5.1 pp, CI +1.2 to +8.8) | 41.4% (+1.0 pp, CI -2.7 to +4.9) |
+| gepa_demos | 53.2% | 56.4% |
 
-The two harnesses agree to within one task. The few-shot variant came out of a meta-prompt run: on the app's 12-sample dev slice it tied the original at 50%, the rewrite alone scored 17% because the rewriter turned the generic instruction into one specific task, and GEPA with a 60-call budget and gemma3n as reflector found nothing better than the original. Five tasks out of 198 is inside the noise of a single run; the direction is consistent across both harnesses and both test suites. llama3.2 has seen MBPP, so read the delta, not the level.
+Four few-shot examples are the only method that clearly beats the original prompt, by 12 to 16 points with intervals well clear of zero; random and coverage selection are indistinguishable. GEPA alone gains five points on the bare prompt and nothing significant on the fixed one, moves five to seven points across seeds, and its val gains overstate its test gains. GEPA's instructions on top of demos add nothing. The one-line format instruction costs this model three points. A demo run takes 2 to 5 minutes; a GEPA run about 24.
+
+The harness agrees with EvalPlus on every one of the 198 test tasks for the anchor prompt (97 base, 80 plus). One finding along the way matters beyond the benchmark: the app had been talking to Ollama through litellm's generate API, which flattens few-shot examples into one turn; small models then copy the example instead of solving the task. Through the chat API the same four demos went from 8 to 18 correct on a 30-task slice, and the app now uses it everywhere.
 
 ## Configuration
 

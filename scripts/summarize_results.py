@@ -61,7 +61,10 @@ def paired_bootstrap_ci(
 
 
 def pct(count: float, n: int) -> str:
-    return f"{count / n * 100:.1f}% ({count:g}/{n})" if n else "n/a"
+    if not n:
+        return "n/a"
+    shown = f"{count:.0f}" if float(count).is_integer() else f"{count:.1f}"
+    return f"{count / n * 100:.1f}% ({shown}/{n})"
 
 
 def summarize(runs: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
@@ -77,7 +80,9 @@ def summarize(runs: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
         "every assert (EvalPlus's extended inputs included) passed, *base* means "
         "the original MBPP asserts passed. The CI is a paired bootstrap over test "
         f"tasks ({RESAMPLES} resamples, seeds pooled) of the plus difference from "
-        "`original` at the same seed."
+        "`original` at the same seed. Wall-clock is the median over seeds of a run's "
+        "total (optimization plus val and test evaluation); a laptop that sleeps "
+        "mid-run inflates the total, which is why the median is used."
     )
     lines.append("")
     facts: dict[str, Any] = {}
@@ -145,7 +150,7 @@ def summarize(runs: list[dict[str, Any]]) -> tuple[str, dict[str, Any]]:
                 ci_cell = "—"
             lines.append(
                 f"| {method} | {', '.join(map(str, seeds))} | {plus_cell} | {pct(base_mean, n)} | "
-                f"{ci_cell} | {statistics.mean(val):.1f}% | {statistics.mean(secs) / 60:.0f} min |"
+                f"{ci_cell} | {statistics.mean(val):.1f}% | {statistics.median(secs) / 60:.0f} min |"
             )
         lines.append("")
     return "\n".join(lines), facts
