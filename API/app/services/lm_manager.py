@@ -74,7 +74,7 @@ class LMManager:
                 api_base=api_base or settings.ollama_base_url,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                timeout=settings.ollama_timeout,
+                timeout=kwargs.pop("timeout", settings.ollama_timeout),
                 **kwargs,
             )
 

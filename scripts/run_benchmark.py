@@ -55,6 +55,10 @@ METHODS = (
 MAX_TOKENS = 512
 REFLECTION_MAX_TOKENS = 2048
 KEEP_ALIVE = "2h"
+# Per-call timeouts. A 27B reflector writing 2k tokens needs minutes, and the
+# first call also pays for loading the model.
+TASK_TIMEOUT_S = 300
+REFLECTION_TIMEOUT_S = 900
 
 log = logging.getLogger("benchmark")
 
@@ -130,13 +134,13 @@ def preload(base_url: str, tag: str) -> None:
     ollama_get(base_url, "/api/generate", {"model": tag, "keep_alive": KEEP_ALIVE})
 
 
-def make_lm(info: dict[str, Any], *, max_tokens: int) -> Any:
+def make_lm(info: dict[str, Any], *, max_tokens: int, timeout: float) -> Any:
     from app.services.lm_manager import LMManager  # noqa: PLC0415
 
     # keep_alive rides along on every request so Ollama keeps the model
     # resident between calls; think=False only where the model can think,
     # because Ollama rejects the field otherwise.
-    extra: dict[str, Any] = {"keep_alive": KEEP_ALIVE}
+    extra: dict[str, Any] = {"keep_alive": KEEP_ALIVE, "timeout": timeout}
     if "thinking" in info["capabilities"]:
         extra["think"] = False
     return LMManager.get_lm(
@@ -412,8 +416,10 @@ def main(argv: list[str] | None = None) -> None:
     task_info = model_info(base_url, args.model)
     reflection_info = model_info(base_url, args.reflection_model or args.model)
     preload(base_url, task_info["tag"])
-    lm = make_lm(task_info, max_tokens=MAX_TOKENS)
-    reflection_lm = make_lm(reflection_info, max_tokens=REFLECTION_MAX_TOKENS)
+    lm = make_lm(task_info, max_tokens=MAX_TOKENS, timeout=TASK_TIMEOUT_S)
+    reflection_lm = make_lm(
+        reflection_info, max_tokens=REFLECTION_MAX_TOKENS, timeout=REFLECTION_TIMEOUT_S
+    )
     log.info(
         "task model %s (%s); reflection %s (%s)",
         task_info["tag"],
@@ -429,6 +435,7 @@ def main(argv: list[str] | None = None) -> None:
         "temperature": 0.0,
         "max_tokens": MAX_TOKENS,
         "reflection_max_tokens": REFLECTION_MAX_TOKENS,
+        "timeouts_s": {"task": TASK_TIMEOUT_S, "reflection": REFLECTION_TIMEOUT_S},
         "thinking": "off"
         if "thinking" in task_info["capabilities"]
         else "not supported by model",
