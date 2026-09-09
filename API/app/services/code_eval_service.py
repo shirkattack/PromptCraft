@@ -525,11 +525,36 @@ def run_tests(
         "exception",
         passed,
         total,
-        f"{exc_type}: {_short(message, 80)} while running `{_short(assertion)}`.",
+        f"{_explain_exception(exc_type, message)} while running `{_short(assertion)}`.",
         first_failure.traceback,
         run.results,
         base_count,
     )
+
+
+_UNDEFINED_NAME = re.compile(r"name '(\w+)' is not defined")
+
+
+def _explain_exception(exc_type: str, message: str) -> str:
+    """Make the common exceptions say what to change, not just what broke.
+
+    A NameError on a standard-library module means the code used it without
+    importing it; said plainly, a reflection model does not conclude that
+    imports are forbidden.
+    """
+    if exc_type == "NameError":
+        match = _UNDEFINED_NAME.search(message)
+        if match and match.group(1) in sys.stdlib_module_names:
+            module = match.group(1)
+            return (
+                f"NameError: the code uses `{module}` without importing it; "
+                f"add `import {module}` inside the code block"
+            )
+        if match:
+            return (
+                f"NameError: `{match.group(1)}` is used but never defined or imported"
+            )
+    return f"{exc_type}: {_short(message, 80)}"
 
 
 # -- entry points used by the metrics ------------------------------------------

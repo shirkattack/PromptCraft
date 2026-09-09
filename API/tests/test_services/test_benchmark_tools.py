@@ -377,6 +377,25 @@ class TestBuildScript:
             == "pass"
         )
 
+    def test_missing_import_feedback_names_the_fix(self):
+        code = "def area(r):\n    return math.pi * r * r"
+        result = run_tests(
+            code, ["assert area(0) == 0"], [], "area", timeout_s=5, memory_mb=256
+        )
+        assert result.status == "exception"
+        assert result.feedback.startswith(
+            "NameError: the code uses `math` without importing it; add `import math`"
+        )
+        other = run_tests(
+            "def f():\n    return helper()",
+            ["assert f()"],
+            [],
+            "f",
+            timeout_s=5,
+            memory_mb=256,
+        )
+        assert "`helper` is used but never defined or imported" in other.feedback
+
     def test_setup_imports_do_not_leak_into_the_solution(self):
         code = "def area(r):\n    return math.pi * r * r"  # forgot: import math
         tests = ["assert __close(area(1), 3.141592653589793, 1e-06)"]
