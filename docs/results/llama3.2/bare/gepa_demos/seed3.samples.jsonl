@@ -25,12 +25,12 @@
 {"task_id": "Mbpp/626", "solution": "import math\n\ndef triangle_area(r):\n    if r <= 0:\n        return None\n    return (r**2)/2"}
 {"task_id": "Mbpp/758", "solution": "def unique_sublists(lst):\n  sublists = {}\n  for sub in lst:\n    sub = tuple(sub)\n    if sub in sublists:\n      sublists[sub] += 1\n    else:\n      sublists[sub] = 1\n  return sublists"}
 {"task_id": "Mbpp/735", "solution": "def toggle_middle_bits(n):\n    return n ^ ((n >> 1) & ((1 << (n.bit_length() - 1)) - 1)) | ((n << 1) & ~((1 << (n.bit_length() - 1)) - 1))"}
-{"task_id": "Mbpp/791", "solution": "def remove_nested(t):\n    result = []\n    for item in t:\n        if isinstance(item, tuple):\n            result.extend(remove_nested(item))\n        else:\n            result.append(item)\n    return result\n```"}
+{"task_id": "Mbpp/791", "solution": "def remove_nested(t):\n    result = []\n    for item in t:\n        if isinstance(item, tuple):\n            result.extend(remove_nested(item))\n        else:\n            result.append(item)\n    return result"}
 {"task_id": "Mbpp/637", "solution": "def noprofit_noloss(amount, cost):\n  return amount == cost"}
 {"task_id": "Mbpp/451", "solution": "def remove_whitespaces(s):\n  return s.replace(\" \", \"\")"}
 {"task_id": "Mbpp/794", "solution": "import re\ndef text_starta_endb(s):\n  return bool(re.match(r'^a.*b$', s))"}
 {"task_id": "Mbpp/132", "solution": "def tup_string(tup):\n  return ''.join(filter(str.isalpha, tup))"}
-{"task_id": "Mbpp/463", "solution": "def max_subarray_product(arr):\n    max_product = arr[0]\n    min_product = arr[0]\n    result = arr[0]\n\n    for i in range(1, len(arr)):\n        if arr[i] < 0:\n            max_product, min_product = min_product, max_product\n\n        max_product = max(arr[i], max_product * arr[i])\n        min_product = min(arr[i], min_product * arr[i])\n\n        result = max(result, max_product)\n\n    return result\n```"}
+{"task_id": "Mbpp/463", "solution": "def max_subarray_product(arr):\n    max_product = arr[0]\n    min_product = arr[0]\n    result = arr[0]\n\n    for i in range(1, len(arr)):\n        if arr[i] < 0:\n            max_product, min_product = min_product, max_product\n\n        max_product = max(arr[i], max_product * arr[i])\n        min_product = min(arr[i], min_product * arr[i])\n\n        result = max(result, max_product)\n\n    return result"}
 {"task_id": "Mbpp/630", "solution": "def get_coordinates(coord):\n  x, y = coord\n  return [[x-1, y], [x, y-1], [x+1, y], [x, y+1]]"}
 {"task_id": "Mbpp/91", "solution": "def find_substring(lst, sub):\n  return sub in lst"}
 {"task_id": "Mbpp/237", "solution": "def check_occurences(lst):\n  count_dict = {}\n  for t in lst:\n    if t in count_dict:\n      count_dict[t] += 1\n    else:\n      count_dict[t] = 1\n  return {k:v for k,v in count_dict.items() if v>1}"}
@@ -44,7 +44,7 @@
 {"task_id": "Mbpp/108", "solution": "def merge_sorted_list(list1, list2, list3):\n  merged_list = list1 + list2 + list3\n  return sorted(merged_list)"}
 {"task_id": "Mbpp/266", "solution": "def lateralsurface_cube(a):\n  return 4*a**2"}
 {"task_id": "Mbpp/730", "solution": "def consecutive_duplicates(lst):\n  result = []\n  for i in lst:\n    if not result or i != result[-1]:\n      result.append(i)\n  return result"}
-{"task_id": "Mbpp/475", "solution": "def sort_counter(counter):\n  return sorted(counter.items(), key=lambda x: x[1], reverse=True)\n```"}
+{"task_id": "Mbpp/475", "solution": "def sort_counter(counter):\n  return sorted(counter.items(), key=lambda x: x[1], reverse=True)"}
 {"task_id": "Mbpp/413", "solution": "def extract_nth_element(tuples, n):\n  return [t[n] for t in tuples]"}
 {"task_id": "Mbpp/96", "solution": "def divisor(n):\n  count = 0\n  for i in range(1, n + 1):\n    if n % i == 0:\n      count += 1\n  return count"}
 {"task_id": "Mbpp/227", "solution": "def min_of_three(a, b, c):\n  return min(a, b, c)"}
@@ -67,10 +67,10 @@
 {"task_id": "Mbpp/64", "solution": "def subject_marks(tuples):\n  return sorted(tuples, key=lambda x: x[1])"}
 {"task_id": "Mbpp/456", "solution": "def reverse_string_list(lst):\n  return [s[::-1] for s in lst]"}
 {"task_id": "Mbpp/267", "solution": "def square_Sum(n):\n  return sum(i**2 for i in range(n*2, 1, -2))"}
-{"task_id": "Mbpp/723", "solution": "def count_same_pair(list1, list2):\n  return sum(1 for a, b in zip(list1, list2) if a == b)\n```"}
+{"task_id": "Mbpp/723", "solution": "def count_same_pair(list1, list2):\n  return sum(1 for a, b in zip(list1, list2) if a == b)"}
 {"task_id": "Mbpp/748", "solution": "def capital_words_spaces(s):\n  result = ''\n  for char in s:\n    if char.isupper():\n      if result and result[-1] != ' ':\n        result += ' '\n    result += char\n  return result"}
 {"task_id": "Mbpp/447", "solution": "def cube_nums(nums):\n  return [n**3 for n in nums]"}
-{"task_id": "Mbpp/726", "solution": "def multiply_elements(t):\n  return tuple(t[i] * t[i+1] for i in range(len(t) - 1))\n```"}
+{"task_id": "Mbpp/726", "solution": "def multiply_elements(t):\n  return tuple(t[i] * t[i+1] for i in range(len(t) - 1))"}
 {"task_id": "Mbpp/478", "solution": "def remove_lowercase(s):\n  return s.replace('l', '').replace('o', '').replace('e', '').replace('i', '').replace('a', '').replace('n', '')"}
 {"task_id": "Mbpp/18", "solution": "def remove_dirty_chars(s1, s2):\n  return ''.join([c for c in s1 if c not in s2])"}
 {"task_id": "Mbpp/239", "solution": "def get_total_number_of_sequences(m, n):\n  if n == 1:\n    return m\n  else:\n    return sum(1 for i in range(2, m+1) if i <= m)"}
@@ -80,7 +80,7 @@
 {"task_id": "Mbpp/477", "solution": "def is_lower(s):\n    return s.lower()"}
 {"task_id": "Mbpp/388", "solution": "def highest_Power_of_2(n):\n  power = 0\n  while 2**power <= n:\n    power += 1\n  return 2**(power - 1)"}
 {"task_id": "Mbpp/631", "solution": "def replace_spaces(string):\n  return string.replace(' ', '_').replace('_', ' ')"}
-{"task_id": "Mbpp/276", "solution": "def volume_cylinder(r, h):\n  return math.pi * r**2 * h\n```"}
+{"task_id": "Mbpp/276", "solution": "import math\n\ndef volume_cylinder(r, h):\n  return math.pi * r**2 * h"}
 {"task_id": "Mbpp/137", "solution": "import math\n\ndef zero_count(arr):\n  non_zeros = sum(1 for x in arr if x != 0)\n  return non_zeros / len(arr) if arr else 0"}
 {"task_id": "Mbpp/102", "solution": "def snake_to_camel(s):\n  words = s.split('_')\n  return words[0] + ''.join(word.capitalize() for word in words[1:])"}
 {"task_id": "Mbpp/406", "solution": "def find_Parity(n):\n  return n % 2 == 0"}
@@ -91,7 +91,7 @@
 {"task_id": "Mbpp/99", "solution": "def decimal_to_binary(n):\n    return bin(n)[2:]"}
 {"task_id": "Mbpp/109", "solution": "def odd_Equivalent(s, n):\n  count = 0\n  for i in range(n):\n    if s[i] == '1':\n      count += 1\n    s = s[-1] + s[:-1]\n  return count"}
 {"task_id": "Mbpp/472", "solution": "def check_Consecutive(lst):\n  return all(lst[i] + 1 == lst[i+1] for i in range(len(lst)-1))"}
-{"task_id": "Mbpp/787", "solution": "def text_match_three(s):\n  return s == \"abb\"\n```"}
+{"task_id": "Mbpp/787", "solution": "def text_match_three(s):\n  return s == \"abb\""}
 {"task_id": "Mbpp/171", "solution": "import math\n\ndef perimeter_pentagon(a):\n  return 5*a"}
 {"task_id": "Mbpp/113", "solution": "def check_integer(num):\n  try:\n    int(num)\n    return True\n  except ValueError:\n    return False"}
 {"task_id": "Mbpp/279", "solution": "def is_num_decagonal(n):\n    def decagonal_number(k):\n        return 10*k**2 - 10*k + 1\n    return decagonal_number(n)"}
@@ -117,21 +117,21 @@
 {"task_id": "Mbpp/278", "solution": "def count_first_elements(tup):\n  count = 0\n  for elem in tup:\n    if isinstance(elem, tuple):\n      break\n    count += 1\n  return count"}
 {"task_id": "Mbpp/165", "solution": "def count_char_position(s):\n  alphabet = 'abcdefghijklmnopqrstuvwxyz'\n  count = 0\n  for char in s.lower():\n    if char in alphabet:\n      count += 1\n  return count"}
 {"task_id": "Mbpp/643", "solution": "def text_match_wordz_middle(text):\n  return 'z' in text[1:-1]"}
-{"task_id": "Mbpp/280", "solution": "def sequential_search(arr, elem):\n  for i in range(len(arr)):\n    if arr[i] == elem:\n      return (True, i)\n  return (False, -1)\n```"}
-{"task_id": "Mbpp/457", "solution": "def Find_Min(lst):\n    return min(lst, key=len)\n```"}
+{"task_id": "Mbpp/280", "solution": "def sequential_search(arr, elem):\n  for i in range(len(arr)):\n    if arr[i] == elem:\n      return (True, i)\n  return (False, -1)"}
+{"task_id": "Mbpp/457", "solution": "def Find_Min(lst):\n    return min(lst, key=len)"}
 {"task_id": "Mbpp/62", "solution": "def smallest_num(lst):\n  return min(lst)"}
-{"task_id": "Mbpp/750", "solution": "def add_tuple(lst, tup):\n  return lst + list(tup)\n```"}
-{"task_id": "Mbpp/300", "solution": "def count_binary_seq(n):\n  count = 0\n  for i in range(2**n):\n    bin_i = bin(i)[2:].zfill(n)\n    if sum(int(bit) for bit in bin_i[:n]) == sum(int(bit) for bit in bin_i[n:]):\n      count += 1\n  return count\n```"}
+{"task_id": "Mbpp/750", "solution": "def add_tuple(lst, tup):\n  return lst + list(tup)"}
+{"task_id": "Mbpp/300", "solution": "import math\n\ndef count_binary_seq(n):\n  count = 0\n  for i in range(2**n):\n    bin_i = bin(i)[2:].zfill(n)\n    if sum(int(bit) for bit in bin_i[:n]) == sum(int(bit) for bit in bin_i[n:]):\n      count += 1\n  return count"}
 {"task_id": "Mbpp/127", "solution": "def multiply_int(a, b):\n  return a * b"}
 {"task_id": "Mbpp/749", "solution": "def sort_numeric_strings(arr):\n  return sorted([int(i) for i in arr])"}
-{"task_id": "Mbpp/103", "solution": "def eulerian_num(n, m):\n    if n == m:\n        return 1\n    if n < 1 or m < 1:\n        return 0\n    return eulerian_num(n-1, m-1) + eulerian_num(n-1, m) + eulerian_num(n, m-1)\n```"}
-{"task_id": "Mbpp/792", "solution": "def count_list(lst):\n  return len(lst)\n```"}
+{"task_id": "Mbpp/103", "solution": "def eulerian_num(n, m):\n    if n == m:\n        return 1\n    if n < 1 or m < 1:\n        return 0\n    return eulerian_num(n-1, m-1) + eulerian_num(n-1, m) + eulerian_num(n, m-1)"}
+{"task_id": "Mbpp/792", "solution": "def count_list(lst):\n  return len(lst)"}
 {"task_id": "Mbpp/19", "solution": "def test_duplicate(arr):\n  return len(arr) == len(set(arr))"}
 {"task_id": "Mbpp/741", "solution": "def all_Characters_Same(s):\n  return len(set(s)) == 1"}
 {"task_id": "Mbpp/240", "solution": "def replace_list(a, b):\n  a[-1:] = b\n  return a"}
-{"task_id": "Mbpp/620", "solution": "def largest_subset(nums):\n    nums.sort()\n    i = 0\n    while i < len(nums) - 1:\n        if nums[i] + nums[i + 1] % 2 != 0:\n            i += 1\n        else:\n            nums.pop(i)\n            nums.pop(i)\n    return len(nums)\n```"}
-{"task_id": "Mbpp/85", "solution": "def surfacearea_sphere(r):\n  return 4 * math.pi * r ** 2\n```"}
-{"task_id": "Mbpp/140", "solution": "def extract_singly(lst):\n    return set(num for sublist in lst for num in sublist)\n```"}
+{"task_id": "Mbpp/620", "solution": "def largest_subset(nums):\n    nums.sort()\n    i = 0\n    while i < len(nums) - 1:\n        if nums[i] + nums[i + 1] % 2 != 0:\n            i += 1\n        else:\n            nums.pop(i)\n            nums.pop(i)\n    return len(nums)"}
+{"task_id": "Mbpp/85", "solution": "import math\n\ndef surfacearea_sphere(r):\n  return 4 * math.pi * r ** 2"}
+{"task_id": "Mbpp/140", "solution": "def extract_singly(lst):\n    return set(num for sublist in lst for num in sublist)"}
 {"task_id": "Mbpp/583", "solution": "def catalan_number(n):\n    if n == 0:\n        return 1\n    catalan = [0 for i in range(n+1)]\n    catalan[0] = catalan[1] = 1\n    for i in range(2, n+1):\n        catalan[i] = 0\n        for j in range(i):\n            catalan[i] += catalan[j] * catalan[i-j-1]\n    return catalan[n]"}
 {"task_id": "Mbpp/641", "solution": "def is_nonagonal(n):\n  def nonagonal(n):\n    return (n*(n+1)*(n+2))//6\n  return nonagonal(n)"}
 {"task_id": "Mbpp/86", "solution": "def centered_hexagonal_number(n):\n    return 3*n**2 - n"}
@@ -145,7 +145,7 @@
 {"task_id": "Mbpp/82", "solution": "import math\n\ndef volume_sphere(r):\n  return (4/3)*math.pi*(r**3)"}
 {"task_id": "Mbpp/590", "solution": "import math\n\ndef polar_rect(r, theta):\n  x = r * math.cos(theta)\n  y = r * math.sin(theta)\n  return ((x, math.degrees(y)), (x, 0))"}
 {"task_id": "Mbpp/14", "solution": "def find_Volume(a, b, c):\n  s = (a + b + c) / 2\n  return (s*(s-a)*(s-b)*(s-c)) ** 0.5"}
-{"task_id": "Mbpp/603", "solution": "def get_ludic(n):\n    lucid = []\n    for i in range(1, n+1):\n        if sum(int(digit) for digit in str(i)) == i:\n            lucid.append(i)\n    return lucid\n```"}
+{"task_id": "Mbpp/603", "solution": "def get_ludic(n):\n    lucid = []\n    for i in range(1, n+1):\n        if sum(int(digit) for digit in str(i)) == i:\n            lucid.append(i)\n    return lucid"}
 {"task_id": "Mbpp/555", "solution": "def difference(n):\n  return sum(i**3 for i in range(1, n+1)) - sum(range(1, n+1))"}
 {"task_id": "Mbpp/230", "solution": "def replace_blank(s, c):\n  return s.replace(\" \", c)"}
 {"task_id": "Mbpp/775", "solution": "def odd_position(lst):\n    return all(lst[i] % 2 != 0 for i in range(len(lst)) if i % 2 != 0)"}
@@ -153,23 +153,23 @@
 {"task_id": "Mbpp/798", "solution": "def _sum(arr):\n  return sum(arr)"}
 {"task_id": "Mbpp/572", "solution": "def two_unique_nums(lst):\n  return list(set(lst))"}
 {"task_id": "Mbpp/297", "solution": "def flatten_list(nested_list):\n  result = []\n  for element in nested_list:\n    if type(element) == list:\n      result.extend(flatten_list(element))\n    else:\n      result.append(element)\n  return result"}
-{"task_id": "Mbpp/752", "solution": "def jacobsthal_num(n):\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 1\n    elif n == 2:\n        return 1\n    else:\n        a, b = 1, 1\n        for _ in range(2, n):\n            a, b = b, a + b\n        return b\n```"}
+{"task_id": "Mbpp/752", "solution": "def jacobsthal_num(n):\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 1\n    elif n == 2:\n        return 1\n    else:\n        a, b = 1, 1\n        for _ in range(2, n):\n            a, b = b, a + b\n        return b"}
 {"task_id": "Mbpp/75", "solution": "def find_tuples(tuples, k):\n  result = []\n  for t in tuples:\n    if all(i % k == 0 for i in t):\n      result.append(t)\n  return result"}
 {"task_id": "Mbpp/619", "solution": "def move_num(s):\n  import re\n  return re.sub(r'\\d+', '', s)"}
 {"task_id": "Mbpp/277", "solution": "def dict_filter(d, n):\n  return {k: v for k, v in d.items() if v >= n}"}
-{"task_id": "Mbpp/65", "solution": "def recursive_list_sum(lst):\n    total = 0\n    for i in lst:\n        if isinstance(i, list):\n            total += recursive_list_sum(i)\n        else:\n            total += i\n    return total\n```"}
-{"task_id": "Mbpp/635", "solution": "def heap_sort(arr):\n    def heapify(arr, n, i):\n        largest = i\n        left = 2 * i + 1\n        right = 2 * i + 2\n        if left < n and arr[i] < arr[left]:\n            largest = left\n        if right < n and arr[largest] < arr[right]:\n            largest = right\n        if largest != i:\n            arr[i], arr[largest] = arr[largest], arr[i]\n            heapify(arr, n, largest)\n    n = len(arr)\n    for i in range(n // 2 - 1, -1, -1):\n        heapify(arr, n, i)\n    for i in range(n - 1, 0, -1):\n        arr[i], arr[0] = arr[0], arr[i]\n        heapify(arr, i, 0)\n    return arr\n```"}
+{"task_id": "Mbpp/65", "solution": "def recursive_list_sum(lst):\n    total = 0\n    for i in lst:\n        if isinstance(i, list):\n            total += recursive_list_sum(i)\n        else:\n            total += i\n    return total"}
+{"task_id": "Mbpp/635", "solution": "def heap_sort(arr):\n    def heapify(arr, n, i):\n        largest = i\n        left = 2 * i + 1\n        right = 2 * i + 2\n        if left < n and arr[i] < arr[left]:\n            largest = left\n        if right < n and arr[largest] < arr[right]:\n            largest = right\n        if largest != i:\n            arr[i], arr[largest] = arr[largest], arr[i]\n            heapify(arr, n, largest)\n    n = len(arr)\n    for i in range(n // 2 - 1, -1, -1):\n        heapify(arr, n, i)\n    for i in range(n - 1, 0, -1):\n        arr[i], arr[0] = arr[0], arr[i]\n        heapify(arr, i, 0)\n    return arr"}
 {"task_id": "Mbpp/593", "solution": "def removezero_ip(ip):\n  return ip.replace('.0', '.').replace('0.', '.')"}
 {"task_id": "Mbpp/92", "solution": "def is_undulating(n):\n    count = 1\n    for i in str(n):\n        if i == '1':\n            count += 1\n        else:\n            if count != 1:\n                return False\n            count = 1\n    return True"}
 {"task_id": "Mbpp/724", "solution": "def power_base_sum(base, power):\n  result = base ** power\n  return sum(int(digit) for digit in str(result))"}
 {"task_id": "Mbpp/80", "solution": "def tetrahedral_number(n):\n  return n*(n+1)*(n+2)//6"}
 {"task_id": "Mbpp/562", "solution": "def Find_Max_Length(lists):\n  return max(len(sublist) for sublist in lists)"}
 {"task_id": "Mbpp/610", "solution": "def remove_kth_element(lst, k):\n  return lst[:k-1] + lst[k:]"}
-{"task_id": "Mbpp/765", "solution": "def is_polite(n):\n    def is_prime(num):\n        if num < 2:\n            return False\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                return False\n        return True\n\n    def is_polite(num):\n        sum = 0\n        for i in range(1, num):\n            if is_prime(i) and is_prime(num // i):\n                sum += i\n        return sum == num\n\n    return is_polite(n)\n```"}
+{"task_id": "Mbpp/765", "solution": "def is_polite(n):\n    def is_prime(num):\n        if num < 2:\n            return False\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                return False\n        return True\n\n    def is_polite(num):\n        sum = 0\n        for i in range(1, num):\n            if is_prime(i) and is_prime(num // i):\n                sum += i\n        return sum == num\n\n    return is_polite(n)"}
 {"task_id": "Mbpp/77", "solution": "def is_Diff(n):\n  return n % 11 != 0"}
 {"task_id": "Mbpp/265", "solution": "def list_split(lst, n):\n  return [lst[i:i+n] for i in range(0, len(lst), n)]"}
 {"task_id": "Mbpp/577", "solution": "def last_Digit_Factorial(n):\n  if n == 0:\n    return 1\n  else:\n    return (last_Digit_Factorial(n-1) * n) % 10"}
-{"task_id": "Mbpp/587", "solution": "def list_tuple(lst):\n  return tuple(lst)\n```"}
+{"task_id": "Mbpp/587", "solution": "def list_tuple(lst):\n  return tuple(lst)"}
 {"task_id": "Mbpp/11", "solution": "def remove_Occ(s, c):\n  if c in s:\n    return s[1:-1].replace(c, '')\n  else:\n    return s"}
 {"task_id": "Mbpp/105", "solution": "def count(lst):\n    return sum(1 for x in lst if x)"}
 {"task_id": "Mbpp/168", "solution": "def frequency(lst, num):\n  return lst.count(num)"}
@@ -180,7 +180,7 @@
 {"task_id": "Mbpp/573", "solution": "def unique_product(arr):\n  unique_nums = set(arr)\n  product = 1\n  for num in unique_nums:\n    product *= num\n  return product"}
 {"task_id": "Mbpp/739", "solution": "def find_Index(n):\n    i = 1\n    while True:\n        triangular_num = (i * (i + 1)) // 2\n        if len(str(triangular_num)) == n:\n            return i\n        i += 1"}
 {"task_id": "Mbpp/753", "solution": "def min_k(tuples, k):\n  return sorted(tuples, key=lambda x: x[1])[:k]"}
-{"task_id": "Mbpp/409", "solution": "def min_product_tuple(lst):\n    return min(t[0]*t[1] for t in lst)\n```"}
+{"task_id": "Mbpp/409", "solution": "def min_product_tuple(lst):\n    return min(t[0]*t[1] for t in lst)"}
 {"task_id": "Mbpp/796", "solution": "def return_sum(d):\n  return sum(d.values())"}
 {"task_id": "Mbpp/56", "solution": "def check(n):\n  s = str(n)[::-1]\n  return n == int(s) - 1"}
 {"task_id": "Mbpp/12", "solution": "def sort_matrix(matrix):\n    return sorted(matrix, key=sum)"}
@@ -194,5 +194,5 @@
 {"task_id": "Mbpp/638", "solution": "import math\n\ndef wind_chill(v, t):\n  return round(math.floor(13.12 * (v**0.16667) + 0.6215 * t - 11.37 * (v**0.16667) * math.cos(math.radians(5 * t)) + 0.3965 * t * math.sin(math.radians(5 * t))))"}
 {"task_id": "Mbpp/93", "solution": "def power(a, b):\n  return a ** b"}
 {"task_id": "Mbpp/6", "solution": "def differ_At_One_Bit_Pos(a, b):\n  return bin(a ^ b).count('1') == 1"}
-{"task_id": "Mbpp/106", "solution": "def add_lists(lst, tup):\n  return tup + lst\n```"}
+{"task_id": "Mbpp/106", "solution": "def add_lists(lst, tup):\n  return tup + lst"}
 {"task_id": "Mbpp/474", "solution": "def replace_char(s, old, new):\n  return s.replace(old, new)"}

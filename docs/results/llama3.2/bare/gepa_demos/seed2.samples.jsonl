@@ -23,7 +23,7 @@
 {"task_id": "Mbpp/256", "solution": "def count_Primes_nums(n):\n  def is_prime(num):\n    if num < 2:\n      return False\n    for i in range(2, int(num**0.5) + 1):\n      if num % i == 0:\n        return False\n    return True\n\n  count = 0\n  for i in range(2, n):\n    if is_prime(i):\n      count += 1\n  return count"}
 {"task_id": "Mbpp/608", "solution": "def bell_number(n):\n  if n == 0:\n    return 0\n  elif n == 1:\n    return 1\n  else:\n    a, b = 0, 1\n    for _ in range(2, n+1):\n      a, b = b, a + b\n    return b"}
 {"task_id": "Mbpp/626", "solution": "import math\n\ndef triangle_area(r):\n  if r <= 0:\n    return None\n  return (r**2)/2"}
-{"task_id": "Mbpp/758", "solution": "def unique_sublists(lst):\n  sublists = {}\n  for sub in lst:\n    sub = tuple(sub)\n    if sub in sublists:\n      sublists[sub] += 1\n    else:\n      sublists[sub] = 1\n  return sublists\n```"}
+{"task_id": "Mbpp/758", "solution": "def unique_sublists(lst):\n  sublists = {}\n  for sub in lst:\n    sub = tuple(sub)\n    if sub in sublists:\n      sublists[sub] += 1\n    else:\n      sublists[sub] = 1\n  return sublists"}
 {"task_id": "Mbpp/735", "solution": "def toggle_middle_bits(n):\n  return n ^ ((n >> 1) & ((1 << (n.bit_length() - 1)) - 1)) | ((n << 1) & ~((1 << (n.bit_length() - 1)) - 1))"}
 {"task_id": "Mbpp/791", "solution": "def remove_nested(tup):\n  return tuple(i for i in tup if not isinstance(i, tuple))"}
 {"task_id": "Mbpp/637", "solution": "def noprofit_noloss(amount, cost):\n  return amount == cost"}
@@ -130,7 +130,7 @@
 {"task_id": "Mbpp/741", "solution": "def all_Characters_Same(s):\n  return len(set(s)) == 1"}
 {"task_id": "Mbpp/240", "solution": "def replace_list(list1, list2):\n  list1[-1:] = list2\n  return list1"}
 {"task_id": "Mbpp/620", "solution": "def largest_subset(nums):\n  nums.sort()\n  subset = [nums[0]]\n  for i in range(1, len(nums)):\n    if nums[i] % subset[-1] == 0:\n      subset.append(nums[i])\n  return len(subset)"}
-{"task_id": "Mbpp/85", "solution": "def surfacearea_sphere(r):\n  return 4 * math.pi * r ** 2"}
+{"task_id": "Mbpp/85", "solution": "import math\n\ndef surfacearea_sphere(r):\n  return 4 * math.pi * r ** 2"}
 {"task_id": "Mbpp/140", "solution": "def extract_singly(lst):\n  return set(num for sublist in lst for num in sublist)"}
 {"task_id": "Mbpp/583", "solution": "def catalan_number(n):\n  if n == 0:\n    return 1\n  catalan = [0 for i in range(n+1)]\n  catalan[0] = catalan[1] = 1\n  for i in range(2, n+1):\n    catalan[i] = 0\n    for j in range(i):\n      catalan[i] += catalan[j]*catalan[i-j-1]\n  return catalan[n]"}
 {"task_id": "Mbpp/641", "solution": "def is_nonagonal(n):\n  def nonagonal(n):\n    return (n*(n+1)*(n+2))//6\n  return nonagonal(n)"}
@@ -153,12 +153,12 @@
 {"task_id": "Mbpp/798", "solution": "def _sum(arr):\n  return sum(arr)"}
 {"task_id": "Mbpp/572", "solution": "def two_unique_nums(lst):\n  return list(set(lst))"}
 {"task_id": "Mbpp/297", "solution": "def flatten_list(nested_list):\n  flat_list = []\n  for element in nested_list:\n    if type(element) == list:\n      flat_list.extend(flatten_list(element))\n    else:\n      flat_list.append(element)\n  return flat_list"}
-{"task_id": "Mbpp/752", "solution": "def jacobsthal_num(n):\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 1\n    elif n == 2:\n        return 3\n    else:\n        a, b = 0, 1\n        for _ in range(2, n+1):\n            a, b = b, a + b + b\n        return b\n```"}
+{"task_id": "Mbpp/752", "solution": "def jacobsthal_num(n):\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 1\n    elif n == 2:\n        return 3\n    else:\n        a, b = 0, 1\n        for _ in range(2, n+1):\n            a, b = b, a + b + b\n        return b"}
 {"task_id": "Mbpp/75", "solution": "def find_tuples(tuples, k):\n  result = []\n  for t in tuples:\n    if all(i % k == 0 for i in t):\n      result.append(t)\n  return result"}
 {"task_id": "Mbpp/619", "solution": "def move_num(s):\n  import re\n  return re.sub(r'\\d+', '', s)"}
 {"task_id": "Mbpp/277", "solution": "def dict_filter(d, n):\n  return {k: v for k, v in d.items() if v >= n}"}
-{"task_id": "Mbpp/65", "solution": "def recursive_list_sum(lst):\n  total = 0\n  for i in lst:\n    if isinstance(i, list):\n      total += recursive_list_sum(i)\n    else:\n      total += i\n  return total\n```"}
-{"task_id": "Mbpp/635", "solution": "def heap_sort(arr):\n  def heapify(arr, n, i):\n    largest = i\n    left = 2 * i + 1\n    right = 2 * i + 2\n    if left < n and arr[i] < arr[left]:\n      largest = left\n    if right < n and arr[largest] < arr[right]:\n      largest = right\n    if largest != i:\n      arr[i], arr[largest] = arr[largest], arr[i]\n      heapify(arr, n, largest)\n  n = len(arr)\n  for i in range(n // 2 - 1, -1, -1):\n    heapify(arr, n, i)\n  for i in range(n - 1, 0, -1):\n    arr[0], arr[i] = arr[i], arr[0]\n    heapify(arr, i, 0)\n  return arr\n```"}
+{"task_id": "Mbpp/65", "solution": "def recursive_list_sum(lst):\n  total = 0\n  for i in lst:\n    if isinstance(i, list):\n      total += recursive_list_sum(i)\n    else:\n      total += i\n  return total"}
+{"task_id": "Mbpp/635", "solution": "def heap_sort(arr):\n  def heapify(arr, n, i):\n    largest = i\n    left = 2 * i + 1\n    right = 2 * i + 2\n    if left < n and arr[i] < arr[left]:\n      largest = left\n    if right < n and arr[largest] < arr[right]:\n      largest = right\n    if largest != i:\n      arr[i], arr[largest] = arr[largest], arr[i]\n      heapify(arr, n, largest)\n  n = len(arr)\n  for i in range(n // 2 - 1, -1, -1):\n    heapify(arr, n, i)\n  for i in range(n - 1, 0, -1):\n    arr[0], arr[i] = arr[i], arr[0]\n    heapify(arr, i, 0)\n  return arr"}
 {"task_id": "Mbpp/593", "solution": "def removezero_ip(ip):\n  return ip.replace('.0', '.').replace('0.', '.')"}
 {"task_id": "Mbpp/92", "solution": "def is_undulating(n):\n  bin_str = bin(n)[2:]\n  for i in range(len(bin_str)-1):\n    if bin_str[i] != bin_str[i+1]:\n      return False\n  return True"}
 {"task_id": "Mbpp/724", "solution": "def power_base_sum(base, power):\n  result = base ** power\n  return sum(int(digit) for digit in str(result))"}

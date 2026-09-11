@@ -134,18 +134,20 @@ The 50/50 runs set `train_ratio` on the GEPA service directly; the UI always use
 
 | Method | Bare prompt | Fixed prompt |
 |---|---|---|
-| original | 43.9% | 40.4% |
-| one_line | 40.4% (-3.5 pp) | — |
-| random_demos (4) | 56.4% (+12.5 pp, CI +8.9 to +16.0) | 56.7% (+16.3 pp, CI +12.8 to +20.0) |
-| coverage_demos (4) | 56.6% (+12.6 pp) | 56.6% (+16.2 pp) |
-| gepa (500 calls, qwen3.6:27b reflector) | 49.0% (+5.1 pp, CI +1.2 to +8.8) | 41.4% (+1.0 pp, CI -2.7 to +4.9) |
-| gepa_demos | 53.2% | 56.4% |
+| original | 44.9% | 43.9% |
+| one_line | 43.9% (-1.0 pp, CI -5.6 to +3.5) | — |
+| random_demos (4) | 56.4% (+11.4 pp, CI +6.2 to +16.5) | 56.7% (+12.8 pp, CI +7.1 to +18.2) |
+| coverage_demos (4) | 56.6% (+11.6 pp) | 56.6% (+12.6 pp) |
+| gepa (500 calls, qwen3.6:27b reflector) | 50.8% (+5.9 pp, CI +0.7 to +11.3) | 43.1% (-0.8 pp, CI -6.2 to +4.4) |
+| gepa_demos | 56.6% | 56.4% |
 
-Four few-shot examples are the only method that clearly beats the original prompt, by 12 to 16 points with intervals well clear of zero; random and coverage selection are indistinguishable. GEPA alone gains five points on the bare prompt and nothing significant on the fixed one, moves five to seven points across seeds, and its val gains overstate its test gains. GEPA's instructions on top of demos add nothing. The one-line format instruction costs this model three points. A demo run takes 2 to 5 minutes; a GEPA run about 24.
+Four few-shot examples are the only method that clearly beats the original prompt, by 11 to 13 points with intervals clear of zero; random and coverage selection are indistinguishable. GEPA alone gains six points on the bare prompt, with an interval that barely clears zero, and nothing on the fixed one; it moves six to eight points across seeds, and its val gains overstate its test gains. GEPA's instructions on top of demos add nothing. The one-line format instruction makes no measurable difference. A demo run takes 2 to 5 minutes; a GEPA run about 24.
 
-A second task model reverses the picture. qwen3.5 4B on the same split and bare prompt scores 65.7% plus with the original prompt and every method lands below it: one_line -4.0 pp, random demos -3.2 pp, coverage demos -5.1 pp, GEPA -2.7 pp (CI -5.4 to +0.0). GEPA's val gain (63.3% to 68.9%) did not carry to test, and all three of its returned prompts describe specific training tasks the reflector saw fail. The demo gain is a property of the weaker model, not of the method, and the app's held-out comparison against the original is what catches this.
+A second task model changes the picture. qwen3.5 4B scores 65.7% plus with the bare prompt, and no method beats it: one_line -4.0 pp, random demos -3.2 pp, coverage demos -5.1 pp, GEPA -2.4 pp, every interval including zero. GEPA's val gain (63.3% to 68.9%) did not carry to test, all three of its returned prompts describe specific training tasks the reflector saw fail, and its answers hit the 512-token cap up to three times as often as the original prompt's. The demo gain is a property of the weaker model, not of the method, and the app's held-out comparison against the original is what catches this.
 
-The harness agrees with EvalPlus on every one of the 198 test tasks for the anchor prompt (97 base, 80 plus). One finding along the way matters beyond the benchmark: the app had been talking to Ollama through litellm's generate API, which flattens few-shot examples into one turn; small models then copy the example instead of solving the task. Through the chat API the same four demos went from 8 to 18 correct on a 30-task slice, and the app now uses it everywhere.
+These numbers were re-scored on 2026-09-11. Code extraction had dropped `import` lines written above an unfenced function, and had turned working code followed by a stray fence, a garbled DSPy marker or a closing brace into a syntax error; both hit unfenced answers, which the original and GEPA prompts produce and demos do not. The raw answers were replayed from DSPy's cache rather than regenerated (`scripts/rescore_results.py`). The confidence intervals had also treated three seeds as independent samples of the test set; they now resample tasks. Val scores and GEPA's own search were not redone. GEPA's default reflection prompt turned out to be why its instructions name training tasks; [docs/results/README.md](docs/results/README.md) has the configuration review and the leak guard the service now uses for code.
+
+For the same code, the harness agrees with EvalPlus on every one of the 198 test tasks. One finding along the way matters beyond the benchmark: the app had been talking to Ollama through litellm's generate API, which flattens few-shot examples into one turn; small models then copy the example instead of solving the task. Through the chat API the same four demos went from 8 to 18 correct on a 30-task slice, and the app now uses it everywhere.
 
 ## Configuration
 

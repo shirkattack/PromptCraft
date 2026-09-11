@@ -80,6 +80,43 @@ class TestExtractCode:
         assert extract_code("", "add") is None
         assert extract_code("I cannot help with that.", "add") is None
 
+    def test_stray_fence_and_dspy_markers_after_the_code_are_cut(self):
+        code = GOOD.strip("\n")
+        for trailer in ("```", "[[ ## completed ## ]]", "[/## completed ## ]]", "[/]"):
+            assert extract_code(f"{code}\n{trailer}", "add") == code
+            assert extract_code(f"{code}\n{trailer}\nSome prose.", "add") == code
+            assert extract_code(f"```python\n{code}\n{trailer}\n```", "add") == code
+
+    def test_imports_and_helpers_above_an_unfenced_function_are_kept(self):
+        code = "import math\n\ndef area(r):\n    return math.pi * r * r"
+        assert extract_code(code, "area") == code
+        assert extract_code(f"Sure, here it is:\n{code}\n", "area") == code
+        helper = "def double(x):\n    return 2 * x\n\ndef add(a, b):\n    return double(a) + b"
+        assert extract_code(helper, "add") == helper
+        result = _run(helper.replace("double(a) + b", "a + b"))
+        assert result.status == "pass"
+
+    def test_prose_between_import_and_function_stops_the_walk(self):
+        text = "import math\nThe function below uses it.\ndef area(r):\n    return r"
+        assert extract_code(text, "area") == "def area(r):\n    return r"
+
+    def test_trailing_junk_that_breaks_parsing_is_dropped(self):
+        code = GOOD.strip("\n")
+        for junk in ("}", '"""', "]", "[/output]", "This function adds two numbers."):
+            assert extract_code(f"{code}\n{junk}", "add") == code
+
+    def test_code_broken_inside_the_function_stays_broken(self):
+        truncated = 'def add(a, b):\n    """Add two numbers.\n    Returns the sum'
+        assert extract_code(truncated, "add") == truncated
+        assert _run(truncated).status == "syntax_error"
+        # A complete helper does not stand in for a truncated entry point.
+        text = "def helper(x):\n    return x\n\ndef add(a, b):\n    return (a +"
+        assert extract_code(text, "add") == text
+
+    def test_list_literal_lines_are_not_mistaken_for_markers(self):
+        code = "def add(a, b):\n    total = [\n        a,\n        b,\n    ]\n    return sum(total)"
+        assert extract_code(code, "add") == code
+
 
 class TestRunTests:
     def test_all_pass(self):

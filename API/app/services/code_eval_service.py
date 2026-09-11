@@ -193,15 +193,85 @@ class CodeEvalResult:
 
 _FENCE = re.compile(r"```[ \t]*(?:python|py|python3)?[ \t]*\r?\n(.*?)```", re.S | re.I)
 _ANY_DEF = re.compile(r"^[ \t]*(?:async[ \t]+)?def[ \t]+\w+[ \t]*\(", re.M)
+# A line no Python module starts with, left behind after the code: a stray
+# closing fence, or a garbled DSPy field marker such as "[[ ## completed ## ]]",
+# "[/## completed ## ]]" or "[/]".
+_TRAILER = re.compile(r"^[ \t]*(?:```|\[+[ \t]*/|\[+[ \t]*##)", re.M)
+
+
+_TOP_LEVEL = re.compile(
+    r"^(?:import[ \t]+\w|from[ \t]+[\w.]+[ \t]+import[ \t]"
+    r"|(?:async[ \t]+)?def[ \t]+\w|class[ \t]+\w|@\w)",
+    re.M,
+)
+
+
+def _preamble_start(text: str, start: int) -> int:
+    """Move ``start`` back over imports and helpers written above the function.
+
+    Returns the earliest top-level ``import``/``from``/``def``/``class``/
+    decorator line whose code up to ``start`` parses on its own, so prose in
+    between stops the walk. Without this an unfenced answer that starts with
+    ``import math`` loses the import and fails with a NameError.
+    """
+    for match in _TOP_LEVEL.finditer(text, 0, start):
+        try:
+            ast.parse(text[match.start() : start])
+        except SyntaxError:
+            continue
+        return match.start()
+    return start
+
+
+def _parseable_prefix(code: str, entry_point: str) -> str:
+    """Drop trailing lines that stop the code from parsing, when that is all.
+
+    A model answer sometimes ends with a stray ``}``, closing quotes or a
+    garbled marker after an otherwise complete function. When ``code`` does
+    not parse, returns the longest prefix ending before a top-level line that
+    parses and still defines ``entry_point``; otherwise ``code`` unchanged, so
+    code that is broken inside the function stays a syntax error.
+    """
+    try:
+        ast.parse(code)
+        return code
+    except SyntaxError:
+        pass
+    lines = code.split("\n")
+    cuts = [
+        i for i, line in enumerate(lines) if i > 0 and line[:1] not in ("", " ", "\t")
+    ]
+    defines = re.compile(
+        rf"^[ \t]*(?:async[ \t]+)?def[ \t]+{re.escape(entry_point)}[ \t]*\(", re.M
+    )
+    for cut in reversed(cuts):
+        prefix = "\n".join(lines[:cut]).rstrip()
+        try:
+            ast.parse(prefix)
+        except SyntaxError:
+            continue
+        if not entry_point or defines.search(prefix):
+            return prefix
+        break
+    return code
+
+
+def cut_trailer(code: str) -> str:
+    """Drop everything from the first trailer line on."""
+    match = _TRAILER.search(code)
+    return code[: match.start()] if match else code
 
 
 def extract_code(response: str, entry_point: str) -> str | None:
     """Pull the Python out of a model response.
 
     In order: the first fenced code block; else from ``def <entry_point>`` to
-    the end; else from the first ``def`` to the end (so a wrong function name
+    the end, with the imports and helpers written above it; else from the
+    first ``def`` to the end (so a wrong function name
     can be diagnosed instead of reported as "no code"); else the whole response
-    if it parses; else None.
+    if it parses; else None. A stray closing fence or a garbled DSPy field
+    marker after the code, and everything below it, is cut off; so are other
+    trailing top-level lines when dropping them is what makes the code parse.
     """
     text = (response or "").replace("\r\n", "\n")
     if not text.strip():
@@ -209,19 +279,22 @@ def extract_code(response: str, entry_point: str) -> str | None:
 
     fenced = _FENCE.search(text)
     if fenced and fenced.group(1).strip():
-        return fenced.group(1).strip("\n")
+        code = cut_trailer(fenced.group(1)).strip("\n")
+        return _parseable_prefix(code, entry_point) if code else None
 
     named = re.search(
         rf"(?:async[ \t]+)?def[ \t]+{re.escape(entry_point)}[ \t]*\(", text
     )
     if named:
-        return text[named.start() :].strip("\n")
+        begin = _preamble_start(text, named.start())
+        return _parseable_prefix(cut_trailer(text[begin:]).strip("\n"), entry_point)
 
     any_def = _ANY_DEF.search(text) or re.search(
         r"(?:async[ \t]+)?def[ \t]+\w+[ \t]*\(", text
     )
     if any_def:
-        return text[any_def.start() :].strip("\n")
+        begin = _preamble_start(text, any_def.start())
+        return _parseable_prefix(cut_trailer(text[begin:]).strip("\n"), "")
 
     try:
         ast.parse(text)

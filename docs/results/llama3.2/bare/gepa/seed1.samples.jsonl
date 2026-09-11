@@ -19,10 +19,10 @@
 {"task_id": "Mbpp/733", "solution": "def find_first_occurrence(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            if mid == 0 or arr[mid - 1] != target:\n                return mid\n            right = mid - 1\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1"}
 {"task_id": "Mbpp/773", "solution": "def occurance_substring(string, sub):\n    try:\n        pos = string.index(sub)\n        return sub, pos, pos + len(sub)\n    except ValueError:\n        return None"}
 {"task_id": "Mbpp/769", "solution": "def Diff(list1, list2):\n    return [x for x in list1 if x not in list2]"}
-{"task_id": "Mbpp/737", "solution": "def check_str(s):\n    if re.match('^[aeiou]', s):\n        return True\n    else:\n        return False"}
+{"task_id": "Mbpp/737", "solution": "import re\n\ndef check_str(s):\n    if re.match('^[aeiou]', s):\n        return True\n    else:\n        return False"}
 {"task_id": "Mbpp/256", "solution": "def count_Primes_nums(n):\n    if n < 2:\n        return 0\n    primes = [True] * n\n    primes[0] = primes[1] = False\n    for i in range(2, int(n**0.5) + 1):\n        if primes[i]:\n            for j in range(i*i, n, i):\n                primes[j] = False\n    return sum(primes)"}
 {"task_id": "Mbpp/608", "solution": "def bell_Number(n):\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:\n        a, b = 0, 1\n        for _ in range(n - 1):\n            a, b = b, a + b\n        return b"}
-{"task_id": "Mbpp/626", "solution": "def triangle_area(radius):\n    if radius <= 0:\n        return None\n    return (radius * radius * math.sin(math.pi)) / 2"}
+{"task_id": "Mbpp/626", "solution": "import math\n\ndef triangle_area(radius):\n    if radius <= 0:\n        return None\n    return (radius * radius * math.sin(math.pi)) / 2"}
 {"task_id": "Mbpp/758", "solution": "def unique_sublists(lst):\n    sublists = set(tuple(sublist) for sublist in lst)\n    return {sublist: lst.count(sublist) for sublist in sublists}"}
 {"task_id": "Mbpp/735", "solution": "def toggle_middle_bits(n):\n    return n ^ ((n >> 1) & ((1 << (n.bit_length() - 1)) - 1)) ^ ((n << 1) & ((1 << (n.bit_length() - 1)) - 1))"}
 {"task_id": "Mbpp/791", "solution": "def remove_nested(t):\n    result = []\n    for item in t:\n        if isinstance(item, tuple):\n            result.extend(remove_nested(item))\n        else:\n            result.append(item)\n    return tuple(result)"}
@@ -80,7 +80,7 @@
 {"task_id": "Mbpp/477", "solution": "def is_lower(s):\n    return s.lower()"}
 {"task_id": "Mbpp/388", "solution": "def highest_Power_of_2(n):\n    power = 0\n    while 2 ** power <= n:\n        power += 1\n    return 2 ** (power - 1)"}
 {"task_id": "Mbpp/631", "solution": "def replace_spaces(s):\n    return s.replace(' ', '_').replace('_', ' ')"}
-{"task_id": "Mbpp/276", "solution": "def volume_cylinder(radius, height):\n    return math.pi * (radius ** 2) * height"}
+{"task_id": "Mbpp/276", "solution": "import math\n\ndef volume_cylinder(radius, height):\n    return math.pi * (radius ** 2) * height"}
 {"task_id": "Mbpp/137", "solution": "def zero_count(arr):\n    zeroes = sum(1 for x in arr if x == 0)\n    non_zeroes = len(arr) - zeroes\n    if non_zeroes == 0:\n        return 0\n    return zeroes / non_zeroes"}
 {"task_id": "Mbpp/102", "solution": "def snake_to_camel(s):\n    words = s.split('_')\n    return words[0] + ''.join(word.capitalize() for word in words[1:])"}
 {"task_id": "Mbpp/406", "solution": "def find_Parity(n):\n    return n % 2 == 0"}
@@ -95,7 +95,7 @@
 {"task_id": "Mbpp/171", "solution": "def perimeter_pentagon(sides):\n    return sides * 5"}
 {"task_id": "Mbpp/113", "solution": "def check_integer(s):\n    try:\n        int(s)\n        return True\n    except ValueError:\n        return False"}
 {"task_id": "Mbpp/279", "solution": "def is_num_decagonal(n):\n    def decagonal_number(n):\n        return 10*n**2 - 10*n + 1\n\n    return decagonal_number(n) == n"}
-{"task_id": "Mbpp/293", "solution": "def otherside_rightangle(a, b):\n    c = math.sqrt(a**2 + b**2)\n    return c"}
+{"task_id": "Mbpp/293", "solution": "import math\n\ndef otherside_rightangle(a, b):\n    c = math.sqrt(a**2 + b**2)\n    return c"}
 {"task_id": "Mbpp/473", "solution": "def tuple_intersection(tuple_list, intersection_list):\n    intersection = set()\n    for tup in tuple_list:\n        for t in intersection_list:\n            if tup == t:\n                intersection.add(tup)\n    return intersection"}
 {"task_id": "Mbpp/596", "solution": "def tuple_size(t):\n    return sys.getsizeof(t)"}
 {"task_id": "Mbpp/809", "solution": "def check_smaller(t1, t2):\n    return all(x < y for x, y in zip(t1, t2))"}
@@ -130,7 +130,7 @@
 {"task_id": "Mbpp/741", "solution": "def all_Characters_Same(s):\n    return len(set(s)) == 1"}
 {"task_id": "Mbpp/240", "solution": "def replace_list(list1, list2):\n    if len(list1) > 0 and len(list2) > 0:\n        list1[-1:] = list2\n    return list1"}
 {"task_id": "Mbpp/620", "solution": "def largest_subset(nums):\n    nums.sort()\n    count = 1\n    for i in range(1, len(nums)):\n        if nums[i] - nums[i-1] > 1:\n            count += 1\n    return count"}
-{"task_id": "Mbpp/85", "solution": "def surfacearea_sphere(radius):\n    return 4 * math.pi * radius ** 2"}
+{"task_id": "Mbpp/85", "solution": "import math\n\ndef surfacearea_sphere(radius):\n    return 4 * math.pi * radius ** 2"}
 {"task_id": "Mbpp/140", "solution": "def extract_singly(lists):\n    return set(num for lst in lists for num in lst)"}
 {"task_id": "Mbpp/583", "solution": "def catalan_number(n):\n    if n == 0:\n        return 1\n    catalan = [0 for i in range(n+1)]\n    catalan[0] = catalan[1] = 1\n    for i in range(2, n+1):\n        catalan[i] = 0\n        for j in range(i):\n            catalan[i] += catalan[j] * catalan[i-j-1]\n    return catalan[n]"}
 {"task_id": "Mbpp/641", "solution": "def is_nonagonal(n):\n    def is_hexagonal(x):\n        return x * (x + 1) == 3 * (3 * x - 1)\n\n    def is_pentagonal(x):\n        return x * (x + 1) == 5 * (5 * x - 1)\n\n    def is_triangle(x):\n        return x * (x + 1) == 2 * (2 * x - 1)\n\n    def is_square(x):\n        return x * (x + 1) == 4 * (4 * x - 1)\n\n    def is_heptagonal(x):\n        return x * (x + 1) == 7 * (7 * x - 1)\n\n    def is_octagonal(x):\n        return x * (x + 1) == 8 * (8 * x - 1)\n\n    def is_decagonal(x):\n        return x * (x + 1) == 10 * (10 * x - 1)\n\n    def is_nonagonal(x):\n        return x * (x + 1) == 11 * (11 * x - 1)\n\n    hexagonal_numbers = [i for i in range(1, n * 3 + 1) if is_hexagonal(i)]\n    pentagonal_numbers = [i for i in range(1, n * 5 + 1) if is_pentagonal(i)]\n    triangle_numbers = [i for i in range(1, n * 3 + 1) if is_triangle(i)]\n    square_numbers = [i for i in range(1, n * 4 + 1) if is_square(i)]\n    heptagonal_numbers = [i for i in range(1, n * 7 + 1) if is_heptagonal(i)]\n    octagonal_numbers = [i for i in range(1, n * 8 + 1) if is_octagonal(i)]\n    decagonal_numbers = [i for i in range(1, n * 10 + 1) if is_decagonal(i)]\n    nonagonal_numbers = [i for i in range(1, n * 11 + 1) if is_nonagonal(i)]\n\n    return n in nonagonal_numbers"}
@@ -141,8 +141,8 @@
 {"task_id": "Mbpp/566", "solution": "def sum_digits(n):\n    return sum(int(digit) for digit in str(n))"}
 {"task_id": "Mbpp/128", "solution": "def long_words(n, words):\n    return [word for word in words if len(word) > n]"}
 {"task_id": "Mbpp/394", "solution": "def check_distinct(t):\n    return len(t) == len(set(t))"}
-{"task_id": "Mbpp/4", "solution": "def heap_queue_largest(nums, n):\n    return heapq.nlargest(n, nums)"}
-{"task_id": "Mbpp/82", "solution": "def volume_sphere(radius):\n    return (4/3) * math.pi * (radius ** 3)"}
+{"task_id": "Mbpp/4", "solution": "import heapq\n\ndef heap_queue_largest(nums, n):\n    return heapq.nlargest(n, nums)"}
+{"task_id": "Mbpp/82", "solution": "import math\n\ndef volume_sphere(radius):\n    return (4/3) * math.pi * (radius ** 3)"}
 {"task_id": "Mbpp/590", "solution": "def polar_rect(r, theta):\n    x = r * np.cos(theta)\n    y = r * np.sin(theta)\n    return (x, y), (0, 0)"}
 {"task_id": "Mbpp/14", "solution": "def find_Volume(a, b, c):\n    s = (a + b + c) / 2\n    area = (s*(s-a)*(s-b)*(s-c))**0.5\n    return area * a * 3"}
 {"task_id": "Mbpp/603", "solution": "def get_ludic(n):\n    lucid_numbers = []\n    for i in range(1, n+1):\n        if i % 2 == 0 and i != 0:\n            lucid_numbers.append(i)\n    return lucid_numbers"}
@@ -178,7 +178,7 @@
 {"task_id": "Mbpp/560", "solution": "def union_elements(tuple1, tuple2):\n    return sorted(list(set(tuple1 + tuple2)))"}
 {"task_id": "Mbpp/734", "solution": "def sum_Of_Subarray_Prod(lst):\n    n = len(lst)\n    total = 0\n    for i in range(n):\n        for j in range(i+1, n+1):\n            product = 1\n            for k in range(i, j):\n                product *= lst[k]\n            total += product\n    return total"}
 {"task_id": "Mbpp/573", "solution": "def unique_product(lst):\n    unique_nums = set(lst)\n    product = 1\n    for num in unique_nums:\n        product *= num\n    return product"}
-{"task_id": "Mbpp/739", "solution": "def find_Index(n):\n    i = 1\n    while True:\n        triangular_num = i * (i + 1) // 2\n        if len(str(triangular_num)) == n:\n            return i\n        i += 1\n[/## completed ## ]]"}
+{"task_id": "Mbpp/739", "solution": "def find_Index(n):\n    i = 1\n    while True:\n        triangular_num = i * (i + 1) // 2\n        if len(str(triangular_num)) == n:\n            return i\n        i += 1"}
 {"task_id": "Mbpp/753", "solution": "def min_k(tuples, k):\n    return sorted(tuples, key=lambda x: x[1])[:k]"}
 {"task_id": "Mbpp/409", "solution": "def min_product_tuple(tuples):\n    min_product = float('inf')\n    for i in range(len(tuples)):\n        for j in range(i+1, len(tuples)):\n            product = tuples[i][0] * tuples[j][1]\n            if product < min_product:\n                min_product = product\n    return min_product"}
 {"task_id": "Mbpp/796", "solution": "def return_sum(dictionary):\n    return sum(dictionary.values())"}

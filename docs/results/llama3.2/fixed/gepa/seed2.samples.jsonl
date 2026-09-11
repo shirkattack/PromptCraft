@@ -91,11 +91,11 @@
 {"task_id": "Mbpp/99", "solution": "def decimal_to_binary(n):\n    if n == 0:\n        return '0'\n    result = ''\n    while n > 0:\n        result = str(n % 2) + result\n        n = n // 2\n    return result"}
 {"task_id": "Mbpp/109", "solution": "def odd_Equivalent(s, n):\n    count = 0\n    for i in range(n):\n        if s[i % len(s)] == '1':\n            count += 1\n    return count"}
 {"task_id": "Mbpp/472", "solution": "def check_Consecutive(lst):\n    return all(lst[i] + 1 == lst[i+1] for i in range(len(lst)-1))"}
-{"task_id": "Mbpp/787", "solution": "def text_match_three(text):\n    return text.startswith(\"abb\") and len(text) == 4\nassert not text_match_three(\"ac\")\n\"\"\""}
+{"task_id": "Mbpp/787", "solution": "def text_match_three(text):\n    return text.startswith(\"abb\") and len(text) == 4\nassert not text_match_three(\"ac\")"}
 {"task_id": "Mbpp/171", "solution": "def perimeter_pentagon(side_length):\n    return 5 * side_length"}
 {"task_id": "Mbpp/113", "solution": "def check_integer(s):\n    try:\n        int(s)\n        return True\n    except ValueError:\n        return False"}
 {"task_id": "Mbpp/279", "solution": "def is_num_decagonal(n):\n    def decagonal_number(k):\n        return 10*k - k*(k+1)//2\n\n    return decagonal_number(n) == n"}
-{"task_id": "Mbpp/293", "solution": "def otherside_rightangle(a, b):\n    c = math.sqrt(a**2 + b**2)\n    return c"}
+{"task_id": "Mbpp/293", "solution": "import math\n\ndef otherside_rightangle(a, b):\n    c = math.sqrt(a**2 + b**2)\n    return c"}
 {"task_id": "Mbpp/473", "solution": "{\n    (4, 5), \n    (3, 4), \n    (5, 6)\n}"}
 {"task_id": "Mbpp/596", "solution": "def tuple_size(t):\n    return sys.getsizeof(t)"}
 {"task_id": "Mbpp/809", "solution": "def check_smaller(tuple1, tuple2):\n    return all(x > y for x, y in zip(tuple1, tuple2))"}
@@ -156,7 +156,7 @@
 {"task_id": "Mbpp/752", "solution": "def jacobsthal_num(n):\n    if n <= 1:\n        return n\n    jacobsthal_numbers = [0, 1, 1]\n    while len(jacobsthal_numbers) <= n:\n        next_number = jacobsthal_numbers[-1] + jacobsthal_numbers[-2]\n        jacobsthal_numbers.append(next_number)\n    return jacobsthal_numbers[n]"}
 {"task_id": "Mbpp/75", "solution": "def find_tuples(tuples, k):\n    result = []\n    for t in tuples:\n        if all(i % k == 0 for i in t):\n            result.append(t)\n    return result"}
 {"task_id": "Mbpp/619", "solution": "def move_num(s):\n    num = ''\n    result = ''\n    for char in s:\n        if char.isdigit():\n            num += char\n        else:\n            result += char\n    return result + num"}
-{"task_id": "Mbpp/277", "solution": "def dict_filter(dictionary, n):\n    return {key: value for key, value in dictionary.items() if value >= n}\n\"\"\""}
+{"task_id": "Mbpp/277", "solution": "def dict_filter(dictionary, n):\n    return {key: value for key, value in dictionary.items() if value >= n}"}
 {"task_id": "Mbpp/65", "solution": "def recursive_list_sum(lst):\n    total = 0\n    for element in lst:\n        if type(element) == list:\n            total += recursive_list_sum(element)\n        else:\n            total += element\n    return total"}
 {"task_id": "Mbpp/635", "solution": "def heap_sort(lst):\n    def heapify(lst, n, i):\n        largest = i\n        left = 2 * i + 1\n        right = 2 * i + 2\n        if left < n and lst[left] > lst[largest]:\n            largest = left\n        if right < n and lst[right] > lst[largest]:\n            largest = right\n        if largest != i:\n            lst[i], lst[largest] = lst[largest], lst[i]\n            heapify(lst, n, largest)\n\n    n = len(lst)\n    for i in range(n // 2 - 1, -1, -1):\n        heapify(lst, n, i)\n    for i in range(n - 1, 0, -1):\n        lst[0], lst[i] = lst[i], lst[0]\n        heapify(lst, i, 0)\n    return lst"}
 {"task_id": "Mbpp/593", "solution": "def removezero_ip(ip):\n    parts = ip.split(\".\")\n    for i in range(len(parts)):\n        parts[i] = parts[i].lstrip('0')\n        if parts[i] == '':\n            parts[i] = '0'\n    return '.'.join(parts)"}

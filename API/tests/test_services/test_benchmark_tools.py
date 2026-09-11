@@ -600,6 +600,49 @@ class TestRunner:
         assert runner.PROMPTS["fixed"] == runner.PROMPTS["bare"] + " " + runner.ONE_LINE
 
 
+class TestRunnerProtocol:
+    def test_result_files_made_with_other_settings_are_not_reused(self):
+        runner = _load("run_benchmark")
+        stored = {
+            "max_tokens": 512,
+            "demos": 4,
+            "budget": 500,
+            "reflection_max_tokens": 2048,
+            "model": {"digest": "a"},
+            "reflection_model": {"tag": "r"},
+        }
+        assert runner.protocol_mismatch(stored, dict(stored), "gepa_guard") == []
+        # Files written before the minibatch was recorded used 3.
+        assert (
+            runner.protocol_mismatch(
+                stored, {**stored, "reflection_minibatch_size": 3}, "gepa"
+            )
+            == []
+        )
+        assert runner.protocol_mismatch(
+            stored, {**stored, "reflection_minibatch_size": 6}, "gepa"
+        ) == ["reflection_minibatch_size: 3 on disk, 6 now"]
+        # GEPA's settings do not change a method that does not run GEPA.
+        other_gepa = {**stored, "budget": 100, "reflection_model": {"tag": "x"}}
+        assert runner.protocol_mismatch(stored, other_gepa, "original") == []
+        assert runner.protocol_mismatch(
+            stored, {**stored, "max_tokens": 1024}, "coverage_demos"
+        ) == ["max_tokens: 512 on disk, 1024 now"]
+        assert runner.protocol_mismatch(
+            stored, {**stored, "model": {"digest": "b"}}, "original"
+        ) == ["model digest: a on disk, b now"]
+
+    def test_guarded_gepa_methods_are_separate_results(self):
+        runner = _load("run_benchmark")
+        assert set(runner.GEPA_METHODS) <= set(runner.METHODS)
+        assert runner.GEPA_METHODS["gepa"] is False
+        assert runner.GEPA_METHODS["gepa_guard"] is True
+        assert "gepa_guard_demos" in runner.DEMO_METHODS
+        assert runner.result_path(Path("out"), "m:1b", "bare", "gepa_guard", 2) == Path(
+            "out/m-1b/bare/gepa_guard/seed2.json"
+        )
+
+
 class TestSummarizer:
     def test_paired_bootstrap_ci_brackets_the_mean(self):
         summarize = _load("summarize_results")
@@ -608,6 +651,29 @@ class TestSummarizer:
         mean = sum(diffs) / len(diffs) * 100
         assert lo < mean < hi
         assert lo > 0  # 22 net wins on 198 tasks is clear of zero
+
+    def test_seeds_are_not_pooled_as_independent_draws(self):
+        summarize = _load("summarize_results")
+
+        def rows(wins):
+            return [
+                {"task_id": f"T/{i}", "plus_pass": i < wins, "base_pass": True}
+                for i in range(40)
+            ]
+
+        original = {s: {"test_rows": rows(10)} for s in (1, 2, 3)}
+        method = {s: {"test_rows": rows(16)} for s in (1, 2, 3)}
+        pooled = summarize.per_task_diffs(method, original)
+        single = summarize.per_task_diffs({1: method[1]}, {1: original[1]})
+        assert len(pooled) == 40
+        # Three replays of one deterministic run carry no more evidence than one.
+        assert summarize.paired_bootstrap_ci(pooled) == summarize.paired_bootstrap_ci(
+            single
+        )
+        assert summarize.identical_seeds(method)
+        assert not summarize.identical_seeds({1: method[1]})
+        method[2] = {"test_rows": rows(15)}
+        assert not summarize.identical_seeds(method)
 
     def test_tables_from_two_runs(self, tmp_path):
         summarize = _load("summarize_results")

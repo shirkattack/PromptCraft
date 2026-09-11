@@ -4,7 +4,7 @@
     uv run --project API python scripts/run_benchmark.py \\
         --dataset docs/benchmarks/mbppplus \\
         --model llama3.2 --reflection-model qwen3.6:27b \\
-        --prompt bare --methods original one_line random_demos coverage_demos gepa gepa_demos \\
+        --prompt bare --methods original one_line random_demos coverage_demos gepa_guard \\
         --seeds 1 2 3 --budget 500 --demos 4 --out docs/results
 
 Calls the services directly: no HTTP, none of the app's EVAL_MAX_* caps.
@@ -16,7 +16,14 @@ runner asserts the test ids are disjoint from everything the optimizer sees.
 Every (model, prompt, method, seed) writes
 ``<out>/<model>/<prompt>/<method>/seed<N>.json`` plus the completions as
 ``seed<N>.samples.jsonl`` the moment it finishes, and is skipped on a rerun if
-that file exists. Temperature 0, 512 tokens, thinking off for the task model.
+that file exists with the same protocol settings; a file made with different
+settings stops the run instead of being reused. Temperature 0, 512 tokens by
+default, thinking off for the task model.
+
+``gepa`` and ``gepa_demos`` reproduce the committed protocol: GEPA's own
+reflection prompt, no leak check. ``gepa_guard`` and ``gepa_guard_demos`` route
+reflection through the template-aware prompt and leak guard
+(``GuardedInstructionProposer``).
 """
 
 from __future__ import annotations
@@ -51,7 +58,28 @@ METHODS = (
     "coverage_demos",
     "gepa",
     "gepa_demos",
+    "gepa_guard",
+    "gepa_guard_demos",
 )
+# method -> leak guard on for its GEPA run
+GEPA_METHODS = {
+    "gepa": False,
+    "gepa_demos": False,
+    "gepa_guard": True,
+    "gepa_guard_demos": True,
+}
+DEMO_METHODS = ("coverage_demos", "gepa_demos", "gepa_guard_demos")
+REFLECTION_MINIBATCH = 3
+# Settings that change what a result file means. A file on disk whose settings
+# differ is not reused; missing keys in older files take these defaults.
+PROTOCOL_DEFAULTS: dict[str, Any] = {
+    "max_tokens": 512,
+    "reflection_max_tokens": 2048,
+    "budget": 500,
+    "demos": 4,
+    "reflection_minibatch_size": REFLECTION_MINIBATCH,
+}
+TRUNCATION_MARKER = "truncated due to exceeding max_tokens"
 MAX_TOKENS = 512
 REFLECTION_MAX_TOKENS = 2048
 KEEP_ALIVE = "2h"
@@ -61,6 +89,18 @@ TASK_TIMEOUT_S = 300
 REFLECTION_TIMEOUT_S = 900
 
 log = logging.getLogger("benchmark")
+
+
+class TruncationCounter(logging.Handler):
+    """Counts DSPy's warning that a response hit max_tokens (cache hits included)."""
+
+    def __init__(self) -> None:
+        super().__init__(level=logging.WARNING)
+        self.count = 0
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if TRUNCATION_MARKER in record.getMessage():
+            self.count += 1
 
 
 # -- data ----------------------------------------------------------------------
@@ -134,6 +174,19 @@ def preload(base_url: str, tag: str) -> None:
     ollama_get(base_url, "/api/generate", {"model": tag, "keep_alive": KEEP_ALIVE})
 
 
+def loaded_context_length(base_url: str, tag: str) -> int | None:
+    """The context window Ollama loaded the model with, if it reports one."""
+    try:
+        running = ollama_get(base_url, "/api/ps").get("models", [])
+    except Exception:
+        return None
+    for entry in running:
+        if tag in (entry.get("name"), entry.get("model")):
+            value = entry.get("context_length")
+            return int(value) if isinstance(value, int | float) else None
+    return None
+
+
 def make_lm(info: dict[str, Any], *, max_tokens: int, timeout: float) -> Any:
     from app.services.lm_manager import LMManager  # noqa: PLC0415
 
@@ -178,50 +231,25 @@ class ThinkBlockError(RuntimeError):
 
 
 def evaluate(program: Any, samples: list[Any], label: str) -> dict[str, Any]:
-    """Run the program on every sample and score it; per-task rows and counts."""
-    from app.services.code_eval_service import (  # noqa: PLC0415
-        evaluate_response,
-        extract_code,
-    )
+    """Run the program on every sample and score it; per-task rows and counts.
 
+    ``truncated`` counts answers that hit max_tokens: code cut off mid-way is
+    a syntax error, and a prompt that makes the model more verbose loses tasks
+    to the cap rather than to wrong code.
+    """
     started = time.time()
     rows: list[dict[str, Any]] = []
     completions: dict[str, str] = {}
-    for index, sample in enumerate(samples, start=1):
-        tid = task_id(sample)
-        try:
-            response = str(program(input=sample.input_text).output or "")
-        except Exception as exc:  # one failed call is an empty answer
-            log.warning("%s %s: model call failed: %s", label, tid, exc)
-            response = ""
-        if "<think>" in response:
-            raise ThinkBlockError(f"{label} {tid}: response contains a <think> block")
-        completions[tid] = response
-        result = evaluate_response(response, sample.extra_data or {})
-        rows.append(
-            {
-                "task_id": tid,
-                "status": result.status,
-                "passed": result.passed,
-                "total": result.total,
-                "base_pass": result.base_pass,
-                "plus_pass": result.plus_pass,
-                "code": extract_code(response, sample.extra_data.get("entry_point", ""))
-                or "",
-            }
-        )
-        if index % 25 == 0 or index == len(samples):
-            base = sum(r["base_pass"] for r in rows)
-            plus = sum(r["plus_pass"] for r in rows)
-            log.info(
-                "%s %d/%d base %d plus %d (%.0fs)",
-                label,
-                index,
-                len(samples),
-                base,
-                plus,
-                time.time() - started,
+    counter = TruncationCounter()
+    lm_logger = logging.getLogger("dspy.clients.lm")
+    lm_logger.addHandler(counter)
+    try:
+        for index, sample in enumerate(samples, start=1):
+            _evaluate_one(
+                program, sample, index, len(samples), label, counter, rows, completions
             )
+    finally:
+        lm_logger.removeHandler(counter)
     n = len(rows)
     base = sum(r["base_pass"] for r in rows)
     plus = sum(r["plus_pass"] for r in rows)
@@ -231,10 +259,64 @@ def evaluate(program: Any, samples: list[Any], label: str) -> dict[str, Any]:
         "plus_pass": plus,
         "base_pass_at_1": round(base / n * 100, 2) if n else 0.0,
         "plus_pass_at_1": round(plus / n * 100, 2) if n else 0.0,
+        "truncated": sum(1 for r in rows if r.get("truncated")),
         "rows": rows,
         "completions": completions,
         "seconds": round(time.time() - started, 1),
     }
+
+
+def _evaluate_one(
+    program: Any,
+    sample: Any,
+    index: int,
+    total: int,
+    label: str,
+    counter: TruncationCounter,
+    rows: list[dict[str, Any]],
+    completions: dict[str, str],
+) -> None:
+    from app.services.code_eval_service import (  # noqa: PLC0415
+        evaluate_response,
+        extract_code,
+    )
+
+    tid = task_id(sample)
+    before = counter.count
+    try:
+        response = str(program(input=sample.input_text).output or "")
+    except Exception as exc:  # one failed call is an empty answer
+        log.warning("%s %s: model call failed: %s", label, tid, exc)
+        response = ""
+    if "<think>" in response:
+        raise ThinkBlockError(f"{label} {tid}: response contains a <think> block")
+    completions[tid] = response
+    result = evaluate_response(response, sample.extra_data or {})
+    rows.append(
+        {
+            "task_id": tid,
+            "status": result.status,
+            "passed": result.passed,
+            "total": result.total,
+            "base_pass": result.base_pass,
+            "plus_pass": result.plus_pass,
+            "truncated": counter.count > before,
+            "code": extract_code(response, sample.extra_data.get("entry_point", ""))
+            or "",
+        }
+    )
+    if index % 25 == 0 or index == total:
+        base = sum(r["base_pass"] for r in rows)
+        plus = sum(r["plus_pass"] for r in rows)
+        log.info(
+            "%s %d/%d base %d plus %d truncated %d",
+            label,
+            index,
+            total,
+            base,
+            plus,
+            sum(1 for r in rows if r["truncated"]),
+        )
 
 
 # -- methods -------------------------------------------------------------------
@@ -243,7 +325,7 @@ def evaluate(program: Any, samples: list[Any], label: str) -> dict[str, Any]:
 def pick_demos(method: str, train: list[Any], k: int, seed: int) -> list[Any]:
     if method in ("random_demos",):
         return random.Random(seed).sample(train, k)
-    if method in ("coverage_demos", "gepa_demos"):
+    if method in DEMO_METHODS:
         from app.services.embedding_service import coverage_selection  # noqa: PLC0415
 
         inputs = [s.input_text for s in train]
@@ -259,6 +341,9 @@ def run_gepa(
     budget: int,
     seed: int,
     reflection_lm: Any,
+    *,
+    guard: bool,
+    minibatch: int,
 ) -> dict[str, Any]:
     from app.services.gepa_service import GepaOptimizer  # noqa: PLC0415
 
@@ -270,6 +355,8 @@ def run_gepa(
         seed=seed,
         train=train,
         dev=val,
+        guard=guard,
+        reflection_minibatch_size=minibatch,
     )
     outcome = optimizer.run(prompt)
     return {
@@ -280,8 +367,40 @@ def run_gepa(
         "metric_calls": outcome["gepa"]["metric_calls"],
         "iterations": outcome["gepa"]["iterations"],
         "timeline": outcome["gepa"]["timeline"],
+        "guard": outcome["gepa"]["guard"],
+        "reflection_minibatch_size": outcome["gepa"]["reflection_minibatch_size"],
         "seconds": outcome["gepa"]["elapsed_seconds"],
     }
+
+
+def protocol_mismatch(
+    stored: dict[str, Any], current: dict[str, Any], method: str
+) -> list[str]:
+    """Settings that differ between a result file on disk and this run.
+
+    Only the settings that can change the method's result count: GEPA's budget,
+    reflection model and minibatch do not affect ``original``.
+    """
+    keys = ["max_tokens"]
+    if method in DEMO_METHODS or method == "random_demos":
+        keys.append("demos")
+    if method in GEPA_METHODS:
+        keys += ["budget", "reflection_max_tokens", "reflection_minibatch_size"]
+    diffs = []
+    for key in keys:
+        on_disk = stored.get(key, PROTOCOL_DEFAULTS[key])
+        now = current.get(key, PROTOCOL_DEFAULTS[key])
+        if on_disk != now:
+            diffs.append(f"{key}: {on_disk} on disk, {now} now")
+    models = [("model", "digest")]
+    if method in GEPA_METHODS:
+        models.append(("reflection_model", "tag"))
+    for section, field in models:
+        on_disk = (stored.get(section) or {}).get(field)
+        now = (current.get(section) or {}).get(field)
+        if on_disk != now:
+            diffs.append(f"{section} {field}: {on_disk} on disk, {now} now")
+    return diffs
 
 
 def result_path(
@@ -292,12 +411,27 @@ def result_path(
 
 
 def git_commit() -> str:
+    """HEAD, with ``-dirty`` when tracked code under API/ or scripts/ differs from it."""
     try:
-        return subprocess.check_output(
+        head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True
+        ).strip()
+        changed = subprocess.check_output(
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--untracked-files=no",
+                "--",
+                "API",
+                "scripts",
+            ],
+            cwd=REPO_ROOT,
+            text=True,
         ).strip()
     except Exception:
         return "unknown"
+    return f"{head}-dirty" if changed else head
 
 
 def run_one(
@@ -313,7 +447,7 @@ def run_one(
     reflection_lm: Any,
     args: argparse.Namespace,
     config: dict[str, Any],
-    gepa_cache: dict[int, dict[str, Any]],
+    gepa_cache: dict[tuple[int, bool], dict[str, Any]],
 ) -> dict[str, Any]:
     import dspy  # noqa: PLC0415
 
@@ -323,12 +457,20 @@ def run_one(
         instructions = f"{prompt} {ONE_LINE}"
     gepa: dict[str, Any] | None = None
     with dspy.context(lm=lm):
-        if method in ("gepa", "gepa_demos"):
-            if seed not in gepa_cache:
-                gepa_cache[seed] = run_gepa(
-                    prompt, train, val, args.budget, seed, reflection_lm
+        if method in GEPA_METHODS:
+            key = (seed, GEPA_METHODS[method])
+            if key not in gepa_cache:
+                gepa_cache[key] = run_gepa(
+                    prompt,
+                    train,
+                    val,
+                    args.budget,
+                    seed,
+                    reflection_lm,
+                    guard=GEPA_METHODS[method],
+                    minibatch=args.minibatch,
                 )
-            gepa = gepa_cache[seed]
+            gepa = gepa_cache[key]
             instructions = gepa["instructions"]
         demos = pick_demos(method, train, args.demos, seed)
         program = build_program(instructions, demos)
@@ -387,6 +529,15 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--seeds", nargs="+", type=int, default=[1])
     parser.add_argument("--budget", type=int, default=500, help="GEPA scored calls")
     parser.add_argument("--demos", type=int, default=4)
+    parser.add_argument(
+        "--max-tokens", type=int, default=MAX_TOKENS, help="task model answer cap"
+    )
+    parser.add_argument(
+        "--minibatch",
+        type=int,
+        default=REFLECTION_MINIBATCH,
+        help="examples GEPA's reflection reads per iteration",
+    )
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "docs" / "results")
     args = parser.parse_args(argv)
 
@@ -416,7 +567,8 @@ def main(argv: list[str] | None = None) -> None:
     task_info = model_info(base_url, args.model)
     reflection_info = model_info(base_url, args.reflection_model or args.model)
     preload(base_url, task_info["tag"])
-    lm = make_lm(task_info, max_tokens=MAX_TOKENS, timeout=TASK_TIMEOUT_S)
+    task_info["context_length"] = loaded_context_length(base_url, task_info["tag"])
+    lm = make_lm(task_info, max_tokens=args.max_tokens, timeout=TASK_TIMEOUT_S)
     reflection_lm = make_lm(
         reflection_info, max_tokens=REFLECTION_MAX_TOKENS, timeout=REFLECTION_TIMEOUT_S
     )
@@ -433,7 +585,7 @@ def main(argv: list[str] | None = None) -> None:
         "model": task_info,
         "reflection_model": reflection_info,
         "temperature": 0.0,
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": args.max_tokens,
         "reflection_max_tokens": REFLECTION_MAX_TOKENS,
         "timeouts_s": {"task": TASK_TIMEOUT_S, "reflection": REFLECTION_TIMEOUT_S},
         "thinking": "off"
@@ -441,6 +593,7 @@ def main(argv: list[str] | None = None) -> None:
         else "not supported by model",
         "budget": args.budget,
         "demos": args.demos,
+        "reflection_minibatch_size": args.minibatch,
         "code_eval_timeout_seconds": settings.code_eval_timeout_seconds,
         "code_eval_memory_mb": settings.code_eval_memory_mb,
         "git_commit": git_commit(),
@@ -452,22 +605,32 @@ def main(argv: list[str] | None = None) -> None:
         log.info("skipping one_line for the fixed prompt: it already carries the line")
         methods.remove("one_line")
 
-    gepa_cache: dict[int, dict[str, Any]] = {}
+    gepa_cache: dict[tuple[int, bool], dict[str, Any]] = {}
     batch_started = time.time()
     for method in methods:
         for seed in args.seeds:
             path = result_path(args.out, args.model, prompt_name, method, seed)
             if path.exists():
+                stored = json.loads(path.read_text())
+                diffs = protocol_mismatch(stored.get("config") or {}, config, method)
+                if diffs:
+                    raise SystemExit(
+                        f"{path} was made with different settings ({'; '.join(diffs)}). "
+                        "Write to another --out directory or move the file."
+                    )
                 log.info(
                     "skip %s (exists)",
                     path.relative_to(REPO_ROOT)
                     if path.is_relative_to(REPO_ROOT)
                     else path,
                 )
-                if method == "gepa" and seed not in gepa_cache:
-                    stored = json.loads(path.read_text())
-                    if stored.get("gepa"):
-                        gepa_cache[seed] = stored["gepa"]
+                key = (seed, GEPA_METHODS.get(method, False))
+                if (
+                    method in GEPA_METHODS
+                    and stored.get("gepa")
+                    and key not in gepa_cache
+                ):
+                    gepa_cache[key] = stored["gepa"]
                 continue
             log.info(
                 "=== %s / %s / %s / seed %d", args.model, prompt_name, method, seed

@@ -230,11 +230,12 @@
   },
   "test": {
     "n": 198,
-    "base_pass": 148,
+    "base_pass": 149,
     "plus_pass": 124,
-    "base_pass_at_1": 74.75,
+    "base_pass_at_1": 75.25,
     "plus_pass_at_1": 62.63,
-    "seconds": 1060.6
+    "seconds": 1060.6,
+    "truncated": 21
   },
   "test_rows": [
     {
@@ -243,7 +244,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/16",
@@ -251,7 +253,8 @@
       "passed": 116,
       "total": 116,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/594",
@@ -259,7 +262,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/432",
@@ -267,7 +271,8 @@
       "passed": 7,
       "total": 109,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/755",
@@ -275,7 +280,8 @@
       "passed": 102,
       "total": 107,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/311",
@@ -283,7 +289,8 @@
       "passed": 0,
       "total": 112,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/454",
@@ -291,7 +298,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/397",
@@ -299,7 +307,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/395",
@@ -307,7 +316,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/2",
@@ -315,7 +325,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/90",
@@ -323,7 +334,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/732",
@@ -331,7 +343,8 @@
       "passed": 115,
       "total": 115,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/415",
@@ -339,7 +352,8 @@
       "passed": 83,
       "total": 116,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/804",
@@ -347,7 +361,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/764",
@@ -355,7 +370,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/84",
@@ -363,7 +379,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/800",
@@ -371,7 +388,8 @@
       "passed": 81,
       "total": 124,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/306",
@@ -379,7 +397,8 @@
       "passed": 0,
       "total": 104,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/733",
@@ -387,7 +406,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/773",
@@ -395,7 +415,8 @@
       "passed": 100,
       "total": 105,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/769",
@@ -403,7 +424,8 @@
       "passed": 77,
       "total": 112,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/737",
@@ -411,7 +433,8 @@
       "passed": 110,
       "total": 110,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/256",
@@ -419,7 +442,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/608",
@@ -427,7 +451,8 @@
       "passed": 2,
       "total": 108,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/626",
@@ -435,7 +460,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/758",
@@ -443,7 +469,8 @@
       "passed": 116,
       "total": 116,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/735",
@@ -451,7 +478,8 @@
       "passed": 4,
       "total": 112,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/791",
@@ -459,7 +487,8 @@
       "passed": 26,
       "total": 112,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/637",
@@ -467,7 +496,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/451",
@@ -475,7 +505,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/794",
@@ -483,7 +514,8 @@
       "passed": 90,
       "total": 106,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/132",
@@ -491,7 +523,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/463",
@@ -499,7 +532,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/630",
@@ -507,7 +541,8 @@
       "passed": 4,
       "total": 91,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/91",
@@ -515,7 +550,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/237",
@@ -523,7 +559,8 @@
       "passed": 16,
       "total": 114,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/740",
@@ -531,7 +568,8 @@
       "passed": 69,
       "total": 69,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/269",
@@ -539,7 +577,8 @@
       "passed": 85,
       "total": 85,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/602",
@@ -547,7 +586,8 @@
       "passed": 102,
       "total": 108,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/558",
@@ -555,7 +595,8 @@
       "passed": 146,
       "total": 146,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/167",
@@ -563,7 +604,8 @@
       "passed": 3,
       "total": 115,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/446",
@@ -571,7 +613,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/453",
@@ -579,7 +622,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/108",
@@ -587,7 +631,8 @@
       "passed": 121,
       "total": 121,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/266",
@@ -595,7 +640,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/730",
@@ -603,7 +649,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/475",
@@ -611,7 +658,8 @@
       "passed": 114,
       "total": 114,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/413",
@@ -619,7 +667,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/96",
@@ -627,7 +676,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/227",
@@ -635,7 +685,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/67",
@@ -643,7 +694,8 @@
       "passed": 0,
       "total": 105,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/98",
@@ -651,7 +703,8 @@
       "passed": 113,
       "total": 113,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/585",
@@ -659,7 +712,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/612",
@@ -667,7 +721,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/59",
@@ -675,7 +730,8 @@
       "passed": 0,
       "total": 104,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/465",
@@ -683,7 +739,8 @@
       "passed": 92,
       "total": 113,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/118",
@@ -691,7 +748,8 @@
       "passed": 88,
       "total": 109,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/290",
@@ -699,7 +757,8 @@
       "passed": 0,
       "total": 112,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/57",
@@ -707,7 +766,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/252",
@@ -715,7 +775,8 @@
       "passed": 0,
       "total": 125,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/133",
@@ -723,7 +784,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/138",
@@ -731,7 +793,8 @@
       "passed": 60,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/412",
@@ -739,7 +802,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/564",
@@ -747,7 +811,8 @@
       "passed": 40,
       "total": 112,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/770",
@@ -755,7 +820,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/586",
@@ -763,7 +829,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/64",
@@ -771,7 +838,8 @@
       "passed": 0,
       "total": 120,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/456",
@@ -779,7 +847,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/267",
@@ -787,7 +856,8 @@
       "passed": 6,
       "total": 122,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/723",
@@ -795,7 +865,8 @@
       "passed": 113,
       "total": 113,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/748",
@@ -803,7 +874,8 @@
       "passed": 7,
       "total": 113,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/447",
@@ -811,7 +883,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/726",
@@ -819,7 +892,8 @@
       "passed": 110,
       "total": 110,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/478",
@@ -827,7 +901,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/18",
@@ -835,15 +910,17 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/239",
-      "status": "syntax_error",
-      "passed": 0,
+      "status": "assert_failed",
+      "passed": 1,
       "total": 107,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/441",
@@ -851,7 +928,8 @@
       "passed": 124,
       "total": 124,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/87",
@@ -859,7 +937,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/744",
@@ -867,7 +946,8 @@
       "passed": 131,
       "total": 131,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/477",
@@ -875,7 +955,8 @@
       "passed": 113,
       "total": 113,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/388",
@@ -883,7 +964,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/631",
@@ -891,7 +973,8 @@
       "passed": 75,
       "total": 109,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/276",
@@ -899,7 +982,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/137",
@@ -907,7 +991,8 @@
       "passed": 114,
       "total": 114,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/102",
@@ -915,7 +1000,8 @@
       "passed": 0,
       "total": 113,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/406",
@@ -923,7 +1009,8 @@
       "passed": 110,
       "total": 110,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/223",
@@ -931,7 +1018,8 @@
       "passed": 4,
       "total": 104,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/268",
@@ -939,7 +1027,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/428",
@@ -947,7 +1036,8 @@
       "passed": 110,
       "total": 110,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/576",
@@ -955,7 +1045,8 @@
       "passed": 113,
       "total": 113,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/99",
@@ -963,7 +1054,8 @@
       "passed": 56,
       "total": 107,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/109",
@@ -971,7 +1063,8 @@
       "passed": 4,
       "total": 105,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/472",
@@ -979,7 +1072,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/787",
@@ -987,7 +1081,8 @@
       "passed": 103,
       "total": 105,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/171",
@@ -995,7 +1090,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/113",
@@ -1003,7 +1099,8 @@
       "passed": 120,
       "total": 124,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/279",
@@ -1011,7 +1108,8 @@
       "passed": 0,
       "total": 114,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/293",
@@ -1019,7 +1117,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/473",
@@ -1027,7 +1126,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/596",
@@ -1035,7 +1135,8 @@
       "passed": 124,
       "total": 124,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/809",
@@ -1043,7 +1144,8 @@
       "passed": 125,
       "total": 125,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/160",
@@ -1051,7 +1153,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/565",
@@ -1059,7 +1162,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/763",
@@ -1067,7 +1171,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/567",
@@ -1075,7 +1180,8 @@
       "passed": 107,
       "total": 108,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/563",
@@ -1083,7 +1189,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/404",
@@ -1091,7 +1198,8 @@
       "passed": 126,
       "total": 126,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/581",
@@ -1099,7 +1207,8 @@
       "passed": 40,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/410",
@@ -1107,7 +1216,8 @@
       "passed": 0,
       "total": 107,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/435",
@@ -1115,7 +1225,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/624",
@@ -1123,7 +1234,8 @@
       "passed": 0,
       "total": 112,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/63",
@@ -1131,7 +1243,8 @@
       "passed": 0,
       "total": 124,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/786",
@@ -1139,7 +1252,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/633",
@@ -1147,7 +1261,8 @@
       "passed": 10,
       "total": 106,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/296",
@@ -1155,7 +1270,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/135",
@@ -1163,7 +1279,8 @@
       "passed": 104,
       "total": 106,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/278",
@@ -1171,7 +1288,8 @@
       "passed": 118,
       "total": 124,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/165",
@@ -1179,7 +1297,8 @@
       "passed": 44,
       "total": 110,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/643",
@@ -1187,7 +1306,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/280",
@@ -1195,7 +1315,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/457",
@@ -1203,7 +1324,8 @@
       "passed": 124,
       "total": 124,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/62",
@@ -1211,7 +1333,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/750",
@@ -1219,15 +1342,17 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/300",
-      "status": "syntax_error",
-      "passed": 0,
+      "status": "exception",
+      "passed": 14,
       "total": 116,
-      "base_pass": false,
-      "plus_pass": false
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/127",
@@ -1235,7 +1360,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/749",
@@ -1243,7 +1369,8 @@
       "passed": 1,
       "total": 107,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/103",
@@ -1251,7 +1378,8 @@
       "passed": 55,
       "total": 104,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/792",
@@ -1259,7 +1387,8 @@
       "passed": 102,
       "total": 118,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/19",
@@ -1267,7 +1396,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/741",
@@ -1275,7 +1405,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/240",
@@ -1283,7 +1414,8 @@
       "passed": 118,
       "total": 118,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/620",
@@ -1291,7 +1423,8 @@
       "passed": 0,
       "total": 109,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/85",
@@ -1299,7 +1432,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/140",
@@ -1307,7 +1441,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/583",
@@ -1315,7 +1450,8 @@
       "passed": 21,
       "total": 21,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/641",
@@ -1323,7 +1459,8 @@
       "passed": 103,
       "total": 105,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/86",
@@ -1331,7 +1468,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/69",
@@ -1339,7 +1477,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/142",
@@ -1347,7 +1486,8 @@
       "passed": 113,
       "total": 113,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/429",
@@ -1355,7 +1495,8 @@
       "passed": 0,
       "total": 116,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/566",
@@ -1363,7 +1504,8 @@
       "passed": 116,
       "total": 116,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/128",
@@ -1371,7 +1513,8 @@
       "passed": 50,
       "total": 107,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/394",
@@ -1379,7 +1522,8 @@
       "passed": 52,
       "total": 52,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/4",
@@ -1387,7 +1531,8 @@
       "passed": 19,
       "total": 109,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/82",
@@ -1395,7 +1540,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/590",
@@ -1403,7 +1549,8 @@
       "passed": 0,
       "total": 104,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/14",
@@ -1411,7 +1558,8 @@
       "passed": 111,
       "total": 111,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/603",
@@ -1419,7 +1567,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/555",
@@ -1427,7 +1576,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/230",
@@ -1435,7 +1585,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/775",
@@ -1443,7 +1594,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/274",
@@ -1451,7 +1603,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/798",
@@ -1459,7 +1612,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/572",
@@ -1467,7 +1621,8 @@
       "passed": 13,
       "total": 109,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/297",
@@ -1475,7 +1630,8 @@
       "passed": 120,
       "total": 120,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/752",
@@ -1483,7 +1639,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/75",
@@ -1491,7 +1648,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/619",
@@ -1499,7 +1657,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/277",
@@ -1507,7 +1666,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/65",
@@ -1515,7 +1675,8 @@
       "passed": 115,
       "total": 115,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/635",
@@ -1523,7 +1684,8 @@
       "passed": 115,
       "total": 115,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/593",
@@ -1531,7 +1693,8 @@
       "passed": 3,
       "total": 104,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/92",
@@ -1539,7 +1702,8 @@
       "passed": 0,
       "total": 104,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/724",
@@ -1547,7 +1711,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/80",
@@ -1555,7 +1720,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/562",
@@ -1563,7 +1729,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/610",
@@ -1571,7 +1738,8 @@
       "passed": 23,
       "total": 108,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/765",
@@ -1579,7 +1747,8 @@
       "passed": 4,
       "total": 111,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/77",
@@ -1587,7 +1756,8 @@
       "passed": 119,
       "total": 119,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/265",
@@ -1595,7 +1765,8 @@
       "passed": 0,
       "total": 114,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/577",
@@ -1603,7 +1774,8 @@
       "passed": 20,
       "total": 108,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/587",
@@ -1611,7 +1783,8 @@
       "passed": 116,
       "total": 116,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/11",
@@ -1619,7 +1792,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/105",
@@ -1627,7 +1801,8 @@
       "passed": 0,
       "total": 106,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/168",
@@ -1635,7 +1810,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/806",
@@ -1643,7 +1819,8 @@
       "passed": 57,
       "total": 105,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/131",
@@ -1651,7 +1828,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/560",
@@ -1659,7 +1837,8 @@
       "passed": 132,
       "total": 132,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/734",
@@ -1667,7 +1846,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/573",
@@ -1675,7 +1855,8 @@
       "passed": 104,
       "total": 104,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/739",
@@ -1683,7 +1864,8 @@
       "passed": 9,
       "total": 106,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     },
     {
       "task_id": "Mbpp/753",
@@ -1691,7 +1873,8 @@
       "passed": 58,
       "total": 106,
       "base_pass": true,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/409",
@@ -1699,7 +1882,8 @@
       "passed": 114,
       "total": 114,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/796",
@@ -1707,7 +1891,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/56",
@@ -1715,7 +1900,8 @@
       "passed": 128,
       "total": 128,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/12",
@@ -1723,7 +1909,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/257",
@@ -1731,7 +1918,8 @@
       "passed": 112,
       "total": 112,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/414",
@@ -1739,7 +1927,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/97",
@@ -1747,7 +1936,8 @@
       "passed": 106,
       "total": 106,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/89",
@@ -1755,7 +1945,8 @@
       "passed": 105,
       "total": 105,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/782",
@@ -1763,7 +1954,8 @@
       "passed": 108,
       "total": 108,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/767",
@@ -1771,7 +1963,8 @@
       "passed": 107,
       "total": 107,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/58",
@@ -1779,7 +1972,8 @@
       "passed": 109,
       "total": 109,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/638",
@@ -1787,7 +1981,8 @@
       "passed": 0,
       "total": 105,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/93",
@@ -1795,7 +1990,8 @@
       "passed": 113,
       "total": 113,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/6",
@@ -1803,7 +1999,8 @@
       "passed": 114,
       "total": 114,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/106",
@@ -1811,7 +2008,8 @@
       "passed": 118,
       "total": 118,
       "base_pass": true,
-      "plus_pass": true
+      "plus_pass": true,
+      "truncated": false
     },
     {
       "task_id": "Mbpp/474",
@@ -1819,7 +2017,8 @@
       "passed": 0,
       "total": 107,
       "base_pass": false,
-      "plus_pass": false
+      "plus_pass": false,
+      "truncated": true
     }
   ],
   "wall_clock": {
@@ -1828,5 +2027,68 @@
     "test_eval_seconds": 1060.6,
     "total_seconds": 5062.8
   },
-  "finished_at": "2026-09-09T17:10:59+00:00"
+  "finished_at": "2026-09-09T17:10:59+00:00",
+  "rescored": [
+    {
+      "at": "2026-09-11T19:10:51+00:00",
+      "commit": "b0b884b4bafcd8b89928b8c82967022be08b76ca",
+      "reason": "extraction keeps imports and helpers above an unfenced function and drops trailing fences, DSPy markers and junk lines that stop the code from parsing",
+      "base": [
+        148,
+        149
+      ],
+      "plus": [
+        124,
+        124
+      ],
+      "cache_misses": [],
+      "changed": [
+        {
+          "task_id": "Mbpp/239",
+          "status": [
+            "syntax_error",
+            "assert_failed"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            false
+          ]
+        },
+        {
+          "task_id": "Mbpp/300",
+          "status": [
+            "syntax_error",
+            "exception"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/590",
+          "status": [
+            "exception",
+            "exception"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            false
+          ]
+        }
+      ]
+    }
+  ]
 }
