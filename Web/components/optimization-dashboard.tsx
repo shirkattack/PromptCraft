@@ -1130,6 +1130,7 @@ export function OptimizationDashboard() {
                           <SelectItem value="contains">Contains match</SelectItem>
                           <SelectItem value="exact">Exact match</SelectItem>
                           <SelectItem value="llm_judge">Model judge</SelectItem>
+                          <SelectItem value="tests">Run tests (code)</SelectItem>
                         </SelectContent>
                       </Select>
                       {selectedMethod !== "gepa" && (

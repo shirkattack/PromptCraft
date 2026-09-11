@@ -1,0 +1,2094 @@
+{
+  "config": {
+    "dataset": "/Users/esteban/PromptCraft/docs/benchmarks/mbppplus",
+    "model": {
+      "tag": "qwen3.5:4b",
+      "digest": "2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "reflection_model": {
+      "tag": "qwen3.6:27b",
+      "digest": "9d5803d493a991af27b9441c098aa56f2ed7bbd260877f075ec09b575c049bc3",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "reflection_max_tokens": 2048,
+    "timeouts_s": {
+      "task": 300,
+      "reflection": 900
+    },
+    "thinking": "off",
+    "budget": 500,
+    "demos": 4,
+    "code_eval_timeout_seconds": 10.0,
+    "code_eval_memory_mb": 1024,
+    "git_commit": "aaf386cd3c1bb395505e693418edb70aa4d7fa60",
+    "split_sizes": {
+      "train": 120,
+      "val": 60,
+      "test": 198
+    },
+    "method": "gepa",
+    "seed": 1,
+    "prompt_name": "bare",
+    "prompt": "Write a Python function for the task below."
+  },
+  "final_prompt": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Monotonic Array Check**:\n   - The function `is_Monotonic(arr)` checks whether a given list `arr` is monotonic.\n   - A list is monotonic if it is entirely non-increasing (each element is less than or equal to the previous one) OR entirely non-decreasing (each element is greater than or equal to the previous one).\n   - **Edge Cases**:\n     - An empty list `[]` is considered monotonic and should return `True`.\n     - A list with a single element `[x]` is considered monotonic and should return `True`.\n   - **Implementation Details**:\n     - Do not assume the list has at least two elements before accessing indices. Handle lists of length 0 or 1 explicitly to avoid `IndexError`.\n     - You can determine the direction by comparing adjacent elements. If the list is constant (all elements equal), it satisfies both non-increasing and non-decreasing conditions.\n     - Return `True` if the condition holds for the entire list, otherwise return `False`.\n\n2. **General Constraints**:\n   - Ensure the function includes a docstring explaining the parameters and return value.\n   - The function should be efficient and handle standard list inputs.\n\nExample usage:\n- `is_Monotonic([6, 5, 4, 4])` should return `True` (non-increasing).\n- `is_Monotonic([1, 2, 3, 4])` should return `True` (non-decreasing).\n- `is_Monotonic([1, 3, 2])` should return `False` (neither).\n- `is_Monotonic([])` should return `True`.\n- `is_Monotonic([5])` should return `True`.",
+  "demos": [],
+  "gepa": {
+    "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Monotonic Array Check**:\n   - The function `is_Monotonic(arr)` checks whether a given list `arr` is monotonic.\n   - A list is monotonic if it is entirely non-increasing (each element is less than or equal to the previous one) OR entirely non-decreasing (each element is greater than or equal to the previous one).\n   - **Edge Cases**:\n     - An empty list `[]` is considered monotonic and should return `True`.\n     - A list with a single element `[x]` is considered monotonic and should return `True`.\n   - **Implementation Details**:\n     - Do not assume the list has at least two elements before accessing indices. Handle lists of length 0 or 1 explicitly to avoid `IndexError`.\n     - You can determine the direction by comparing adjacent elements. If the list is constant (all elements equal), it satisfies both non-increasing and non-decreasing conditions.\n     - Return `True` if the condition holds for the entire list, otherwise return `False`.\n\n2. **General Constraints**:\n   - Ensure the function includes a docstring explaining the parameters and return value.\n   - The function should be efficient and handle standard list inputs.\n\nExample usage:\n- `is_Monotonic([6, 5, 4, 4])` should return `True` (non-increasing).\n- `is_Monotonic([1, 2, 3, 4])` should return `True` (non-decreasing).\n- `is_Monotonic([1, 3, 2])` should return `False` (neither).\n- `is_Monotonic([])` should return `True`.\n- `is_Monotonic([5])` should return `True`.",
+    "improved": true,
+    "baseline_val_pass_at_1": 63.33,
+    "final_val_pass_at_1": 68.33,
+    "metric_calls": 561,
+    "iterations": 16,
+    "timeline": [
+      {
+        "index": 0,
+        "parent": null,
+        "generation": 0,
+        "instructions": "Write a Python function for the task below.",
+        "score": 63.33,
+        "iteration": null,
+        "feedback": []
+      },
+      {
+        "index": 1,
+        "parent": 0,
+        "generation": 1,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Sum and Average of Natural Numbers**:\n   - Calculate the sum of the first `n` natural numbers using the formula `n * (n + 1) // 2`.\n   - Calculate the average as `sum / n`. If `n` is 0, the average should be `0.0`.\n   - Return a tuple `(sum, average)`.\n   - Handle negative inputs by raising a `ValueError`.\n\n2. **Pattern Matching (Isomorphic Strings)**:\n   - The function `is_samepatterns(patterns, sequences)` checks if two lists are isomorphic.\n   - It must verify a **bijective mapping** (one-to-one correspondence) between elements of `patterns` and `sequences`.\n   - This means:\n     - Every element in `patterns` must map to exactly one element in `sequences`.\n     - Every element in `sequences` must map to exactly one element in `patterns` (no two different pattern elements can map to the same sequence element).\n   - If the lengths differ, return `False`.\n   - If the mapping is not bijective, return `False`.\n   - Otherwise, return `True`.\n\n3. **Last Position in Sorted Array**:\n   - The function `last(arr, target)` finds the last index of `target` in a sorted list `arr`.\n   - Use binary search to achieve O(log n) complexity.\n   - If the target is not found, return `-1`.\n   - If the target is found, return the highest index where it appears.\n\nEnsure all functions include appropriate docstrings and handle edge cases as described.",
+        "score": 61.67,
+        "iteration": 6,
+        "feedback": [
+          "Passed 112/120 asserts. First failure: `assert is_samepatterns(['red', 'green', 'greenn'], ['a', 'b', 'b']) == False`",
+          "Passed 118/120 asserts. First failure: `assert is_samepatterns(['red', 'red', 'red', 'red', 'red', 'red'], ['a', 'b', 'c', 'a', 'b', 'c']) == True`",
+          "SyntaxError at line 43: invalid syntax.",
+          "ValueError: At least two words starting with 'p' are required. while running `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`.",
+          "SyntaxError at line 58: unterminated string literal (detected at line 58).",
+          "ValueError: Start index must be less than or equal to end index. while running `assert sum_range_list([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 7, 5) == 0`.",
+          "Passed 0/105 asserts. First failure: `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([5, 4, 7, 2, 1], 5) == 6`",
+          "ValueError: too many values to unpack (expected 2) while running `assert index_minimum([('Adam', 150, 'NYC', True), ('Benjamin', 100, 'LA', False), ('Charlie', 200, 'Chicago', True), ('\u2026`.",
+          "Passed 0/110 asserts. First failure: `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 29)."
+        ]
+      },
+      {
+        "index": 2,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Perfect Square Check**:\n   - The function `is_perfect_square(n)` checks if a given integer `n` is a perfect square.\n   - A perfect square is an integer that is the square of another integer (e.g., 0, 1, 4, 9, 16).\n   - **Input Validation**:\n     - If `n` is negative, raise a `ValueError` with a descriptive message (e.g., \"n must be non-negative\").\n     - Do not return `False` for negative numbers; explicitly raise an error.\n   - **Logic**:\n     - Calculate the integer square root of `n`. You can use `int(n ** 0.5)` or `math.isqrt(n)` (if available) to get the candidate root.\n     - Verify if squaring this candidate root equals `n`.\n     - Return `True` if it is a perfect square, `False` otherwise.\n   - **Edge Cases**:\n     - `0` is a perfect square.\n     - `1` is a perfect square.\n     - Large integers should be handled correctly without floating-point precision errors if possible (using integer arithmetic for verification is preferred).\n\n2. **Complex Number Angle**:\n   - The function `angle_complex(x, y)` calculates the angle (argument) of a complex number.\n   - **Input Handling**:\n     - The inputs `x` and `y` represent the real and imaginary parts, respectively.\n     - **Crucial Constraint**: The function must accept `x` and `y` as separate arguments (typically floats or integers). It must **not** accept a single complex number object as an argument if the signature implies separate components, or if it does, it must extract the real and imaginary parts correctly.\n     - Based on the feedback, ensure that the arguments passed to `math.atan2` are real numbers. If the input might be a complex number object, extract `.real` and `.imag`. However, the standard signature `angle_complex(x, y)` implies `x` is real part and `y` is imaginary part. Ensure `x` and `y` are converted to floats if necessary before passing to `math.atan2` to avoid `TypeError` if complex objects are inadvertently passed or if the implementation expects raw numbers.\n     - Specifically, ensure that if the caller passes a complex number directly (e.g., `angle_complex(0, 1j)` where the second arg is complex), the function handles it by extracting the real/imaginary components or converting them to floats. *Correction based on feedback*: The feedback indicated a `TypeError` when passing `1j` as the second argument to a function expecting floats for `math.atan2`. Therefore, the function should explicitly convert inputs to floats or extract real/imaginary parts if complex numbers are passed. A robust implementation would be: `return math.atan2(float(y), float(x))` if `x` and `y` are expected to be the components, but if `y` is passed as `1j`, `float(1j)` raises an error. \n     - **Refined Logic**: The function signature `angle_complex(x, y)` suggests `x` and `y` are the components. If the test case passes `1j` as `y`, it implies the input might be a complex number or the user made a mistake in the test. However, to be robust against the specific feedback \"TypeError: must be real number, not complex\", the function should ensure that the values passed to `math.atan2` are real. If the inputs `x` and `y` can be complex numbers themselves, extract their real parts? No, usually `x` is real part, `y` is imag part. If `y` is `1j`, it's likely the user intended to pass the imaginary component `1.0`. \n     - **Instruction**: Ensure the function converts inputs to real numbers. If `x` or `y` are complex, take their real part? Or assume the inputs are the real and imaginary components and ensure they are cast to float. Given the error, the safest instruction is: \"Ensure that the arguments passed to `math.atan2` are real numbers. If the inputs `x` and `y` might be complex numbers, extract their real and imaginary parts appropriately, or cast them to float if they are numeric types compatible with float conversion. Specifically, handle cases where inputs might be complex objects by using `complex(x).real` and `complex(y).imag` if necessary, or simply ensure `float()` conversion works. *Actually*, looking at the error `angle_complex(0, 1j)`, the second argument is `1j`. `math.atan2` expects real numbers. The function should likely interpret the inputs as the real and imaginary parts. If a complex number is passed as an argument, it should be handled. A robust way is to define the function to accept either separate real/imag parts or a complex number. However, sticking to the signature `angle_complex(x, y)`, we should ensure `x` and `y` are treated as real and imaginary components. If `y` is `1j`, it's not a real number. The function should probably extract the real value from `y` if it's complex? No, `1j` has real part 0. This is ambiguous. \n     - **Clarified Instruction**: The function `angle_complex(x, y)` should calculate the angle using `math.atan2`. To prevent `TypeError`, ensure that `x` and `y` are converted to real numbers before passing to `atan2`. If `x` or `y` are complex numbers, use their real parts? Or if they are meant to be the components, ensure they are floats. Given the specific failure, the instruction should be: \"Convert inputs `x` and `y` to floats. If they are complex numbers, this will raise an error, so instead, if the input is a complex number, extract its real and imaginary parts. If the inputs are separate arguments `x` and `y`, assume they are the real and imaginary components. If `y` is passed as `1j`, it implies the user might be passing a complex number as the second argument. To be safe, check if inputs are complex. If `x` is complex, use `x.real` and `x.imag`. If `x` and `y` are separate, use `float(x)` and `float(y)`. If `float(y)` fails because `y` is complex, use `y.real`? No, `1j.real` is 0. This would give angle 0. The expected angle for `0 + 1j` is pi/2. So if `y` is `1j`, it represents the imaginary unit. The function should likely accept a complex number or separate parts. Let's assume the function signature is fixed as `angle_complex(x, y)`. The feedback suggests the implementation failed because `1j` was passed to `atan2`. The fix is to ensure `atan2` receives real numbers. If `y` is `1j`, we want the imaginary part to be 1. So we should take `abs(y)`? No. We should take `y.imag` if `y` is complex? \n     - **Final Decision for Instruction**: \"The function `angle_complex(x, y)` calculates the angle. It must handle inputs where `x` and `y` might be complex numbers or real numbers. If `x` and `y` are real, use them directly. If they are complex, extract the real part of `x` and the imaginary part of `y`? No, standard convention is `x` is real part, `y` is imag part. If `y` is `1j`, it's a complex number with real part 0 and imag part 1. If we treat `y` as the imaginary component, we want the value 1. So, if `y` is complex, use `y.imag`. If `x` is complex, use `x.real`. This handles the case where the user passes `0` (real) and `1j` (complex representing the imaginary unit). Thus: `real_part = x.real if isinstance(x, complex) else float(x)` and `imag_part = y.imag if isinstance(y, complex) else float(y)`. Then `return math.atan2(imag_part, real_part)`.\"\n\n3. **List of Empty Dictionaries**:\n   - The function `empty_list(n)` creates a list containing `n` empty dictionaries.\n   - **Input Validation**:\n     - If `n` is negative, raise a `ValueError`.\n   - **Logic**:\n     - Use a list comprehension `[{} for _ in range(n)]` to create independent empty dictionaries.\n     - **Crucial Constraint**: Do **not** use `[{}] * n`, as this creates references to the same dictionary object. Each dictionary in the list must be a distinct object.\n   - **Return**:\n     - Return the list of `n` distinct empty dictionaries.\n\nEnsure all functions include appropriate docstrings and handle edge cases as described.",
+        "score": 56.67,
+        "iteration": 9,
+        "feedback": [
+          "ValueError: n must be non-negative. while running `assert is_perfect_square(-9) == False`.",
+          "TypeError: must be real number, not complex while running `assert __close(angle_complex(0.0, 1j), 1.5707963267948966, 0.0001)`.",
+          "ValueError: n must be non-negative while running `assert is_perfect_square(-9) == False`.",
+          "NameError: the code uses `re` without importing it; add `import re` inside the code block while running `assert find_adverb_position('clearly!! we can see the sky') == (0, 7, 'clearly')`.",
+          "SyntaxError at line 41: unterminated string literal (detected at line 41).",
+          "SyntaxError at line 14: expected ':'.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "IndexError: Indices 7 and 5 are out of bounds for a list of length 10. while running `assert sum_range_list([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 7, 5) == 0`.",
+          "The tests call `maxAverageOfPath` but the code defines `max_average_of_path`. Define `maxAverageOfPath` exactly.",
+          "Passed 0/106 asserts. First failure: `assert find_Odd_Pair([5, 4, 7, 2, 1], 5) == 6`",
+          "ValueError: The length of tuples1 and tuples2 must be the same. while running `assert index_multiplication(((1, 2), (3, 4), (5, 6)), ((7, 8), (9, 10))) == ((7, 16), (27, 40))`.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`"
+        ]
+      },
+      {
+        "index": 3,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Difference Between Largest and Smallest Value**:\n   - The function `big_diff(nums)` calculates the difference between the maximum and minimum values in a given list of numbers.\n   - It must return `max(nums) - min(nums)`.\n   - If the input list is empty, it must raise a `ValueError` with an appropriate message.\n   - The function should handle lists containing integers or floats.\n\n2. **Common Elements in Nested Lists**:\n   - The function `common_in_nested_lists(nested_lists)` finds the intersection of all inner lists within a list of lists.\n   - It must return a `set` containing elements that are present in every inner list.\n   - If the input `nested_lists` is empty, it should return an empty set `set()`.\n   - If `nested_lists` contains only one inner list, it should return the set of elements from that list.\n   - The implementation should be efficient, ideally using set intersection operations.\n\n3. **N Largest Items from a List**:\n   - The function `larg_nnum(lst, n)` returns a list containing the `n` largest items from the input list `lst`.\n   - The items should be selected based on their value. If there are duplicate values, they are treated as distinct items if they appear multiple times in the source list, but the output is typically expected to be the top `n` values.\n   - Based on the example `set(larg_nnum([10, 20, 50, 70, 90, 20, 50, 40, 60, 80, 100], 2)) == set([100, 90])`, the function should identify the top `n` unique values or the top `n` items by value. Note that the example uses `set()` on the result, implying that the order of the returned list does not matter for the test, but the values must be correct.\n   - A robust approach is to sort the list in descending order and take the first `n` elements. If `n` is greater than the length of the list, return all elements (or handle as per specific requirement, but typically returning all is safe if not specified otherwise).\n   - Ensure the function handles cases where `n` is 0 (return empty list) or negative (raise ValueError or return empty list, depending on standard conventions, but raising ValueError is safer for invalid inputs).\n\nEnsure all functions include appropriate docstrings and handle edge cases as described.",
+        "score": 58.33,
+        "iteration": 10,
+        "feedback": [
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 27).",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 38).",
+          "ValueError: Expected at least two words starting with 'p', found 1. while running `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`.",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "ValueError: Invalid indices: 7 and 5. List length is 10. Indices must be within [0, 9] and \u2026 while running `assert sum_range_list([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 7, 5) == 0`.",
+          "SyntaxError at line 49: expected ':'.",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 34).",
+          "ValueError: Tuples must be of equal length. while running `assert index_multiplication(((1, 2), (3, 4), (5, 6)), ((7, 8), (9, 10))) == ((7, 16), (27, 40))`.",
+          "AssertionError while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "Passed 0/104 asserts. First failure: `assert maximize_elements(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 7), (4, 9), (2, 9\u2026`",
+          "ValueError: Input list of lists cannot be empty. while running `assert count_element_in_list([], 'A') == 0`."
+        ]
+      },
+      {
+        "index": 4,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Monotonic Array Check**:\n   - The function `is_Monotonic(arr)` checks whether a given list `arr` is monotonic.\n   - A list is monotonic if it is entirely non-increasing (each element is less than or equal to the previous one) OR entirely non-decreasing (each element is greater than or equal to the previous one).\n   - **Edge Cases**:\n     - An empty list `[]` is considered monotonic and should return `True`.\n     - A list with a single element `[x]` is considered monotonic and should return `True`.\n   - **Implementation Details**:\n     - Do not assume the list has at least two elements before accessing indices. Handle lists of length 0 or 1 explicitly to avoid `IndexError`.\n     - You can determine the direction by comparing adjacent elements. If the list is constant (all elements equal), it satisfies both non-increasing and non-decreasing conditions.\n     - Return `True` if the condition holds for the entire list, otherwise return `False`.\n\n2. **General Constraints**:\n   - Ensure the function includes a docstring explaining the parameters and return value.\n   - The function should be efficient and handle standard list inputs.\n\nExample usage:\n- `is_Monotonic([6, 5, 4, 4])` should return `True` (non-increasing).\n- `is_Monotonic([1, 2, 3, 4])` should return `True` (non-decreasing).\n- `is_Monotonic([1, 3, 2])` should return `False` (neither).\n- `is_Monotonic([])` should return `True`.\n- `is_Monotonic([5])` should return `True`.",
+        "score": 68.33,
+        "iteration": 11,
+        "feedback": [
+          "IndexError: list index out of range while loading the code.",
+          "SyntaxError at line 48: expected an indented block after 'if' statement on line 42.",
+          "AssertionError: Expected ('Python', 'PHP'), got None while loading the code.",
+          "AssertionError while loading the code.",
+          "Passed 0/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "SyntaxError at line 45: expected an indented block after 'for' statement on line 44.",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 29).",
+          "Passed 0/110 asserts. First failure: `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "TypeError: argument of type 'int' is not iterable while running `assert check_K((10, 4, 5, 6, 8), 6) == True`.",
+          "TypeError: 'float' object cannot be interpreted as an integer while running `assert next_Perfect_Square(3.14) == 4`.",
+          "Passed 89/104 asserts. First failure: `assert find(-1, 2) == -1`"
+        ]
+      },
+      {
+        "index": 5,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Check Even Indices for Even Numbers**:\n   - The function `even_position(lst)` checks if every element at an even index (0, 2, 4, ...) in the list `lst` is an even number.\n   - Iterate through the list using indices `0, 2, 4, ...` up to the length of the list.\n   - If any element at an even index is odd (i.e., `lst[i] % 2 != 0`), return `False`.\n   - If the loop completes without finding any odd numbers at even indices, return `True`.\n   - Handle empty lists by returning `True` (vacuously true).\n\n2. **Remove Odd Characters from String**:\n   - The function `remove_odd(s)` removes characters from the string `s` that are at odd indices (1, 3, 5, ...).\n   - **Crucial Correction**: Based on the example `remove_odd(\"python\") == \"yhn\"`, the task is to keep characters at **even indices** (0, 2, 4...) and remove characters at **odd indices** (1, 3, 5...).\n     - Index 0: 'p' (Keep)\n     - Index 1: 'y' (Remove? Wait, let's re-read the example carefully).\n     - Example: `remove_odd(\"python\")` returns `\"yhn\"`.\n       - Input: `p` (0), `y` (1), `t` (2), `h` (3), `o` (4), `n` (5).\n       - Output: `y`, `h`, `n`.\n       - Indices in output correspond to indices 1, 3, 5 in input.\n       - Therefore, the function should **keep characters at odd indices** and **remove characters at even indices**.\n       - Let's re-verify:\n         - Index 0 ('p') is removed.\n         - Index 1 ('y') is kept.\n         - Index 2 ('t') is removed.\n         - Index 3 ('h') is kept.\n         - Index 4 ('o') is removed.\n         - Index 5 ('n') is kept.\n         - Result: \"yhn\".\n   - Logic: Iterate through the string. If the index `i` is odd (`i % 2 != 0`), keep the character. If the index `i` is even, skip it.\n   - Return the resulting string.\n\n3. **Generate Combinations with Repetition**:\n   - The function `combinations_colors(colors, n)` generates all combinations of length `n` from the list `colors` with replacement (repetition allowed).\n   - The order of elements in the combination tuples does not matter in the sense that combinations are unique multisets, but typically in programming challenges, \"combinations with repetition\" implies generating tuples where the order of selection follows the original list order to avoid duplicates like `(A, B)` and `(B, A)` being counted separately if they represent the same combination.\n   - Use `itertools.combinations_with_replacement` from the standard library if allowed, or implement a recursive backtracking solution.\n   - If implementing manually:\n     - Use a recursive helper function that builds combinations.\n     - To ensure combinations (not permutations), enforce that the next element chosen is from the current index or later in the `colors` list.\n     - Base case: If the current combination length equals `n`, add it to the results.\n     - Recursive step: Iterate through the `colors` list starting from the current index to allow repetition and maintain order.\n   - Return a list of tuples.\n\nEnsure all functions include appropriate docstrings and handle edge cases as described.",
+        "score": 63.33,
+        "iteration": 14,
+        "feedback": [
+          "Passed 98/114 asserts. First failure: `assert even_position([2, 1, 4, 2, 6, 1, 8, 2, 10, 1, 12]) == False`",
+          "Passed 1/106 asserts. First failure: `assert remove_odd('python') == 'yhn'`",
+          "SyntaxError at line 44: expected an indented block after 'for' statement on line 30.",
+          "SyntaxError at line 40: expected an indented block after 'if' statement on line 31.",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 35).",
+          "The tests call `maxAverageOfPath` but the code defines `max_average_of_path`. Define `maxAverageOfPath` exactly.",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while running `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "Passed 0/104 asserts. First failure: `assert maximize_elements(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 7), (4, 9), (2, 9\u2026`",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "TypeError: argument of type 'int' is not iterable while loading the code."
+        ]
+      },
+      {
+        "index": 6,
+        "parent": 2,
+        "generation": 3,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples and feedback:\n\n1. **Sum of Digits Calculation**:\n   - The function `sum_of_digits(numbers)` computes the sum of the digits of each number in a given list and returns the total sum of these digit sums.\n   - **Input Handling**:\n     - The input `numbers` is expected to be a list of integers.\n     - **Crucial Constraint**: The function must handle cases where the input might be nested or contain non-integer elements if implied by broader test cases, but based on the specific feedback `TypeError: bad operand type for abs(): 'list'`, the primary issue was that the function was called with a nested list `[[10, 20, ...]]` or the input validation failed to flatten or handle the structure correctly. However, looking at the feedback `assert sum_of_digits([[10, 20, 4, 5, 'b', 70, 'a']]) == 19`, it appears the input can be a list containing a single list of mixed types (integers and strings).\n     - **Refined Logic**: The function should iterate through the input. If the input is a list of lists, it should flatten it or process the inner list. More specifically, the feedback suggests the input might be a list containing one element which is itself a list of items. The function needs to robustly handle the iteration.\n     - **Digit Summation**: For each integer in the processed list, calculate the sum of its digits. Ignore non-integer items (like strings 'a', 'b') or raise an error? The example output `19` for `[10, 20, 4, 5, 'b', 70, 'a']` implies:\n       - 10 -> 1+0 = 1\n       - 20 -> 2+0 = 2\n       - 4 -> 4\n       - 5 -> 5\n       - 70 -> 7+0 = 7\n       - Sum = 1 + 2 + 4 + 5 + 7 = 19.\n       - The strings 'b' and 'a' are ignored.\n     - **Implementation Strategy**:\n       - Check if the input is a list. If it contains a single list as its first element, use that inner list. Otherwise, use the input list directly.\n       - Iterate through each item in the list.\n       - If the item is an integer, calculate the sum of its digits.\n       - If the item is not an integer (e.g., string), skip it.\n       - Sum all the digit sums.\n   - **Edge Cases**:\n     - Handle negative numbers by taking the absolute value before summing digits.\n     - Handle `0` correctly (digit sum is 0).\n     - Handle empty lists or lists with no integers (return 0).\n\n2. **Word Length Parity Check**:\n   - The function `word_len(word)` checks if the length of a given string is odd.\n   - **Input Handling**:\n     - The input `word` is a string.\n   - **Logic**:\n     - Return `True` if `len(word)` is odd, `False` otherwise.\n   - **Edge Cases**:\n     - Empty string has length 0 (even), so return `False`.\n\n3. **Prime Number Check**:\n   - The function `prime_num(n)` checks if a given integer is a prime number.\n   - **Input Validation**:\n     - If `n` is not an integer, raise a `ValueError`.\n     - If `n < 2`, return `False` (since primes are natural numbers greater than 1).\n   - **Logic**:\n     - Check divisibility from 2 up to the square root of `n`.\n     - If `n` is divisible by any number in this range, return `False`.\n     - Otherwise, return `True`.\n   - **Edge Cases**:\n     - `2` is prime.\n     - `1` is not prime.\n     - Negative numbers are not prime.\n\nEnsure all functions include appropriate docstrings and handle edge cases as described. Specifically for `sum_of_digits`, ensure robust handling of nested lists and non-integer elements by skipping them.",
+        "score": 58.33,
+        "iteration": 15,
+        "feedback": [
+          "TypeError: bad operand type for abs(): 'list' while running `assert sum_of_digits([[10, 20, 4, 5, 'b', 70, 'a']]) == 19`.",
+          "Passed 105/108 asserts. First failure: `assert sum_of_digits([10, -5, 'abc', 0, 3.14]) == 14`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 28).",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Passed 0/116 asserts. First failure: `assert count_divisors(10) == True`",
+          "Passed 1/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "IndexError: Indices 7 and 5 are out of bounds for the list of length 10. while running `assert sum_range_list([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 7, 5) == 0`.",
+          "SyntaxError at line 42: invalid syntax.",
+          "AssertionError while loading the code.",
+          "ValueError: Elements at index 0 must be integers. Got (1, 3) and (6, 7). while running `assert index_multiplication(((1, 3), (4, 5), (2, 9), (1, 10)), ((6, 7), (3, 9), (1, 1), (7, 3))) == ((6, 21), (12, 45),\u2026`.",
+          "Passed 1/105 asserts. First failure: `assert reverse_Array_Upto_K([1, 2, 3, 4, 5, 6], 4) == [4, 3, 2, 1, 5, 6]`",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`"
+        ]
+      },
+      {
+        "index": 7,
+        "parent": 5,
+        "generation": 3,
+        "instructions": "Write a Python function for the task below.\n\nThe function must strictly adhere to the following logic and constraints based on the provided examples:\n\n1. **Calculate Sum of Perrin Numbers**:\n   - The function `cal_sum(n)` calculates the sum of the first `n` terms of the Perrin sequence.\n   - **Perrin Sequence Definition**:\n     - $P(0) = 3$\n     - $P(1) = 0$\n     - $P(2) = 2$\n     - For $n > 2$, $P(n) = P(n-2) + P(n-3)$.\n   - **Logic**:\n     - If $n \\le 0$, return 0.\n     - Initialize the first three terms: $p_0=3, p_1=0, p_2=2$.\n     - Calculate the initial sum based on how many terms are requested ($n=1, 2, 3$).\n     - For $n > 3$, iterate from index 3 up to $n-1$ (since we want the first $n$ terms, indices $0$ to $n-1$).\n     - In each iteration, calculate the next Perrin number using the recurrence relation $P(i) = P(i-2) + P(i-3)$.\n     - Add the new number to the running total.\n     - Update the previous values to shift the window for the next calculation.\n     - Return the total sum.\n   - **Edge Cases**:\n     - Handle $n=1$ (sum is 3), $n=2$ (sum is 3), $n=3$ (sum is 5).\n     - Ensure the loop range is correct to include exactly $n$ terms.\n\n2. **Count Element Frequencies**:\n   - The function `freq_count(lst)` returns a dictionary where keys are the unique elements from the input list `lst` and values are their respective counts.\n   - **Logic**:\n     - Initialize an empty dictionary.\n     - Iterate through each element in the list.\n     - If the element is already in the dictionary, increment its count.\n     - If the element is not in the dictionary, add it with a count of 1.\n     - Return the dictionary.\n   - **Note**: The order of keys in the dictionary does not matter for correctness, as dictionary equality checks values regardless of insertion order in modern Python contexts for this type of assertion.\n\n3. **Count Pairs with Even XOR**:\n   - The function `find_even_pair(nums)` counts the number of pairs $(i, j)$ such that $i < j$ and `nums[i] ^ nums[j]` is an even number.\n   - **Mathematical Insight**:\n     - The XOR of two numbers is even if and only if both numbers have the same parity (both even or both odd).\n     - Even ^ Even = Even\n     - Odd ^ Odd = Even\n     - Even ^ Odd = Odd\n   - **Logic**:\n     - Iterate through all unique pairs $(i, j)$ where $0 \\le i < j < len(nums)$.\n     - Check if `(nums[i] ^ nums[j]) % 2 == 0`.\n     - Increment a counter for each valid pair.\n     - Return the final count.\n   - **Optimization Note**: While a brute-force $O(N^2)$ approach is acceptable for small lists, one could also count the number of even and odd integers separately. If there are $E$ even numbers and $O$ odd numbers, the answer is $\\binom{E}{2} + \\binom{O}{2}$. However, given the examples, a direct pair check is sufficient and less prone to off-by-one errors in implementation if not explicitly required to be optimized.\n\nEnsure all functions include appropriate docstrings and handle edge cases as described.",
+        "score": 60.0,
+        "iteration": 16,
+        "feedback": [
+          "AssertionError while loading the code.",
+          "IndexError: list index out of range while running `assert cal_sum(9) == 49`.",
+          "AssertionError: Expected (0, 7, 'clearly'), got (0, 9, 'clearly!!') while loading the code.",
+          "Passed 0/110 asserts. First failure: `assert start_withp(['Python PHP', 'Java JavaScript', 'c c++']) == ('Python', 'PHP')`",
+          "Passed 0/116 asserts. First failure: `assert count_divisors(10) == True`",
+          "SyntaxError at line 50: expected an indented block after 'if' statement on line 40.",
+          "SyntaxError at line 74: unterminated triple-quoted string literal (detected at line 77).",
+          "TypeError: unhashable type: 'list' while running `assert remove_elements([1, 'apple', [1, 2], [3, 4], {'name': 'John'}, 5.5], [2, 'apple', [3, 4], {'name': 'John'}, 5.5]\u2026`.",
+          "The tests call `maxAverageOfPath` but the code defines `max_average_of_path`. Define `maxAverageOfPath` exactly.",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "SyntaxError at line 37: unterminated triple-quoted string literal (detected at line 42).",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`"
+        ]
+      }
+    ],
+    "seconds": 4000.5
+  },
+  "val": {
+    "n": 60,
+    "base_pass": 47,
+    "plus_pass": 41,
+    "base_pass_at_1": 78.33,
+    "plus_pass_at_1": 68.33,
+    "seconds": 1.7
+  },
+  "test": {
+    "n": 198,
+    "base_pass": 149,
+    "plus_pass": 124,
+    "base_pass_at_1": 75.25,
+    "plus_pass_at_1": 62.63,
+    "seconds": 1060.6,
+    "truncated": 21
+  },
+  "test_rows": [
+    {
+      "task_id": "Mbpp/728",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/16",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/594",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/432",
+      "status": "assert_failed",
+      "passed": 7,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/755",
+      "status": "exception",
+      "passed": 102,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/311",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/454",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/397",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/395",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/2",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/90",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/732",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/415",
+      "status": "assert_failed",
+      "passed": 83,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/804",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/764",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/84",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/800",
+      "status": "assert_failed",
+      "passed": 81,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/306",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/733",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/773",
+      "status": "assert_failed",
+      "passed": 100,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/769",
+      "status": "assert_failed",
+      "passed": 77,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/737",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/256",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/608",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/626",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/758",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/735",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/791",
+      "status": "assert_failed",
+      "passed": 26,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/637",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/451",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/794",
+      "status": "assert_failed",
+      "passed": 90,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/132",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/463",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/630",
+      "status": "exception",
+      "passed": 4,
+      "total": 91,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/91",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/237",
+      "status": "assert_failed",
+      "passed": 16,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/740",
+      "status": "pass",
+      "passed": 69,
+      "total": 69,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/269",
+      "status": "pass",
+      "passed": 85,
+      "total": 85,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/602",
+      "status": "assert_failed",
+      "passed": 102,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/558",
+      "status": "pass",
+      "passed": 146,
+      "total": 146,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/167",
+      "status": "assert_failed",
+      "passed": 3,
+      "total": 115,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/446",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/453",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/108",
+      "status": "pass",
+      "passed": 121,
+      "total": 121,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/266",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/730",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/475",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/413",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/96",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/227",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/67",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/98",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/585",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/612",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/59",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/465",
+      "status": "assert_failed",
+      "passed": 92,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/118",
+      "status": "assert_failed",
+      "passed": 88,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/290",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/57",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/252",
+      "status": "exception",
+      "passed": 0,
+      "total": 125,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/133",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/138",
+      "status": "assert_failed",
+      "passed": 60,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/412",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/564",
+      "status": "assert_failed",
+      "passed": 40,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/770",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/586",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/64",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 120,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/456",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/267",
+      "status": "exception",
+      "passed": 6,
+      "total": 122,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/723",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/748",
+      "status": "assert_failed",
+      "passed": 7,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/447",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/726",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/478",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/18",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/239",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/441",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/87",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/744",
+      "status": "pass",
+      "passed": 131,
+      "total": 131,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/477",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/388",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/631",
+      "status": "assert_failed",
+      "passed": 75,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/276",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/137",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/102",
+      "status": "exception",
+      "passed": 0,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/406",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/223",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/268",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/428",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/576",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/99",
+      "status": "assert_failed",
+      "passed": 56,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/109",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/472",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/787",
+      "status": "assert_failed",
+      "passed": 103,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/171",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/113",
+      "status": "assert_failed",
+      "passed": 120,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/279",
+      "status": "exception",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/293",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/473",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/596",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/809",
+      "status": "pass",
+      "passed": 125,
+      "total": 125,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/160",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/565",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/763",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/567",
+      "status": "assert_failed",
+      "passed": 107,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/563",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/404",
+      "status": "pass",
+      "passed": 126,
+      "total": 126,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/581",
+      "status": "assert_failed",
+      "passed": 40,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/410",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/435",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/624",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/63",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/786",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/633",
+      "status": "assert_failed",
+      "passed": 10,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/296",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/135",
+      "status": "exception",
+      "passed": 104,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/278",
+      "status": "assert_failed",
+      "passed": 118,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/165",
+      "status": "assert_failed",
+      "passed": 44,
+      "total": 110,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/643",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/280",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/457",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/62",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/750",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/300",
+      "status": "exception",
+      "passed": 14,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/127",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/749",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/103",
+      "status": "assert_failed",
+      "passed": 55,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/792",
+      "status": "assert_failed",
+      "passed": 102,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/19",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/741",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/240",
+      "status": "pass",
+      "passed": 118,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/620",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/85",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/140",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/583",
+      "status": "pass",
+      "passed": 21,
+      "total": 21,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/641",
+      "status": "exception",
+      "passed": 103,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/86",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/69",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/142",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/429",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/566",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/128",
+      "status": "assert_failed",
+      "passed": 50,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/394",
+      "status": "pass",
+      "passed": 52,
+      "total": 52,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/4",
+      "status": "assert_failed",
+      "passed": 19,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/82",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/590",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/14",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/603",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/555",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/230",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/775",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/274",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/798",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/572",
+      "status": "assert_failed",
+      "passed": 13,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/297",
+      "status": "pass",
+      "passed": 120,
+      "total": 120,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/752",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/75",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/619",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/277",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/65",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/635",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/593",
+      "status": "assert_failed",
+      "passed": 3,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/92",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/724",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/80",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/562",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/610",
+      "status": "assert_failed",
+      "passed": 23,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/765",
+      "status": "timeout",
+      "passed": 4,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/77",
+      "status": "pass",
+      "passed": 119,
+      "total": 119,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/265",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/577",
+      "status": "exception",
+      "passed": 20,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/587",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/11",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/105",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/168",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/806",
+      "status": "assert_failed",
+      "passed": 57,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/131",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/560",
+      "status": "pass",
+      "passed": 132,
+      "total": 132,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/734",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/573",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/739",
+      "status": "timeout",
+      "passed": 9,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/753",
+      "status": "assert_failed",
+      "passed": 58,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/409",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/796",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/56",
+      "status": "pass",
+      "passed": 128,
+      "total": 128,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/12",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/257",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/414",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/97",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/89",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/782",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/767",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/58",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/638",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/93",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/6",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/106",
+      "status": "pass",
+      "passed": 118,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/474",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    }
+  ],
+  "wall_clock": {
+    "optimization_seconds": 4000.5,
+    "val_eval_seconds": 1.7,
+    "test_eval_seconds": 1060.6,
+    "total_seconds": 5062.8
+  },
+  "finished_at": "2026-09-09T17:10:59+00:00",
+  "rescored": [
+    {
+      "at": "2026-09-11T19:10:51+00:00",
+      "commit": "b0b884b4bafcd8b89928b8c82967022be08b76ca",
+      "reason": "extraction keeps imports and helpers above an unfenced function and drops trailing fences, DSPy markers and junk lines that stop the code from parsing",
+      "base": [
+        148,
+        149
+      ],
+      "plus": [
+        124,
+        124
+      ],
+      "cache_misses": [],
+      "changed": [
+        {
+          "task_id": "Mbpp/239",
+          "status": [
+            "syntax_error",
+            "assert_failed"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            false
+          ]
+        },
+        {
+          "task_id": "Mbpp/300",
+          "status": [
+            "syntax_error",
+            "exception"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/590",
+          "status": [
+            "exception",
+            "exception"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            false
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -13,6 +13,8 @@ from app.services.gepa_service import (
     GEPA_LOGGER_NAME,
     GepaOptimizer,
     GepaTracker,
+    GuardedInstructionProposer,
+    InstructionLeakGuard,
     build_feedback_metric,
     clean_instructions,
 )
@@ -254,3 +256,172 @@ class TestGepaOptimizer:
         # The fake optimizer scored two misses; each carried the user's note.
         misses = [fb for c in gepa["timeline"] for fb in c["feedback"]]
         assert misses and all("Answer with the label only" in fb for fb in misses)
+
+
+def test_guard_is_on_by_default_and_can_be_turned_off():
+    for guard, expected in ((True, GuardedInstructionProposer), (False, type(None))):
+        with (
+            dspy.context(lm=DummyLM(ANSWERS)),
+            patch("app.services.gepa_service.GEPA", FakeGEPA),
+        ):
+            outcome = GepaOptimizer(
+                SAMPLES, metric="contains", budget=40, guard=guard
+            ).run("Classify the ticket.")
+        assert isinstance(FakeGEPA.last_kwargs["instruction_proposer"], expected)
+        assert outcome["gepa"]["guard"]["mode"] == ("placeholders" if guard else "off")
+
+
+# -- leak guard ------------------------------------------------------------------
+
+ORIGINAL = "Write a Python function for the task below."
+CODE_SAMPLES = [
+    Sample(
+        "Write a function to find the nth newman–shanks–williams prime number.\n"
+        "assert newman_prime(3) == 7",
+        "",
+        {"tests": ["assert newman_prime(3) == 7"], "entry_point": "newman_prime"},
+    ),
+    Sample(
+        "Write a function to remove uppercase substrings from a given string.\n"
+        "assert remove_uppercase('cAstyoUrFavoRitETVshoWs') == 'cstyoravoitshos'",
+        "",
+        {
+            "tests": ["assert remove_uppercase('a') == 'a'"],
+            "entry_point": "remove_uppercase",
+        },
+    ),
+    Sample(
+        "Write a python function to split a string into characters.\n"
+        "assert Split('python') == ['p','y','t','h','o','n']",
+        "",
+        {"tests": ["assert Split('ab') == ['a', 'b']"], "entry_point": "Split"},
+    ),
+    Sample(
+        "Write a function to find the sum of the numbers in a list.\n"
+        "assert sum_list([1, 2]) == 3",
+        "",
+        {"tests": ["assert sum_list([1, 2]) == 3"], "entry_point": "sum_list"},
+    ),
+]
+SHOWN = [s.input_text for s in CODE_SAMPLES]
+
+
+class ScriptedLM:
+    """A reflection LM that returns canned answers and keeps the prompts."""
+
+    def __init__(self, answers):
+        self.answers = list(answers)
+        self.prompts = []
+
+    def __call__(self, prompt=None, messages=None, **kwargs):
+        self.prompts.append(prompt)
+        return [self.answers.pop(0)]
+
+
+def _records(samples):
+    return [
+        {
+            "Inputs": {"input": s.input_text},
+            "Generated Outputs": {"output": "def f():\n    pass"},
+            "Feedback": "The function name is wrong.",
+        }
+        for s in samples
+    ]
+
+
+class TestLeakGuard:
+    def test_flags_names_literals_phrases_and_placeholders(self):
+        guard = InstructionLeakGuard(CODE_SAMPLES, ORIGINAL, template=True)
+        report = guard.check(
+            "Define newman_prime carefully and return 'cstyoravoitshos' for the "
+            "example. To find the nth newman shanks williams prime number, use the "
+            "recurrence. Task: {task_input}",
+            SHOWN[:2],
+        )
+        assert report.names == ["newman_prime"]
+        assert report.literals == ["cstyoravoitshos"]
+        assert report.placeholders == ["{task_input}"]
+        assert report.phrases
+        assert {"newman", "shanks", "williams"} <= set(report.terms)
+
+    def test_generic_guidance_passes(self):
+        guard = InstructionLeakGuard(CODE_SAMPLES, ORIGINAL, template=True)
+        report = guard.check(
+            "Name the function exactly as the assert calls it. Import every module "
+            "you use inside the code block. Handle empty inputs, and use sum() or "
+            "max() where they fit. Split long logic into helpers. Write a Python "
+            "function for the task below.",
+            SHOWN,
+        )
+        assert report.leaked == []
+
+    def test_title_case_names_count_only_as_calls_or_code(self):
+        guard = InstructionLeakGuard(CODE_SAMPLES, ORIGINAL, template=True)
+        assert guard.check("Split the work into steps.", SHOWN).names == []
+        assert guard.check("If the assert calls `Split`, name it so.", SHOWN).names == [
+            "Split"
+        ]
+
+    def test_label_instructions_are_checked_for_placeholders_only(self):
+        guard = InstructionLeakGuard(SAMPLES, "Classify the ticket.", template=False)
+        report = guard.check(
+            "Label the alpha ticket as high. Input: {input}", ["alpha ticket"]
+        )
+        assert report.leaked == ["{input}"]
+
+
+class TestGuardedProposer:
+    def test_leaky_proposal_is_regenerated_and_the_clean_one_kept(self):
+        lm = ScriptedLM(
+            [
+                "```\nImplement newman_prime with the recurrence.\n```",
+                "```\nName the function as the assert does and handle edge cases.\n```",
+            ]
+        )
+        guard = InstructionLeakGuard(CODE_SAMPLES, ORIGINAL, template=True)
+        proposer = GuardedInstructionProposer(guard, lm=lm)
+        proposal = proposer(
+            {"self": ORIGINAL}, {"self": _records(CODE_SAMPLES[:1])}, ["self"]
+        )
+        assert proposal == {
+            "self": "Name the function as the assert does and handle edge cases."
+        }
+        assert "none of these examples will come back" in lm.prompts[0]
+        assert "niche and domain specific" not in lm.prompts[0]
+        assert "'newman_prime'" in lm.prompts[1]
+        summary = proposer.summary()
+        assert (summary["mode"], summary["regenerated"], summary["rejected"]) == (
+            "template",
+            1,
+            0,
+        )
+
+    def test_proposal_still_leaking_after_the_retry_is_dropped(self):
+        lm = ScriptedLM(["```\nUse newman_prime.\n```"] * 2)
+        guard = InstructionLeakGuard(CODE_SAMPLES, ORIGINAL, template=True)
+        proposer = GuardedInstructionProposer(guard, lm=lm)
+        proposal = proposer(
+            {"self": ORIGINAL}, {"self": _records(CODE_SAMPLES[:1])}, ["self"]
+        )
+        assert proposal == {}
+        assert proposer.events[0]["rejected"]
+        assert proposer.events[0]["leaked_after_retry"] == ["newman_prime"]
+
+    def test_label_instructions_keep_gepas_reflection_prompt(self):
+        lm = ScriptedLM(["```\nReply with the label only.\n```"])
+        guard = InstructionLeakGuard(SAMPLES, "Classify the ticket.", template=False)
+        records = [
+            {
+                "Inputs": {"input": "alpha ticket"},
+                "Generated Outputs": {"output": "urgent"},
+                "Feedback": "Wrong.",
+            }
+        ]
+        proposal = GuardedInstructionProposer(guard, lm=lm)(
+            {"self": "Classify the ticket."}, {"self": records}, ["self"]
+        )
+        assert proposal == {"self": "Reply with the label only."}
+        assert lm.prompts[0].startswith(
+            "I provided an assistant with the following instructions"
+        )
+        assert "niche and domain specific" in lm.prompts[0]

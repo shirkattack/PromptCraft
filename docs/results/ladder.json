@@ -1,0 +1,16 @@
+{
+  "_comment": "Model ladder for the MBPP+ benchmark. Status: qwen3.5:4b bare prompt done for original, one_line, random_demos, coverage_demos, gepa (gepa_demos and the fixed prompt not run); the rest not started. Run each entry with scripts/run_benchmark.py in this order once the llama3.2 floor is in. Tags must exist in `ollama list`; check `ollama show <tag>` for the thinking capability (the runner turns it off for the task model).",
+  "dataset": "docs/benchmarks/mbppplus",
+  "prompts": ["bare", "fixed"],
+  "methods": ["original", "one_line", "random_demos", "coverage_demos", "gepa", "gepa_demos"],
+  "seeds": [1, 2, 3],
+  "budget": 500,
+  "demos": 4,
+  "reflection_model": "qwen3.6:27b",
+  "ladder": [
+    {"model": "qwen3.5:4b", "note": "small task model; expect the largest relative gain from demos"},
+    {"model": "gemma4:e4b", "note": "Gemma 4 effective-4B; verify the tag before running"},
+    {"model": "qwen3.5:9b", "note": "mid-size task model"},
+    {"model": "qwen3.6:27b", "note": "the reflection model as task model; thinking off; slowest rung"}
+  ]
+}

@@ -20,12 +20,14 @@ const METRIC_LABELS: Record<string, string> = {
   exact: "exact match",
   contains: "contains match",
   llm_judge: "model judge",
+  tests: "run tests",
 }
 
 const METRIC_HELP: Record<string, string> = {
   exact: "The answer must equal the expected output after trimming, lower-casing and removing surrounding punctuation.",
   contains: "The expected output must appear inside the answer (or the answer inside it) after normalization. Good for labels and short answers.",
   llm_judge: "The same model is asked whether the answer conveys the expected output. Used for free-text outputs.",
+  tests: "The answer's Python code is run against the sample's asserts in a sandboxed subprocess. A sample passes only when every assert passes (pass@1).",
 }
 
 export const candidateLabel = (name: string) => CANDIDATE_LABELS[name] ?? name

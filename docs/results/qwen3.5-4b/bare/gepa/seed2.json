@@ -1,0 +1,2042 @@
+{
+  "config": {
+    "dataset": "/Users/esteban/PromptCraft/docs/benchmarks/mbppplus",
+    "model": {
+      "tag": "qwen3.5:4b",
+      "digest": "2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "reflection_model": {
+      "tag": "qwen3.6:27b",
+      "digest": "9d5803d493a991af27b9441c098aa56f2ed7bbd260877f075ec09b575c049bc3",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "reflection_max_tokens": 2048,
+    "timeouts_s": {
+      "task": 300,
+      "reflection": 900
+    },
+    "thinking": "off",
+    "budget": 500,
+    "demos": 4,
+    "code_eval_timeout_seconds": 10.0,
+    "code_eval_memory_mb": 1024,
+    "git_commit": "aaf386cd3c1bb395505e693418edb70aa4d7fa60",
+    "split_sizes": {
+      "train": 120,
+      "val": 60,
+      "test": 198
+    },
+    "method": "gepa",
+    "seed": 2,
+    "prompt_name": "bare",
+    "prompt": "Write a Python function for the task below."
+  },
+  "final_prompt": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - Do not assume arguments are optional or can be derived internally if the test cases explicitly pass them. For example, if an assert passes a list and its length, the function signature must include both parameters.\n   - Ensure argument types match the inputs in the test cases (e.g., if the test passes a complex number `1j`, the parameter should accept complex numbers or be handled appropriately; if it passes floats, ensure no type errors occur).\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems (like maximum subarray sum), use standard, correct algorithms (e.g., Kadane's algorithm) and ensure edge cases (empty lists, all negative numbers) are handled if implied by the context, though primarily focus on passing the provided asserts.\n   - For mathematical or domain-specific problems (like complex number angles), use appropriate standard library functions (e.g., `cmath` or `math`) and ensure the return type matches the expected output (e.g., float for angles).\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. For instance, `math.atan2` expects real numbers. If the input is a complex number, you may need to extract real and imaginary parts or use `cmath.phase`. However, look closely at the assert: if the assert passes `0` and `1j` as separate arguments, the function likely expects two separate arguments (real and imaginary parts) or a single complex argument. In Example 2, the assert `angle_complex(0, 1j)` suggests two arguments. If the second argument is complex, `math.atan2` will fail. You must handle the types correctly. If the problem implies a complex number input, consider using `cmath`. If it implies separate real/imaginary components, ensure they are real numbers. *Correction*: In Example 2, the input was `angle_complex(0, 1j)`. The feedback indicated a TypeError because `math.atan2` received a complex number. The correct approach depends on the intended signature. If the signature is `angle_complex(z)`, use `cmath.phase(z)`. If the signature is `angle_complex(x, y)`, ensure `x` and `y` are real. The assert `angle_complex(0, 1j)` is ambiguous. It could mean `x=0` and `y=1j` (which is invalid for `atan2`) or it could be a typo in the prompt for `angle_complex(0+1j)`. Given the feedback, the assistant failed because it assumed `x` and `y` were real but received a complex `y`. The instruction should emphasize checking the types of arguments in the assert.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+  "demos": [],
+  "gepa": {
+    "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - Do not assume arguments are optional or can be derived internally if the test cases explicitly pass them. For example, if an assert passes a list and its length, the function signature must include both parameters.\n   - Ensure argument types match the inputs in the test cases (e.g., if the test passes a complex number `1j`, the parameter should accept complex numbers or be handled appropriately; if it passes floats, ensure no type errors occur).\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems (like maximum subarray sum), use standard, correct algorithms (e.g., Kadane's algorithm) and ensure edge cases (empty lists, all negative numbers) are handled if implied by the context, though primarily focus on passing the provided asserts.\n   - For mathematical or domain-specific problems (like complex number angles), use appropriate standard library functions (e.g., `cmath` or `math`) and ensure the return type matches the expected output (e.g., float for angles).\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. For instance, `math.atan2` expects real numbers. If the input is a complex number, you may need to extract real and imaginary parts or use `cmath.phase`. However, look closely at the assert: if the assert passes `0` and `1j` as separate arguments, the function likely expects two separate arguments (real and imaginary parts) or a single complex argument. In Example 2, the assert `angle_complex(0, 1j)` suggests two arguments. If the second argument is complex, `math.atan2` will fail. You must handle the types correctly. If the problem implies a complex number input, consider using `cmath`. If it implies separate real/imaginary components, ensure they are real numbers. *Correction*: In Example 2, the input was `angle_complex(0, 1j)`. The feedback indicated a TypeError because `math.atan2` received a complex number. The correct approach depends on the intended signature. If the signature is `angle_complex(z)`, use `cmath.phase(z)`. If the signature is `angle_complex(x, y)`, ensure `x` and `y` are real. The assert `angle_complex(0, 1j)` is ambiguous. It could mean `x=0` and `y=1j` (which is invalid for `atan2`) or it could be a typo in the prompt for `angle_complex(0+1j)`. Given the feedback, the assistant failed because it assumed `x` and `y` were real but received a complex `y`. The instruction should emphasize checking the types of arguments in the assert.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+    "improved": true,
+    "baseline_val_pass_at_1": 63.33,
+    "final_val_pass_at_1": 71.67,
+    "metric_calls": 519,
+    "iterations": 20,
+    "timeline": [
+      {
+        "index": 0,
+        "parent": null,
+        "generation": 0,
+        "instructions": "Write a Python function for the task below.",
+        "score": 63.33,
+        "iteration": null,
+        "feedback": []
+      },
+      {
+        "index": 1,
+        "parent": 0,
+        "generation": 1,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - Do not assume arguments are optional or can be derived internally if the test cases explicitly pass them. For example, if an assert passes a list and its length, the function signature must include both parameters.\n   - Ensure argument types match the inputs in the test cases (e.g., if the test passes a complex number `1j`, the parameter should accept complex numbers or be handled appropriately; if it passes floats, ensure no type errors occur).\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems (like maximum subarray sum), use standard, correct algorithms (e.g., Kadane's algorithm) and ensure edge cases (empty lists, all negative numbers) are handled if implied by the context, though primarily focus on passing the provided asserts.\n   - For mathematical or domain-specific problems (like complex number angles), use appropriate standard library functions (e.g., `cmath` or `math`) and ensure the return type matches the expected output (e.g., float for angles).\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. For instance, `math.atan2` expects real numbers. If the input is a complex number, you may need to extract real and imaginary parts or use `cmath.phase`. However, look closely at the assert: if the assert passes `0` and `1j` as separate arguments, the function likely expects two separate arguments (real and imaginary parts) or a single complex argument. In Example 2, the assert `angle_complex(0, 1j)` suggests two arguments. If the second argument is complex, `math.atan2` will fail. You must handle the types correctly. If the problem implies a complex number input, consider using `cmath`. If it implies separate real/imaginary components, ensure they are real numbers. *Correction*: In Example 2, the input was `angle_complex(0, 1j)`. The feedback indicated a TypeError because `math.atan2` received a complex number. The correct approach depends on the intended signature. If the signature is `angle_complex(z)`, use `cmath.phase(z)`. If the signature is `angle_complex(x, y)`, ensure `x` and `y` are real. The assert `angle_complex(0, 1j)` is ambiguous. It could mean `x=0` and `y=1j` (which is invalid for `atan2`) or it could be a typo in the prompt for `angle_complex(0+1j)`. Given the feedback, the assistant failed because it assumed `x` and `y` were real but received a complex `y`. The instruction should emphasize checking the types of arguments in the assert.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+        "score": 71.67,
+        "iteration": 2,
+        "feedback": [
+          "TypeError: must be real number, not complex while running `assert __close(angle_complex(0.0, 1j), 1.5707963267948966, 0.0001)`.",
+          "AssertionError while loading the code.",
+          "TypeError: angle_complex() takes 1 positional argument but 2 were given while running `assert __close(angle_complex(0.0, 1j), 1.5707963267948966, 0.0001)`.",
+          "Passed 39/112 asserts. First failure: `assert max_sub_array_sum([-10, -5, -3, -2, -1], 5) == 0`",
+          "SyntaxError at line 32: expected an indented block after 'if' statement on line 31.",
+          "ValueError: At least two words starting with 'p' are required. while loading the code.",
+          "Passed 0/105 asserts. First failure: `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "TypeError: argument of type 'int' is not iterable while loading the code."
+        ]
+      },
+      {
+        "index": 2,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - Do not assume arguments are optional or can be derived internally if the test cases explicitly pass them. For example, if an assert passes a list and its length, the function signature must include both parameters.\n   - Ensure argument types match the inputs in the test cases (e.g., if the test passes a complex number `1j`, the parameter should accept complex numbers or be handled appropriately; if it passes floats, ensure no type errors occur).\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems (like maximum subarray sum), use standard, correct algorithms (e.g., Kadane's algorithm) and ensure edge cases (empty lists, all negative numbers) are handled if implied by the context, though primarily focus on passing the provided asserts.\n   - For mathematical or domain-specific problems (like complex number angles), use appropriate standard library functions (e.g., `cmath` or `math`) and ensure the return type matches the expected output (e.g., float for angles).\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. For instance, `math.atan2` expects real numbers. If the input is a complex number, you may need to extract real and imaginary parts or use `cmath.phase`. However, look closely at the assert: if the assert passes `0` and `1j` as separate arguments, the function likely expects two separate arguments (real and imaginary parts) or a single complex argument. In Example 2, the assert `angle_complex(0, 1j)` suggests two arguments. If the second argument is complex, `math.atan2` will fail. You must handle the types correctly. If the problem implies a complex number input, consider using `cmath`. If it implies separate real/imaginary components, ensure they are real numbers. *Correction*: In Example 2, the input was `angle_complex(0, 1j)`. The feedback indicated a TypeError because `math.atan2` received a complex number. The correct approach depends on the intended signature. If the signature is `angle_complex(z)`, use `cmath.phase(z)`. If the signature is `angle_complex(x, y)`, ensure `x` and `y` are real. The assert `angle_complex(0, 1j)` is ambiguous. It could mean `x=0` and `y=1j` (which is invalid for `atan2`) or it could be a typo in the prompt for `angle_complex(0+1j)`. Given the feedback, the assistant failed because it assumed `x` and `y` were real but received a complex `y`. The instruction should emphasize checking the types of arguments in the assert.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n\n6. **Critical Edge Case Handling (Learned from Failures)**:\n   - **Counting/Equality Logic**: When counting equal elements or determining relationships between values, strictly define the return value for cases where no elements are equal. For example, in `test_three_equal`, if all three numbers are distinct, the expected return value was `0`, not `1`. Do not assume \"distinct\" implies a count of 1 (as in \"1 group of distinct items\") unless explicitly stated. Always verify the exact integer return values for all branches (all equal, some equal, none equal) against the test cases.\n   - **String Manipulation Precision**: When removing or filtering characters, ensure you are removing the *characters* themselves, not just changing their case. For example, `remove_uppercase` should delete uppercase letters entirely, not convert them to lowercase. Verify the output string length and content character-by-character against the assert.\n   - **Recursive Depth/Structure Analysis**: When calculating depth or size of nested structures (like dictionaries), clearly define the base case. An empty dictionary `{}` typically has a depth of 0. A dictionary with non-dict values has a depth of 1. Ensure the recursion correctly adds 1 for each level of nesting.\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+        "score": 68.33,
+        "iteration": 7,
+        "feedback": [
+          "Passed 56/113 asserts. First failure: `assert test_three_equal(-1, -2, -3) == 0`",
+          "AssertionError while loading the code.",
+          "SyntaxError at line 44: expected an indented block after 'for' statement on line 43.",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 28).",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "TypeError: argument of type 'int' is not iterable while loading the code.",
+          "ValueError: invalid literal for int() with base 10: '(7' while running `assert tuple_str_int('((7, 8, 9)') == (7, 8, 9)`.",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 35).",
+          "IndexError: list index out of range while running `assert search([]) == 0`.",
+          "Passed 0/108 asserts. First failure: `assert extract_string(['Python', 'list', 'exercises', 'practice', 'solution'], 8) == ['practice', 'solution']`"
+        ]
+      },
+      {
+        "index": 3,
+        "parent": 0,
+        "generation": 1,
+        "instructions": "Write a Python function for the task below.\n\nGuidelines for generating the solution:\n1. **Function Signature**: Define the function with the exact name and parameters specified in the input prompt.\n2. **Logic Implementation**:\n   - Carefully analyze the problem description and the provided assertion example to infer the exact logic required.\n   - Pay close attention to edge cases, such as empty lists, strings with mixed casing, or specific character constraints (e.g., \"starts with a lowercase letter\" vs \"is entirely lowercase\").\n   - Ensure the logic handles all implicit constraints revealed by the test cases. For instance, if a test case fails because of case sensitivity or specific character checks, ensure the implementation is robust against these variations.\n3. **Code Structure**:\n   - Include a docstring explaining the function's purpose, arguments, and return value.\n   - Include the specific assertion provided in the input as a comment or executable code at the end to verify correctness.\n4. **Correctness**: The generated code must pass all hidden test cases associated with the problem. If the problem involves filtering or conditional logic, ensure the conditions are strictly adhered to (e.g., checking the first character's case specifically, not the whole string).\n5. **Output**: Return only the Python code block.",
+        "score": 66.67,
+        "iteration": 11,
+        "feedback": [
+          "Passed 76/114 asserts. First failure: `assert sample_nam(['AbCdE', 'fGH', 'IJKLMnOp', 'qrs', 'TUVW', 'xyz']) == 0`",
+          "AssertionError while loading the code.",
+          "Passed 5/114 asserts. First failure: `assert sample_nam(['AbCdE', 'fGH', 'IJKLMnOp', 'qrs', 'TUVW', 'xyz']) == 0`",
+          "SyntaxError at line 40: '(' was never closed.",
+          "NameError: `num` is used but never defined or imported while running `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`.",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "ValueError: max() arg is an empty sequence while running `assert check_greater([], 10) == True`.",
+          "ValueError: math domain error while running `assert next_Perfect_Square(-5) == 0`.",
+          "ValueError: invalid literal for int() with base 10: '(7' while running `assert tuple_str_int('((7, 8, 9)') == (7, 8, 9)`.",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 27)."
+        ]
+      },
+      {
+        "index": 4,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - **Crucial**: Do not add optional arguments (like `delimiter` or default values) if they are not present in the `assert` call. If the assert calls `func(arg1)`, the function signature must be `def func(arg1):`. Adding extra parameters, even with defaults, can cause `TypeError` or signature mismatch errors in strict testing environments.\n   - Ensure argument types match the inputs in the test cases.\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems, use standard, correct algorithms and ensure edge cases are handled if implied by the context.\n   - For mathematical or domain-specific problems, use appropriate standard library functions.\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. Ensure that operations like string joining or mathematical calculations receive the correct types.\n   - If the problem involves strings, ensure all elements are converted to strings before joining if necessary, but only if the logic requires it and the types are mixed.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+        "score": 61.67,
+        "iteration": 17,
+        "feedback": [
+          "AssertionError while loading the code.",
+          "Passed 0/116 asserts. First failure: `assert count_divisors(10) == True`",
+          "Passed 0/105 asserts. First failure: `assert __close(maxAverageOfPath([[1, 2, 3], [6, 5, 4], [7, 3, 9]]), 5.2, 1e-06)`",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "Passed 0/112 asserts. First failure: `assert next_Perfect_Square(35) == 36`",
+          "Passed 89/104 asserts. First failure: `assert find(-1, 2) == -1`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 33).",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 27).",
+          "Passed 0/106 asserts. First failure: `assert sum_Of_product(3) == 15`"
+        ]
+      },
+      {
+        "index": 5,
+        "parent": 4,
+        "generation": 3,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - **Crucial**: Do not add optional arguments (like `delimiter` or default values) if they are not present in the `assert` call. If the assert calls `func(arg1)`, the function signature must be `def func(arg1):`. Adding extra parameters, even with defaults, can cause `TypeError` or signature mismatch errors in strict testing environments.\n   - Ensure argument types match the inputs in the test cases.\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems, use standard, correct algorithms and ensure edge cases are handled if implied by the context.\n   - **Critical Requirement**: The generated code must be syntactically complete and valid Python. Do not leave loops, conditionals, or functions incomplete. Do not include trailing comments that interrupt code flow or leave blocks empty. Ensure every `for`, `if`, `while`, `def`, and `class` statement has a properly indented body.\n   - For mathematical or domain-specific problems, use appropriate standard library functions.\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. Ensure that operations like string joining or mathematical calculations receive the correct types.\n   - If the problem involves strings, ensure all elements are converted to strings before joining if necessary, but only if the logic requires it and the types are mixed.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n   - Avoid including debugging traces, incomplete thoughts, or explanatory comments inside the code block that break syntax (e.g., comments after a colon that imply missing code).\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+        "score": 68.33,
+        "iteration": 19,
+        "feedback": [
+          "SyntaxError at line 42: expected an indented block after 'for' statement on line 34.",
+          "AssertionError while loading the code.",
+          "Passed 0/116 asserts. First failure: `assert count_divisors(10) == True`",
+          "Passed 0/92 asserts. First failure: `assert combinations_list(['orange', 'red', 'green', 'blue']) == [[], ['orange'], ['red'], ['red', 'orange'], ['green'],\u2026`",
+          "SyntaxError at line 48: invalid syntax.",
+          "Passed 45/106 asserts. First failure: `assert find_Odd_Pair([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2], 10) == 25`",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "ValueError: math domain error while running `assert next_Perfect_Square(-5) == 0`.",
+          "Passed 89/104 asserts. First failure: `assert find(-1, 2) == -1`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 32)."
+        ]
+      },
+      {
+        "index": 6,
+        "parent": 1,
+        "generation": 2,
+        "instructions": "Write a Python function for the task below.\n\nStrictly adhere to the following guidelines to ensure correctness and robustness:\n\n1. **Function Signature and Arguments**:\n   - Carefully analyze the provided `assert` statements to determine the exact number and type of arguments the function must accept.\n   - Do not assume arguments are optional or can be derived internally if the test cases explicitly pass them. For example, if an assert passes a list and its length, the function signature must include both parameters.\n   - Ensure argument types match the inputs in the test cases (e.g., if the test passes a complex number `1j`, the parameter should accept complex numbers or be handled appropriately; if it passes floats, ensure no type errors occur).\n\n2. **Logic and Algorithm**:\n   - Implement the core logic accurately based on the problem description.\n   - For algorithmic problems (like maximum subarray sum), use standard, correct algorithms (e.g., Kadane's algorithm) and ensure edge cases (empty lists, all negative numbers) are handled if implied by the context, though primarily focus on passing the provided asserts.\n   - For mathematical or domain-specific problems (like complex number angles), use appropriate standard library functions (e.g., `cmath` or `math`) and ensure the return type matches the expected output (e.g., float for angles).\n   - **Crucial**: If the problem description is vague or the mathematical formula is not explicitly stated (e.g., \"find the directrix of a parabola\" with specific integer inputs), you must **reverse-engineer the formula** from the provided assert statement. Do not guess standard formulas if they don't match the test case. Instead, treat the assert as the ground truth for the relationship between inputs and outputs. If the relationship is non-obvious, try simple algebraic combinations (polynomials, linear combinations) that fit the single data point, or look for common competitive programming patterns associated with the problem name. However, prioritize code that is syntactically complete and executable.\n\n3. **Type Handling**:\n   - Be mindful of Python's type system. For instance, `math.atan2` expects real numbers. If the input is a complex number, you may need to extract real and imaginary parts or use `cmath.phase`. However, look closely at the assert: if the assert passes `0` and `1j` as separate arguments, the function likely expects two separate arguments (real and imaginary parts) or a single complex argument. In Example 2, the assert `angle_complex(0, 1j)` suggests two arguments. If the second argument is complex, `math.atan2` will fail. You must handle the types correctly. If the problem implies a complex number input, consider using `cmath`. If it implies separate real/imaginary components, ensure they are real numbers. *Correction*: In Example 2, the input was `angle_complex(0, 1j)`. The feedback indicated a TypeError because `math.atan2` received a complex number. The correct approach depends on the intended signature. If the signature is `angle_complex(z)`, use `cmath.phase(z)`. If the signature is `angle_complex(x, y)`, ensure `x` and `y` are real. The assert `angle_complex(0, 1j)` is ambiguous. It could mean `x=0` and `y=1j` (which is invalid for `atan2`) or it could be a typo in the prompt for `angle_complex(0+1j)`. Given the feedback, the assistant failed because it assumed `x` and `y` were real but received a complex `y`. The instruction should emphasize checking the types of arguments in the assert.\n\n4. **Assertions**:\n   - Include the provided assert statements in the output code to verify correctness.\n   - Ensure the function name matches exactly what is called in the assert.\n\n5. **General Best Practices**:\n   - Add docstrings explaining the function's purpose, parameters, and return value.\n   - Keep the code clean and readable.\n   - **Critical**: Ensure the generated code is syntactically valid Python. Do not leave comments or reasoning trails that break the code structure (e.g., unterminated strings, incomplete function definitions). The output must be a complete, runnable script.\n\nHere is the specific task to solve:\n\"\"\"\n{task_input}\n\"\"\"",
+        "score": 70.0,
+        "iteration": 20,
+        "feedback": [
+          "AssertionError while loading the code.",
+          "Passed 102/105 asserts. First failure: `assert is_Monotonic([-34.902913681824856, -34.902913681824856, -10.768528666126521, -35.65861283942265, -47.55433018390\u2026`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 34).",
+          "SyntaxError at line 27: invalid syntax.",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 29).",
+          "TypeError: can't multiply sequence by non-int of type 'tuple' while loading the code.",
+          "Passed 105/106 asserts. First failure: `assert check_expression('') == False`",
+          "SyntaxError at line 2: unterminated triple-quoted string literal (detected at line 33).",
+          "The tests call `unique_Element` but the code defines `unique_element`. Define `unique_Element` exactly.",
+          "TypeError: argument of type 'int' is not iterable while loading the code.",
+          "ValueError: invalid literal for int() with base 10: '(7' while running `assert tuple_str_int('((7, 8, 9)') == (7, 8, 9)`.",
+          "SyntaxError at line 46: '[' was never closed."
+        ]
+      }
+    ],
+    "seconds": 3269.1
+  },
+  "val": {
+    "n": 60,
+    "base_pass": 48,
+    "plus_pass": 43,
+    "base_pass_at_1": 80.0,
+    "plus_pass_at_1": 71.67,
+    "seconds": 1.7
+  },
+  "test": {
+    "n": 198,
+    "base_pass": 150,
+    "plus_pass": 128,
+    "base_pass_at_1": 75.76,
+    "plus_pass_at_1": 64.65,
+    "seconds": 1021.6,
+    "truncated": 14
+  },
+  "test_rows": [
+    {
+      "task_id": "Mbpp/728",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/16",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/594",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/432",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/755",
+      "status": "assert_failed",
+      "passed": 51,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/311",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/454",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/397",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/395",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/2",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/90",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/732",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/415",
+      "status": "assert_failed",
+      "passed": 102,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/804",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/764",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/84",
+      "status": "exception",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/800",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/306",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/733",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/773",
+      "status": "assert_failed",
+      "passed": 100,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/769",
+      "status": "exception",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/737",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/256",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/608",
+      "status": "exception",
+      "passed": 0,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/626",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/758",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/735",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/791",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/637",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/451",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/794",
+      "status": "assert_failed",
+      "passed": 90,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/132",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/463",
+      "status": "assert_failed",
+      "passed": 88,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/630",
+      "status": "exception",
+      "passed": 0,
+      "total": 91,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/91",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/237",
+      "status": "exception",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/740",
+      "status": "pass",
+      "passed": 69,
+      "total": 69,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/269",
+      "status": "pass",
+      "passed": 85,
+      "total": 85,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/602",
+      "status": "assert_failed",
+      "passed": 102,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/558",
+      "status": "pass",
+      "passed": 146,
+      "total": 146,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/167",
+      "status": "assert_failed",
+      "passed": 109,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/446",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/453",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/108",
+      "status": "pass",
+      "passed": 121,
+      "total": 121,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/266",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/730",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/475",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/413",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/96",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/227",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/67",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/98",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/585",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/612",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/59",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/465",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/118",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/290",
+      "status": "exception",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/57",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/252",
+      "status": "exception",
+      "passed": 0,
+      "total": 125,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/133",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/138",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/412",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/564",
+      "status": "exception",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/770",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/586",
+      "status": "exception",
+      "passed": 105,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/64",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 120,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/456",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/267",
+      "status": "exception",
+      "passed": 6,
+      "total": 122,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/723",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/748",
+      "status": "assert_failed",
+      "passed": 7,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/447",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/726",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/478",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/18",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/239",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/441",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/87",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/744",
+      "status": "pass",
+      "passed": 131,
+      "total": 131,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/477",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/388",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/631",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/276",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/137",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/102",
+      "status": "assert_failed",
+      "passed": 13,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/406",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/223",
+      "status": "exception",
+      "passed": 15,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/268",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/428",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/576",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/99",
+      "status": "assert_failed",
+      "passed": 56,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/109",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/472",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/787",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/171",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/113",
+      "status": "assert_failed",
+      "passed": 120,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/279",
+      "status": "exception",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/293",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/473",
+      "status": "exception",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/596",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/809",
+      "status": "pass",
+      "passed": 125,
+      "total": 125,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/160",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/565",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/763",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/567",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/563",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/404",
+      "status": "pass",
+      "passed": 126,
+      "total": 126,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/581",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/410",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/435",
+      "status": "assert_failed",
+      "passed": 68,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/624",
+      "status": "exception",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/63",
+      "status": "exception",
+      "passed": 0,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/786",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/633",
+      "status": "assert_failed",
+      "passed": 10,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/296",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/135",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/278",
+      "status": "assert_failed",
+      "passed": 118,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/165",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/643",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/280",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/457",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/62",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/750",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/300",
+      "status": "exception",
+      "passed": 14,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/127",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/749",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/103",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/792",
+      "status": "assert_failed",
+      "passed": 102,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/19",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/741",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/240",
+      "status": "pass",
+      "passed": 118,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/620",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/85",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/140",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/583",
+      "status": "pass",
+      "passed": 21,
+      "total": 21,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/641",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/86",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/69",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/142",
+      "status": "exception",
+      "passed": 41,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/429",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/566",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/128",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/394",
+      "status": "pass",
+      "passed": 52,
+      "total": 52,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/4",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/82",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/590",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/14",
+      "status": "exception",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/603",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/555",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/230",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/775",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/274",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/798",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/572",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/297",
+      "status": "pass",
+      "passed": 120,
+      "total": 120,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/752",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/75",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/619",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/277",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/65",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/635",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/593",
+      "status": "assert_failed",
+      "passed": 3,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/92",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/724",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/80",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/562",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/610",
+      "status": "exception",
+      "passed": 0,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/765",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/77",
+      "status": "pass",
+      "passed": 119,
+      "total": 119,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/265",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/577",
+      "status": "exception",
+      "passed": 20,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/587",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/11",
+      "status": "syntax_error",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": true
+    },
+    {
+      "task_id": "Mbpp/105",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/168",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/806",
+      "status": "assert_failed",
+      "passed": 57,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/131",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/560",
+      "status": "pass",
+      "passed": 132,
+      "total": 132,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/734",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/573",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/739",
+      "status": "timeout",
+      "passed": 9,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/753",
+      "status": "assert_failed",
+      "passed": 58,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/409",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/796",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/56",
+      "status": "pass",
+      "passed": 128,
+      "total": 128,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/12",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/257",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/414",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/97",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/89",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/782",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/767",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/58",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/638",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/93",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/6",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/106",
+      "status": "pass",
+      "passed": 118,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/474",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    }
+  ],
+  "wall_clock": {
+    "optimization_seconds": 3269.1,
+    "val_eval_seconds": 1.7,
+    "test_eval_seconds": 1021.6,
+    "total_seconds": 4292.4
+  },
+  "finished_at": "2026-09-09T18:22:32+00:00",
+  "rescored": [
+    {
+      "at": "2026-09-11T19:10:51+00:00",
+      "commit": "b0b884b4bafcd8b89928b8c82967022be08b76ca",
+      "reason": "extraction keeps imports and helpers above an unfenced function and drops trailing fences, DSPy markers and junk lines that stop the code from parsing",
+      "base": [
+        150,
+        150
+      ],
+      "plus": [
+        128,
+        128
+      ],
+      "cache_misses": [],
+      "changed": [
+        {
+          "task_id": "Mbpp/590",
+          "status": [
+            "syntax_error",
+            "syntax_error"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            false
+          ]
+        }
+      ]
+    }
+  ]
+}

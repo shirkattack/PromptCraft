@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import deque
 from datetime import UTC, datetime
 from typing import Any
@@ -7,6 +8,7 @@ import dspy
 from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import settings
+from app.services.embedding_service import EmbeddingUnavailable, coverage_selection
 from app.services.eval_service import (
     DatasetOptimizer,
     EvalError,
@@ -20,6 +22,10 @@ from app.services.progress import ProgressCallback, no_progress
 from app.services.text import clean_model_text
 
 logger = logging.getLogger(__name__)
+
+# How many dataset inputs the meta-prompt rewriter is shown, and how much of each.
+REWRITER_SAMPLE_INPUTS = 4
+REWRITER_INPUT_CHARS = 600
 
 
 class PromptOptimizationService:
@@ -280,7 +286,11 @@ class PromptOptimizationService:
             progress("rewrite", f"Rewriting the prompt ({optimization_method})")
             if optimization_method == "meta_prompt":
                 result = self._optimize_with_meta_prompt(
-                    original_prompt, task_type, lm, constraints
+                    original_prompt,
+                    task_type,
+                    lm,
+                    constraints,
+                    sample_inputs=self._representative_inputs(dataset_samples),
                 )
             elif optimization_method == "dspy":
                 result = self._optimize_with_dspy(
@@ -369,29 +379,116 @@ class PromptOptimizationService:
             },
         }
 
-    def _optimize_with_meta_prompt(
-        self, original_prompt: str, task_type: str, lm: dspy.LM, constraints: str = ""
-    ) -> dict[str, Any]:
-        """Optimize using meta-prompt technique from Promptomatix."""
+    @staticmethod
+    def _representative_inputs(
+        samples: list[Sample] | None, k: int = REWRITER_SAMPLE_INPUTS
+    ) -> list[str]:
+        """A few coverage-selected inputs to show the rewriter what the prompt
+        will be applied to. Falls back to the first inputs without embeddings."""
+        if not samples:
+            return []
+        inputs = [s.input_text for s in samples]
+        k = min(k, len(inputs))
+        try:
+            chosen, _ = coverage_selection(inputs, inputs, k)
+            return [inputs[i] for i in chosen]
+        except EmbeddingUnavailable as exc:
+            logger.warning(f"Coverage selection unavailable for the rewriter: {exc}")
+            return inputs[:k]
 
-        meta_prompt = self._generate_meta_prompt(original_prompt, task_type)
+    @staticmethod
+    def specific_tokens(
+        rewrite: str, shown_inputs: list[str], original_prompt: str
+    ) -> list[str]:
+        """Identifier-like tokens of ``rewrite`` that come from one shown input.
+
+        A rewrite of a *template* prompt must not carry anything specific to
+        one input. Only tokens that look like names count: ones with an
+        underscore, a digit or mixed case, or ones an input calls like a
+        function (``find_kth(...)``, ``Diff(...)``). Ordinary words that
+        happen to appear in a single input ("issue", "with") do not.
+        """
+        if not shown_inputs:
+            return []
+        word_re = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
+        call_re = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+
+        def name_like(token: str) -> bool:
+            return (
+                "_" in token
+                or any(ch.isdigit() for ch in token)
+                or (token[0].isupper() and any(ch.islower() for ch in token[1:]))
+                or (any(ch.isupper() for ch in token[1:]))
+            )
+
+        counts: dict[str, int] = {}
+        for text in shown_inputs:
+            called = set(call_re.findall(text))
+            tokens = {t for t in word_re.findall(text) if name_like(t) or t in called}
+            for token in tokens:
+                counts[token] = counts.get(token, 0) + 1
+        allowed = set(word_re.findall(original_prompt))
+        found = set(word_re.findall(rewrite))
+        return sorted(t for t in found if counts.get(t) == 1 and t not in allowed)
+
+    def _optimize_with_meta_prompt(
+        self,
+        original_prompt: str,
+        task_type: str,
+        lm: dspy.LM,
+        constraints: str = "",
+        sample_inputs: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Optimize using meta-prompt technique from Promptomatix.
+
+        With ``sample_inputs`` the rewriter is told the prompt is a template
+        applied to many inputs, shown several of them, and its rewrite is
+        rejected (once regenerated, then dropped) if it borrows anything that
+        appears in only one of them.
+        """
+        sample_inputs = sample_inputs or []
+        meta_prompt = self._generate_meta_prompt(
+            original_prompt, task_type, constraints, sample_inputs
+        )
 
         try:
             # Use DSPy to generate the optimized prompt
             predictor = dspy.Predict("meta_prompt -> optimized_prompt")
             result = predictor(meta_prompt=meta_prompt)
-
-            return {
-                "optimized_prompt": result.optimized_prompt.strip(),
-                "metadata": {
-                    "method": "meta_prompt",
-                    "meta_prompt_used": (
-                        meta_prompt[:200] + "..."
-                        if len(meta_prompt) > 200
-                        else meta_prompt
-                    ),
-                },
+            rewrite = result.optimized_prompt.strip()
+            metadata: dict[str, Any] = {
+                "method": "meta_prompt",
+                "meta_prompt_used": (
+                    meta_prompt[:200] + "..." if len(meta_prompt) > 200 else meta_prompt
+                ),
+                "sample_inputs_shown": len(sample_inputs),
             }
+
+            leaked = self.specific_tokens(rewrite, sample_inputs, original_prompt)
+            if leaked:
+                retry_prompt = (
+                    meta_prompt
+                    + "\n\nYour previous rewrite mentioned "
+                    + ", ".join(f"'{t}'" for t in leaked[:8])
+                    + ", which belongs to a single example input. The rewrite must "
+                    "apply to every input equally; remove anything specific to one "
+                    "example and try again.\n\n## Optimized Prompt:"
+                )
+                rewrite = predictor(meta_prompt=retry_prompt).optimized_prompt.strip()
+                metadata["regenerated_for"] = leaked
+                still = self.specific_tokens(rewrite, sample_inputs, original_prompt)
+                if still:
+                    logger.warning(
+                        f"Rewrite kept input-specific tokens after a retry: {still}"
+                    )
+                    metadata["rewrite_rejected"] = {
+                        "reason": "specific to one of the shown inputs",
+                        "tokens": still,
+                        "rewrite": rewrite,
+                    }
+                    return {"optimized_prompt": original_prompt, "metadata": metadata}
+
+            return {"optimized_prompt": rewrite, "metadata": metadata}
         except Exception as e:
             logger.error(f"Meta-prompt optimization failed: {e}")
             # Fallback to simple optimization
@@ -564,12 +661,28 @@ Improved prompt:"""
         return "\n".join(f"- {line}" for line in lines)
 
     def _generate_meta_prompt(
-        self, original_prompt: str, task_type: str, constraints: str = ""
+        self,
+        original_prompt: str,
+        task_type: str,
+        constraints: str = "",
+        sample_inputs: list[str] | None = None,
     ) -> str:
         """Generate meta-prompt for optimization (adapted from Promptomatix)."""
         constraints_section = (
             f"\n\n## Constraints:\n{constraints}" if constraints else ""
         )
+        if sample_inputs:
+            shown = "\n\n".join(
+                f"### Example input {i}\n{text[:REWRITER_INPUT_CHARS]}"
+                for i, text in enumerate(sample_inputs, start=1)
+            )
+            constraints_section += (
+                "\n\n## This prompt is a template\n"
+                "It will be applied, unchanged, to many different inputs; a few of "
+                "them follow. The rewrite must work for all of them and must not "
+                "mention, solve or describe any single one: no names, values or "
+                "details from one example may appear in it.\n\n" + shown
+            )
 
         return f"""You are an expert prompt engineer specializing in {task_type} tasks. Your goal is to analyze and dramatically improve the following prompt to make it more effective, specific, and reliable.
 

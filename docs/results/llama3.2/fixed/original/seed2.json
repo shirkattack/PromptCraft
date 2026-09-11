@@ -1,0 +1,1994 @@
+{
+  "config": {
+    "dataset": "/Users/esteban/PromptCraft/docs/benchmarks/mbppplus",
+    "model": {
+      "tag": "llama3.2:latest",
+      "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+      "capabilities": [
+        "completion",
+        "tools"
+      ]
+    },
+    "reflection_model": {
+      "tag": "qwen3.6:27b",
+      "digest": "9d5803d493a991af27b9441c098aa56f2ed7bbd260877f075ec09b575c049bc3",
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "reflection_max_tokens": 2048,
+    "timeouts_s": {
+      "task": 300,
+      "reflection": 900
+    },
+    "thinking": "not supported by model",
+    "budget": 500,
+    "demos": 4,
+    "code_eval_timeout_seconds": 10.0,
+    "code_eval_memory_mb": 1024,
+    "git_commit": "cb97c55a3b851ce321c49895daa3ab684aad49ac",
+    "split_sizes": {
+      "train": 120,
+      "val": 60,
+      "test": 198
+    },
+    "method": "original",
+    "seed": 2,
+    "prompt_name": "fixed",
+    "prompt": "Write a Python function for the task below. Respond with a single fenced Python code block and nothing else."
+  },
+  "final_prompt": "Write a Python function for the task below. Respond with a single fenced Python code block and nothing else.",
+  "demos": [],
+  "gepa": null,
+  "val": {
+    "n": 60,
+    "base_pass": 33,
+    "plus_pass": 25,
+    "base_pass_at_1": 55.0,
+    "plus_pass_at_1": 41.67,
+    "seconds": 63.4
+  },
+  "test": {
+    "n": 198,
+    "base_pass": 104,
+    "plus_pass": 87,
+    "base_pass_at_1": 52.53,
+    "plus_pass_at_1": 43.94,
+    "seconds": 205.7,
+    "truncated": 0
+  },
+  "test_rows": [
+    {
+      "task_id": "Mbpp/728",
+      "status": "no_code",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/16",
+      "status": "assert_failed",
+      "passed": 109,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/594",
+      "status": "assert_failed",
+      "passed": 80,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/432",
+      "status": "no_code",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/755",
+      "status": "assert_failed",
+      "passed": 99,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/311",
+      "status": "assert_failed",
+      "passed": 10,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/454",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/397",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/395",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/2",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/90",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/732",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/415",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/804",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/764",
+      "status": "assert_failed",
+      "passed": 41,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/84",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/800",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/306",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/733",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/773",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/769",
+      "status": "assert_failed",
+      "passed": 77,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/737",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/256",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/608",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/626",
+      "status": "assert_failed",
+      "passed": 44,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/758",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/735",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/791",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/637",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/451",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/794",
+      "status": "assert_failed",
+      "passed": 90,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/132",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/463",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/630",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 91,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/91",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/237",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/740",
+      "status": "pass",
+      "passed": 69,
+      "total": 69,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/269",
+      "status": "pass",
+      "passed": 85,
+      "total": 85,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/602",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/558",
+      "status": "assert_failed",
+      "passed": 52,
+      "total": 146,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/167",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/446",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/453",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/108",
+      "status": "pass",
+      "passed": 121,
+      "total": 121,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/266",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/730",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/475",
+      "status": "pass",
+      "passed": 114,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/413",
+      "status": "assert_failed",
+      "passed": 51,
+      "total": 108,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/96",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/227",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/67",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/98",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/585",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/612",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/59",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/465",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/118",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/290",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/57",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/252",
+      "status": "exception",
+      "passed": 2,
+      "total": 125,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/133",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/138",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/412",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/564",
+      "status": "assert_failed",
+      "passed": 8,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/770",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/586",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/64",
+      "status": "pass",
+      "passed": 120,
+      "total": 120,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/456",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/267",
+      "status": "exception",
+      "passed": 0,
+      "total": 122,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/723",
+      "status": "exception",
+      "passed": 0,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/748",
+      "status": "assert_failed",
+      "passed": 28,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/447",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/726",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/478",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/18",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/239",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/441",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/87",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/744",
+      "status": "pass",
+      "passed": 131,
+      "total": 131,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/477",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/388",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/631",
+      "status": "assert_failed",
+      "passed": 75,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/276",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/137",
+      "status": "assert_failed",
+      "passed": 113,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/102",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/406",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 110,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/223",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/268",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/428",
+      "status": "pass",
+      "passed": 110,
+      "total": 110,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/576",
+      "status": "assert_failed",
+      "passed": 109,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/99",
+      "status": "assert_failed",
+      "passed": 56,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/109",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/472",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/787",
+      "status": "assert_failed",
+      "passed": 103,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/171",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/113",
+      "status": "assert_failed",
+      "passed": 120,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/279",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/293",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/473",
+      "status": "exception",
+      "passed": 11,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/596",
+      "status": "exception",
+      "passed": 0,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/809",
+      "status": "pass",
+      "passed": 125,
+      "total": 125,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/160",
+      "status": "assert_failed",
+      "passed": 23,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/565",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/763",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/567",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/563",
+      "status": "assert_failed",
+      "passed": 37,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/404",
+      "status": "pass",
+      "passed": 126,
+      "total": 126,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/581",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/410",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/435",
+      "status": "assert_failed",
+      "passed": 68,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/624",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/63",
+      "status": "assert_failed",
+      "passed": 91,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/786",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/633",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/296",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/135",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/278",
+      "status": "exception",
+      "passed": 0,
+      "total": 124,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/165",
+      "status": "assert_failed",
+      "passed": 3,
+      "total": 110,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/643",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/280",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/457",
+      "status": "pass",
+      "passed": 124,
+      "total": 124,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/62",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/750",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/300",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/127",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/749",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/103",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/792",
+      "status": "assert_failed",
+      "passed": 102,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/19",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/741",
+      "status": "no_code",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/240",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 118,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/620",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/85",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/140",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 112,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/583",
+      "status": "pass",
+      "passed": 21,
+      "total": 21,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/641",
+      "status": "assert_failed",
+      "passed": 4,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/86",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/69",
+      "status": "assert_failed",
+      "passed": 104,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/142",
+      "status": "exception",
+      "passed": 0,
+      "total": 113,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/429",
+      "status": "assert_failed",
+      "passed": 1,
+      "total": 116,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/566",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/128",
+      "status": "assert_failed",
+      "passed": 50,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/394",
+      "status": "pass",
+      "passed": 52,
+      "total": 52,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/4",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/82",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/590",
+      "status": "wrong_name",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/14",
+      "status": "pass",
+      "passed": 111,
+      "total": 111,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/603",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/555",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/230",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/775",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/274",
+      "status": "exception",
+      "passed": 0,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/798",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/572",
+      "status": "assert_failed",
+      "passed": 9,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/297",
+      "status": "pass",
+      "passed": 120,
+      "total": 120,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/752",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/75",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/619",
+      "status": "assert_failed",
+      "passed": 35,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/277",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/65",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/635",
+      "status": "pass",
+      "passed": 115,
+      "total": 115,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/593",
+      "status": "assert_failed",
+      "passed": 7,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/92",
+      "status": "exception",
+      "passed": 0,
+      "total": 104,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/724",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/80",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/562",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/610",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/765",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 111,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/77",
+      "status": "assert_failed",
+      "passed": 106,
+      "total": 119,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/265",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/577",
+      "status": "exception",
+      "passed": 20,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/587",
+      "status": "pass",
+      "passed": 116,
+      "total": 116,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/11",
+      "status": "assert_failed",
+      "passed": 14,
+      "total": 106,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/105",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/168",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/806",
+      "status": "assert_failed",
+      "passed": 57,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/131",
+      "status": "pass",
+      "passed": 105,
+      "total": 105,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/560",
+      "status": "pass",
+      "passed": 132,
+      "total": 132,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/734",
+      "status": "exception",
+      "passed": 104,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/573",
+      "status": "pass",
+      "passed": 104,
+      "total": 104,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/739",
+      "status": "timeout",
+      "passed": 5,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/753",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/409",
+      "status": "assert_failed",
+      "passed": 31,
+      "total": 114,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/796",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/56",
+      "status": "assert_failed",
+      "passed": 0,
+      "total": 128,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/12",
+      "status": "pass",
+      "passed": 109,
+      "total": 109,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/257",
+      "status": "pass",
+      "passed": 112,
+      "total": 112,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/414",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/97",
+      "status": "pass",
+      "passed": 106,
+      "total": 106,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/89",
+      "status": "exception",
+      "passed": 0,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/782",
+      "status": "pass",
+      "passed": 108,
+      "total": 108,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/767",
+      "status": "exception",
+      "passed": 0,
+      "total": 107,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/58",
+      "status": "exception",
+      "passed": 0,
+      "total": 109,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/638",
+      "status": "assert_failed",
+      "passed": 2,
+      "total": 105,
+      "base_pass": false,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/93",
+      "status": "pass",
+      "passed": 113,
+      "total": 113,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/6",
+      "status": "assert_failed",
+      "passed": 107,
+      "total": 114,
+      "base_pass": true,
+      "plus_pass": false,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/106",
+      "status": "pass",
+      "passed": 118,
+      "total": 118,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    },
+    {
+      "task_id": "Mbpp/474",
+      "status": "pass",
+      "passed": 107,
+      "total": 107,
+      "base_pass": true,
+      "plus_pass": true,
+      "truncated": false
+    }
+  ],
+  "wall_clock": {
+    "optimization_seconds": 0.0,
+    "val_eval_seconds": 63.4,
+    "test_eval_seconds": 205.7,
+    "total_seconds": 269.1
+  },
+  "finished_at": "2026-09-09T04:37:45+00:00",
+  "rescored": [
+    {
+      "at": "2026-09-11T19:10:40+00:00",
+      "commit": "b0b884b4bafcd8b89928b8c82967022be08b76ca",
+      "reason": "extraction keeps imports and helpers above an unfenced function and drops trailing fences, DSPy markers and junk lines that stop the code from parsing",
+      "base": [
+        97,
+        104
+      ],
+      "plus": [
+        80,
+        87
+      ],
+      "cache_misses": [],
+      "changed": [
+        {
+          "task_id": "Mbpp/454",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/90",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/256",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/477",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/787",
+          "status": [
+            "syntax_error",
+            "assert_failed"
+          ],
+          "plus_pass": [
+            false,
+            false
+          ],
+          "base_pass": [
+            false,
+            false
+          ]
+        },
+        {
+          "task_id": "Mbpp/171",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/131",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        },
+        {
+          "task_id": "Mbpp/474",
+          "status": [
+            "syntax_error",
+            "pass"
+          ],
+          "plus_pass": [
+            false,
+            true
+          ],
+          "base_pass": [
+            false,
+            true
+          ]
+        }
+      ]
+    }
+  ]
+}
